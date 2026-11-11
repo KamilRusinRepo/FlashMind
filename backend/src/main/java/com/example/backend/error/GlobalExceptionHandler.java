@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.example.backend.auth.RegistrationConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 : createError(status, messageFor(status), path(request), Map.of());
         // Keep Spring's status and protocol headers, e.g. Allow for HTTP 405.
         return super.handleExceptionInternal(exception, error, headers, status, request);
+    }
+
+    @ExceptionHandler(RegistrationConflictException.class)
+    public ResponseEntity<ApiError> handleRegistrationConflict(
+            RegistrationConflictException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(createError(
+                HttpStatus.CONFLICT,
+                "An account with these details already exists.",
+                request.getRequestURI(),
+                Map.of(exception.getField(), exception.getMessage())
+        ));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
