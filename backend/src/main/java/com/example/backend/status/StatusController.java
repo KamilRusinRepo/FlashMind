@@ -1,4 +1,4 @@
-dpackage com.example.backend.status;
+package com.example.backend.status;
 
 import java.time.Instant;
 

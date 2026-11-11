@@ -1,0 +1,130 @@
+package com.example.backend.error;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.example.backend.auth.RegistrationConflictException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        exception.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.putIfAbsent(error.getField(),
+                        error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage()));
+
+        ApiError body = createError(status, "Please check the submitted fields.", path(request), fieldErrors);
+        return handleExceptionInternal(exception, body, headers, status, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception exception,
+            Object body,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        ApiError error = body instanceof ApiError apiError
+                ? apiError
+                : createError(status, messageFor(status), path(request), Map.of());
+        // Keep Spring's status and protocol headers, e.g. Allow for HTTP 405.
+        return super.handleExceptionInternal(exception, error, headers, status, request);
+    }
+
+    @ExceptionHandler(RegistrationConflictException.class)
+    public ResponseEntity<ApiError> handleRegistrationConflict(
+            RegistrationConflictException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(createError(
+                HttpStatus.CONFLICT,
+                "An account with these details already exists.",
+                request.getRequestURI(),
+                Map.of(exception.getField(), exception.getMessage())
+        ));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataConflict(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(createError(
+                HttpStatus.CONFLICT,
+                "The submitted data conflicts with existing data.",
+                request.getRequestURI(),
+                Map.of()
+        ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpectedException(Exception exception, HttpServletRequest request) {
+        log.error("Unhandled exception while processing {}", request.getRequestURI(), exception);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(createError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected server error occurred.",
+                request.getRequestURI(),
+                Map.of()
+        ));
+    }
+
+    private ApiError createError(HttpStatusCode status, String message, String path, Map<String, String> fieldErrors) {
+        HttpStatus httpStatus = HttpStatus.resolve(status.value());
+        return new ApiError(
+                Instant.now(),
+                status.value(),
+                httpStatus == null ? "HTTP Error" : httpStatus.getReasonPhrase(),
+                message,
+                path,
+                fieldErrors
+        );
+    }
+
+    private String path(WebRequest request) {
+        return ((ServletWebRequest) request).getRequest().getRequestURI();
+    }
+
+    private String messageFor(HttpStatusCode status) {
+        return switch (status.value()) {
+            case 400 -> "The request body or parameters are invalid.";
+            case 401 -> "Authentication is required.";
+            case 403 -> "You do not have permission to access this resource.";
+            case 404 -> "The requested resource was not found.";
+            case 405 -> "This HTTP method is not supported for this resource.";
+            case 406 -> "The requested response format is not supported.";
+            case 409 -> "The request conflicts with the current state of the resource.";
+            case 413 -> "The uploaded content is too large.";
+            case 415 -> "The request content type is not supported.";
+            case 429 -> "Too many requests. Please try again later.";
+            case 503 -> "The service is temporarily unavailable.";
+            default -> status.is5xxServerError()
+                    ? "An unexpected server error occurred."
+                    : "The request could not be completed.";
+        };
+    }
+}

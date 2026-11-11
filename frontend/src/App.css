@@ -82,6 +82,11 @@
 .field-error { font-size: 11px; line-height: 1.6; color: var(--danger); }
 .field-hint { font-size: 11px; line-height: 1.6; color: var(--muted); }
 .form-notice { border: 1px solid #cee2f6; background: #eff6ff; color: #355679; border-radius: 10px; padding: 12px; font-size: 12px; line-height: 1.7; }
+.form-error { border-color: #efc7cd; background: #fff3f4; color: var(--danger); }
+.form-success { border-color: #c5e8d3; background: #effaf3; color: #27613e; }
+.form-success p + p { margin-top: 12px; }
+.form-success strong { overflow-wrap: anywhere; }
+.registration-success { display: grid; gap: 22px; }
 .availability-note { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.7; margin-top: 16px; }
 .or-separator { display: flex; align-items: center; gap: 12px; margin: 24px 0 18px; color: #8996a6; font-size: 8px; font-weight: 650; letter-spacing: .08em; }
 .or-separator::before, .or-separator::after { content: ''; height: 1px; background: #e9eef3; flex: 1; }
