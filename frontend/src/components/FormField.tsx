@@ -29,6 +29,7 @@ export default function FormField({ id, label, error, hint, type = 'text', ...in
           <button
             className="password-toggle"
             type="button"
+            disabled={inputProps.disabled}
             aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
             aria-pressed={visible}
             aria-controls={id}
