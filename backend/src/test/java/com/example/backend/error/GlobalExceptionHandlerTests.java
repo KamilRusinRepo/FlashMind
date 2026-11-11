@@ -1,5 +1,6 @@
 package com.example.backend.error;
 
+import com.example.backend.auth.token.InvalidTokenException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,9 +125,21 @@ class GlobalExceptionHandlerTests {
                 .andExpect(content().string(not(containsString("private-token"))));
     }
 
+    @Test
+    void returnsBadRequestForInvalidToken() throws Exception {
+        mvc.perform(get("/test/errors/token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.token").value("The token is invalid, expired or has already been used."));
+    }
+
     @RestController
     @RequestMapping("/test/errors")
     static class ErrorTestController {
+
+        @GetMapping("/token")
+        void invalidToken() {
+            throw new InvalidTokenException();
+        }
 
         @PostMapping(value = "/validate", consumes = MediaType.APPLICATION_JSON_VALUE)
         void validate(@Valid @RequestBody TestRequest request) {
