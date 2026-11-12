@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { registerAccount, RegistrationError, type RegisterResponse } from '../api/registration'
 import { LoginError } from '../api/login'
 import { useAuth } from '../auth/AuthContext'
@@ -17,12 +17,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [registeredAccount, setRegisteredAccount] = useState<RegisterResponse | null>(null)
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
-  const signedInAccount = isRegister ? null : user
   const submitting = useRef(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (submitting.current || registeredAccount || signedInAccount) return
+    if (submitting.current || registeredAccount || (!isRegister && user)) return
     const form = event.currentTarget
     const data = new FormData(form)
     const value = (name: string) => String(data.get(name) ?? '')
@@ -93,6 +92,10 @@ export default function AuthPage({ mode }: AuthPageProps) {
     }
   }
 
+  if (!isRegister && status === 'authenticated' && user) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   if (!isRegister && (status === 'loading' || status === 'error')) {
     return <div className="auth-page"><section className="auth-card" aria-labelledby="auth-title">
       <div className="auth-heading"><span className="eyebrow">WELCOME BACK</span><h1 id="auth-title">Sign In</h1></div>
@@ -107,8 +110,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-heading">
           <span className="eyebrow">{isRegister ? 'START YOUR JOURNEY' : 'WELCOME BACK'}</span>
-          <h1 id="auth-title">{signedInAccount ? 'Signed in' : registeredAccount ? 'Account created' : isRegister ? 'Create account' : 'Sign In'}</h1>
-          <p>{signedInAccount ? `Welcome back, ${signedInAccount.username}.` : registeredAccount ? `Welcome, ${registeredAccount.username}.` : isRegister ? 'Make a little room for learning, every day.' : 'Pick up where you left off.'}</p>
+          <h1 id="auth-title">{registeredAccount ? 'Account created' : isRegister ? 'Create account' : 'Sign In'}</h1>
+          <p>{registeredAccount ? `Welcome, ${registeredAccount.username}.` : isRegister ? 'Make a little room for learning, every day.' : 'Pick up where you left off.'}</p>
         </div>
         {registeredAccount ? (
           <div className="registration-success">
@@ -119,13 +122,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
             </div>
             <ResendVerificationForm email={registeredAccount.email} initialCooldownSeconds={60} />
             <Link className="button button-outline button-full" to="/login">Go to sign in</Link>
-            <Link className="button button-primary button-full" to="/">Back to home</Link>
-          </div>
-        ) : signedInAccount ? (
-          <div className="registration-success">
-            <div className="form-notice form-success" role="status">
-              <p>You are signed in as <strong>{signedInAccount.username}</strong>.</p>
-            </div>
             <Link className="button button-primary button-full" to="/">Back to home</Link>
           </div>
         ) : (
@@ -157,20 +153,20 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </button>
         </form>
         )}
-        {!isRegister && !signedInAccount && verificationEmail && (
+        {!isRegister && verificationEmail && (
           <div className="login-verification-resend">
             <p className="field-hint">Send a new confirmation link to <strong>{verificationEmail}</strong>.</p>
             <ResendVerificationForm key={verificationEmail} email={verificationEmail} />
           </div>
         )}
-        {!isRegister && !signedInAccount && (
+        {!isRegister && (
           <>
             <div className="or-separator"><span>OR TAKE A LOOK AROUND</span></div>
             <Link className="button button-secondary button-full" to="/#preview">Try a sample flashcard</Link>
           </>
         )}
       </section>
-      {!registeredAccount && !signedInAccount && <p className="auth-footer">
+      {!registeredAccount && <p className="auth-footer">
         {isRegister ? 'Already have an account? ' : "Don't have an account? "}
         <Link to={isRegister ? '/login' : '/register'}>{isRegister ? 'Sign in' : 'Sign up for free'}</Link>
       </p>}
