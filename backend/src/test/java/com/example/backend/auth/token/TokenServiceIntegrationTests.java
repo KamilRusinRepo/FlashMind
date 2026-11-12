@@ -1,5 +1,7 @@
 package com.example.backend.auth.token;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -25,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-class TokenServiceIntegrationTests {
+class TokenServiceIntegrationTests extends PostgresIntegrationTest {
 
     @Autowired
     private TokenService service;

@@ -1,3 +1,5 @@
+import { postWithCsrf } from './csrf'
+
 export class EmailVerificationError extends Error {
   readonly retryable: boolean
 
@@ -11,8 +13,7 @@ export class EmailVerificationError extends Error {
 export async function verifyEmail(token: string): Promise<void> {
   let response: Response
   try {
-    response = await fetch('/api/auth/verify-email', {
-      method: 'POST',
+    response = await postWithCsrf('/api/auth/verify-email', {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
       signal: AbortSignal.timeout(15000),

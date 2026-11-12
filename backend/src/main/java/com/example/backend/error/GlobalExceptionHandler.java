@@ -5,6 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.example.backend.auth.RegistrationConflictException;
+import com.example.backend.auth.EmailNotVerifiedException;
+import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
+import org.springframework.security.core.AuthenticationException;
 import com.example.backend.auth.token.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -25,6 +28,20 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<EmailVerificationRequiredResponse> handleUnverifiedEmail(
+            EmailNotVerifiedException exception, HttpServletRequest request) {
+        ApiError error = createError(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI(), Map.of());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(EmailVerificationRequiredResponse.from(error, exception.getEmail()));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(createError(HttpStatus.UNAUTHORIZED,
+                "Invalid email/username or password.", request.getRequestURI(), Map.of()));
+    }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(

@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -33,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
-class EmailVerificationApiTests {
+class EmailVerificationApiTests extends PostgresIntegrationTest {
     @Autowired Environment environment;
     @Autowired ObjectMapper json;
     @Autowired UserRepository users;
@@ -179,9 +181,6 @@ class EmailVerificationApiTests {
     }
 
     private HttpResponse<String> post(Map<String, ?> body) throws Exception {
-        return http.send(HttpRequest.newBuilder(endpoint()).timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(),
-                HttpResponse.BodyHandlers.ofString());
+        return com.example.backend.support.CsrfHttpClient.post(endpoint(), json.writeValueAsString(body), json);
     }
 }

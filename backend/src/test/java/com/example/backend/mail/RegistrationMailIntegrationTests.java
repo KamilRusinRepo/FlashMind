@@ -1,5 +1,7 @@
 package com.example.backend.mail;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.util.UUID;
 
 import com.example.backend.auth.RegistrationService;
@@ -25,7 +27,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
-class RegistrationMailIntegrationTests {
+class RegistrationMailIntegrationTests extends PostgresIntegrationTest {
     @Autowired RegistrationService registration;
     @Autowired UserRepository users;
     @Autowired UserTokenRepository tokens;

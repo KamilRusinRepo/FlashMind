@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -40,7 +42,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
-class ResendVerificationApiTests {
+class ResendVerificationApiTests extends PostgresIntegrationTest {
     private static final Instant NOW = Instant.parse("2026-11-12T12:00:00Z");
     @Autowired Environment environment;
     @Autowired ObjectMapper json;
@@ -253,9 +255,6 @@ class ResendVerificationApiTests {
     }
 
     private HttpResponse<String> post(String path, Map<String, ?> body) throws Exception {
-        return http.send(HttpRequest.newBuilder(endpoint(path)).timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(),
-                HttpResponse.BodyHandlers.ofString());
+        return com.example.backend.support.CsrfHttpClient.post(endpoint(path), json.writeValueAsString(body), json);
     }
 }

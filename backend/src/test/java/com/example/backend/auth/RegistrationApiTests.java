@@ -1,10 +1,9 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class RegistrationApiTests {
+class RegistrationApiTests extends PostgresIntegrationTest {
     @MockitoBean
     private VerificationMailPublisher mailPublisher;
 
@@ -46,7 +45,6 @@ class RegistrationApiTests {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     @Test
     void registrationCreatesAccountWithoutExposingPasswordAndIgnoresClientRole() throws Exception {
@@ -157,11 +155,7 @@ class RegistrationApiTests {
 
     private HttpResponse<String> post(Map<String, ?> body) throws Exception {
         int port = environment.getRequiredProperty("local.server.port", Integer.class);
-        HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/auth/register"))
-                .timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
-                .build();
-        return http.send(request, HttpResponse.BodyHandlers.ofString());
+        return com.example.backend.support.CsrfHttpClient.post(
+                URI.create("http://localhost:" + port + "/api/auth/register"), objectMapper.writeValueAsString(body), objectMapper);
     }
 }
