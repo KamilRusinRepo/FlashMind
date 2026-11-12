@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router'
 import PublicLayout from './components/PublicLayout'
+import DashboardLayout from './components/dashboard/DashboardLayout'
+import DashboardPage from './pages/DashboardPage'
 import AuthPage from './pages/AuthPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
 import HomePage from './pages/HomePage'
@@ -10,6 +12,9 @@ import './App.css'
 function App() {
   return (
     <Routes>
+      <Route element={<DashboardLayout />}>
+        <Route path="dashboard" element={<DashboardPage />} />
+      </Route>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
