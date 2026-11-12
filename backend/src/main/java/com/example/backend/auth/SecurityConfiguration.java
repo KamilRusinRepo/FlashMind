@@ -16,6 +16,8 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 
@@ -58,7 +60,10 @@ public class SecurityConfiguration {
                 .requestCache(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .logout(AbstractHttpConfigurer::disable)
+                .logout(logout -> logout.logoutUrl("/api/auth/logout")
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
+                        .permitAll())
                 .build();
     }
 }

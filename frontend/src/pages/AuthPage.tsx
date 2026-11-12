@@ -1,7 +1,8 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { registerAccount, RegistrationError, type RegisterResponse } from '../api/registration'
-import { loginAccount, LoginError, type LoginResponse } from '../api/login'
+import { LoginError } from '../api/login'
+import { useAuth } from '../auth/AuthContext'
 import FormField from '../components/FormField'
 import ResendVerificationForm from '../components/ResendVerificationForm'
 
@@ -10,11 +11,12 @@ type FieldErrors = Partial<Record<'login' | 'username' | 'email' | 'password' | 
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const isRegister = mode === 'register'
+  const { user, status, signIn } = useAuth()
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [registeredAccount, setRegisteredAccount] = useState<RegisterResponse | null>(null)
-  const [signedInAccount, setSignedInAccount] = useState<LoginResponse | null>(null)
+  const signedInAccount = isRegister ? null : user
   const submitting = useRef(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,8 +68,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         const account = await registerAccount({ username: value('username').trim(), email: value('email').trim(), password })
         setRegisteredAccount(account)
       } else {
-        const account = await loginAccount(value('login').trim(), password)
-        setSignedInAccount(account)
+        await signIn(value('login').trim(), password)
       }
       form.reset()
     } catch (error) {
@@ -85,6 +86,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
       submitting.current = false
       setIsSubmitting(false)
     }
+  }
+
+  if (!isRegister && (status === 'loading' || status === 'error')) {
+    return <div className="auth-page"><section className="auth-card" aria-labelledby="auth-title">
+      <div className="auth-heading"><span className="eyebrow">WELCOME BACK</span><h1 id="auth-title">Sign In</h1></div>
+      {status === 'loading' && <p className="form-notice" role="status">Checking your session…</p>}
+      {status === 'error' && <p className="field-hint">Use the retry button above to check your session again.</p>}
+    </section></div>
   }
 
   return (

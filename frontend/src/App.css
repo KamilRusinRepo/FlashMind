@@ -17,6 +17,9 @@
 .site-nav { display: flex; align-items: center; gap: 26px; }
 .nav-login { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 13px 18px; border-radius: 12px; font-size: 16px; font-weight: 650; color: #40516a; }
 .nav-login:hover, .nav-login.active { color: var(--primary-dark); }
+.session-user { max-width: clamp(90px, 18vw, 300px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 650; }
+.session-label { color: var(--muted); font-size: 13px; }
+.session-error { width: calc(100% - 2 * var(--page-gutter)); margin: 0 auto 16px; }
 .page-content { flex: 1; width: 100%; outline: none; }
 .site-footer { width: calc(100% - 2 * var(--page-gutter)); margin: 0 auto; padding: 23px 0; display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; line-height: 1.7; }
 .site-footer p span { padding: 0 7px; }
@@ -65,7 +68,7 @@
 .auth-card { padding: 40px 44px; background: #fff; border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow); }
 .auth-heading { margin-bottom: 30px; }
 .auth-heading h1 { font-size: 36px; letter-spacing: -.035em; line-height: 1.2; margin: 12px 0; }
-.auth-heading > p { color: var(--muted); font-size: 16px; line-height: 1.7; }
+.auth-heading > p { color: var(--muted); font-size: 16px; line-height: 1.7; overflow-wrap: anywhere; }
 .auth-form { display: grid; gap: 22px; }
 .auth-card .button { min-height: 58px; font-size: 17px; }
 .form-field { display: grid; gap: 8px; }
@@ -191,6 +194,7 @@
   .brand-title { font-size: 18px; }
   .brand-subtitle { font-size: 9px; }
   .site-nav { gap: 14px; }
+  .session-user { max-width: 90px; font-size: 12px; }
   .site-nav .button { padding: 10px 12px; font-size: 11px; min-height: 40px; }
   .nav-login { font-size: 13px; min-height: 42px; padding: 8px 4px; }
   .hero { grid-template-columns: 1fr; gap: 40px; padding: 34px 0 38px; }

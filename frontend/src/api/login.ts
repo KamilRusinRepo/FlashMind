@@ -1,6 +1,7 @@
 import { postWithCsrf } from './csrf'
+import { isAuthUser, type AuthUser } from './authUser'
 
-export type LoginResponse = { id: number; username: string; email: string; roles: string[] }
+export type LoginResponse = AuthUser
 
 export class LoginError extends Error {
   readonly fieldErrors: Record<string, string>
@@ -32,8 +33,7 @@ export async function loginAccount(login: string, password: string): Promise<Log
     throw new LoginError(response.status >= 500 ? 'Sign in is temporarily unavailable. Please try again later.'
       : typeof data?.message === 'string' ? data.message : 'Unable to sign in. Please try again.', fields)
   }
-  if (typeof data?.id !== 'number' || typeof data?.username !== 'string' || typeof data?.email !== 'string'
-    || !Array.isArray(data?.roles) || !data.roles.every((role: unknown) => typeof role === 'string')) {
+  if (!isAuthUser(data)) {
     throw new LoginError('The server returned an unexpected response. Please try again later.')
   }
   return data as LoginResponse
