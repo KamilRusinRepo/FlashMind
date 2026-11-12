@@ -58,7 +58,12 @@ public class TokenService {
         if (value == null || !value.matches("[A-Za-z0-9_-]{43}")) {
             throw new InvalidTokenException();
         }
-        UserToken token = tokens.findByTokenHashForUpdate(hash(value)).orElseThrow(InvalidTokenException::new);
+        String tokenHash = hash(value);
+        Long ownerId = tokens.findOwnerIdByTokenHash(tokenHash).orElseThrow(InvalidTokenException::new);
+        // Resend and consumption lock in the same order: user, then token. This avoids deadlocks
+        // and prevents a concurrently invalidated token from verifying the account.
+        users.findByIdForUpdate(ownerId).orElseThrow(InvalidTokenException::new);
+        UserToken token = tokens.findByTokenHashForUpdate(tokenHash).orElseThrow(InvalidTokenException::new);
         if (token.getType() != expectedType) {
             throw new InvalidTokenException();
         }

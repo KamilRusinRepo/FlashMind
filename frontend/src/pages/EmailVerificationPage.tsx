@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { EmailVerificationError, verifyEmail } from '../api/emailVerification'
+import ResendVerificationForm from '../components/ResendVerificationForm'
 
 type VerificationState =
   | { status: 'pending' }
@@ -64,6 +65,7 @@ function VerificationResult({ token, onRetry }: { token: string; onRetry: () => 
             <>
               <p className="form-notice form-error" role="alert">{state.message}</p>
               {state.retryable && <button type="button" className="button button-primary button-full" onClick={onRetry}>Try again</button>}
+              {!state.retryable && <ResendVerificationForm />}
             </>
           )}
           <Link className="button button-secondary button-full" to="/">Back to home</Link>

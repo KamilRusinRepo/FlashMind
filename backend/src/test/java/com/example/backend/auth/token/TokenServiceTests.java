@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.example.backend.user.User;
 import com.example.backend.user.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,12 @@ class TokenServiceTests {
     private final User user = mock(User.class);
     private final TokenService service = new TokenService(tokens, users,
             new TokenProperties(Duration.ofHours(24), Duration.ofMinutes(30)), Clock.fixed(NOW, ZoneOffset.UTC));
+
+    @BeforeEach
+    void setUpOwnerLock() {
+        when(tokens.findOwnerIdByTokenHash(anyString())).thenReturn(Optional.of(1L));
+        when(users.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+    }
 
     @Test
     void issuesRandomVerificationTokenAndStoresOnlyItsHash() throws Exception {
@@ -123,7 +130,7 @@ class TokenServiceTests {
 
     @Test
     void unknownTokenIsRejectedWithoutIncludingItsValueInMessage() {
-        when(tokens.findByTokenHashForUpdate(anyString())).thenReturn(Optional.empty());
+        when(tokens.findOwnerIdByTokenHash(anyString())).thenReturn(Optional.empty());
 
         var exception = assertThrows(InvalidTokenException.class,
                 () -> service.consume(RAW_TOKEN, TokenType.EMAIL_VERIFICATION));
