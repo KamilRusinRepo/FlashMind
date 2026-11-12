@@ -3,6 +3,11 @@ package com.example.backend.auth;
 import java.util.Optional;
 
 import com.example.backend.auth.dto.request.RegisterRequest;
+import com.example.backend.auth.token.TokenService;
+import com.example.backend.auth.token.TokenType;
+import com.example.backend.mail.VerificationEmailRequested;
+import org.springframework.context.ApplicationEventPublisher;
+import java.time.Instant;
 import com.example.backend.role.Role;
 import com.example.backend.role.RoleName;
 import com.example.backend.role.RoleRepository;
@@ -32,11 +37,14 @@ class RegistrationServiceTests {
     private final RoleRepository roles = mock(RoleRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final Role userRole = mock(Role.class);
-    private final RegistrationService service = new RegistrationService(users, roles, encoder);
+    private final TokenService tokens = mock(TokenService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final RegistrationService service = new RegistrationService(users, roles, encoder, tokens, events);
 
     @BeforeEach
     void setUp() {
         when(roles.findByName(RoleName.USER)).thenReturn(Optional.of(userRole));
+        when(tokens.issue(any(), any())).thenReturn(new TokenService.IssuedToken("test-token", Instant.now().plusSeconds(3600)));
     }
 
     @Test
@@ -60,6 +68,8 @@ class RegistrationServiceTests {
         assertFalse(response.emailVerified());
         verify(encoder).encode("  Example123!  ");
         verify(roles, never()).findByName(RoleName.ADMIN);
+        verify(tokens).issue(saved.getId(), TokenType.EMAIL_VERIFICATION);
+        verify(events).publishEvent(any(VerificationEmailRequested.class));
     }
 
     @Test
@@ -71,6 +81,7 @@ class RegistrationServiceTests {
 
         assertEquals("username", exception.getField());
         verifyNoInteractions(encoder);
+        verifyNoInteractions(tokens, events);
         verify(users, never()).saveAndFlush(any(User.class));
     }
 
@@ -83,6 +94,7 @@ class RegistrationServiceTests {
 
         assertEquals("email", exception.getField());
         verifyNoInteractions(encoder);
+        verifyNoInteractions(tokens, events);
         verify(users, never()).saveAndFlush(any(User.class));
     }
 
@@ -94,6 +106,7 @@ class RegistrationServiceTests {
                 service.register(new RegisterRequest("Learner", "learner@example.com", "Example123!")));
 
         verifyNoInteractions(encoder);
+        verifyNoInteractions(tokens, events);
         verify(users, never()).saveAndFlush(any(User.class));
     }
 
@@ -105,5 +118,6 @@ class RegistrationServiceTests {
 
         assertThrows(DataIntegrityViolationException.class, () ->
                 service.register(new RegisterRequest("Learner", "learner@example.com", "Example123!")));
+        verifyNoInteractions(tokens, events);
     }
 }

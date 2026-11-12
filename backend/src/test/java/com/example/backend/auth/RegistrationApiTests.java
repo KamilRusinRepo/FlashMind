@@ -12,6 +12,8 @@ import java.util.UUID;
 import com.example.backend.role.RoleName;
 import com.example.backend.user.User;
 import com.example.backend.user.UserRepository;
+import com.example.backend.mail.VerificationMailPublisher;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RegistrationApiTests {
+    @MockitoBean
+    private VerificationMailPublisher mailPublisher;
 
     @Autowired
     private Environment environment;

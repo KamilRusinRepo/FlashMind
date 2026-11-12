@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { registerAccount, RegistrationError, type RegisterResponse } from '../api/registration'
 import FormField from '../components/FormField'
+import ResendVerificationForm from '../components/ResendVerificationForm'
 
 type AuthPageProps = { mode: 'login' | 'register' }
 type FieldErrors = Partial<Record<'login' | 'username' | 'email' | 'password' | 'confirmation', string>>
@@ -101,8 +102,10 @@ export default function AuthPage({ mode }: AuthPageProps) {
           <div className="registration-success">
             <div className="form-notice form-success" role="status">
               <p>Your account has been created for <strong>{registeredAccount.email}</strong>.</p>
-              <p>Email verification and sign in will be available soon. No confirmation email has been sent yet.</p>
+              <p>Verification emails are processed in the background. Please check your inbox.</p>
+              <p>Open the link in your confirmation email to verify your address. Sign in will be available soon.</p>
             </div>
+            <ResendVerificationForm email={registeredAccount.email} initialCooldownSeconds={60} />
             <Link className="button button-primary button-full" to="/">Back to home</Link>
           </div>
         ) : (
