@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import Brand from '../Brand'
-import { dashboardProfile } from '../../data/dashboard'
+import { useAuth } from '../../auth/AuthContext'
 import homeIcon from '../../assets/icons/sidebar/home.svg'
 import decksIcon from '../../assets/icons/sidebar/create_deck.svg'
 import exploreIcon from '../../assets/icons/sidebar/explore.svg'
@@ -31,8 +31,11 @@ function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const { user, error } = useAuth()
 
   useEffect(() => { document.title = 'Dashboard | FlashMind' }, [])
+
+  if (!user) return null
 
   return <div className={`dashboard-shell${collapsed ? ' db-collapsed' : ''}`}>
     <a className="skip-link" href="#dashboard-main">Skip to content</a>
@@ -42,19 +45,32 @@ export default function DashboardLayout() {
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(value => !value)}>
           <span aria-hidden="true">{collapsed ? '›' : '‹'}</span>
         </button>
+        <div className="db-mobile-signout"><SignOutButton /></div>
       </div>
       <div className="db-sidebar-content" id="dashboard-sidebar-content">
         <DashboardNavigation />
         <div className="db-sidebar-footer">
           <div className="db-profile">
-            <span className="db-avatar" aria-hidden="true">{dashboardProfile.initials}</span>
-            <div className="db-profile-copy"><strong>{dashboardProfile.name}</strong><span>{dashboardProfile.label}</span></div>
+            <span className="db-avatar" aria-hidden="true">{user.username.slice(0, 2).toUpperCase()}</span>
+            <div className="db-profile-copy"><strong title={user.username}>{user.username}</strong><span>Signed in</span></div>
           </div>
-          <button className="db-signout" type="button" disabled title="Sign out will be connected in the authentication step">Sign out <span>Coming soon</span></button>
+          <SignOutButton />
         </div>
       </div>
     </aside>
-    <main className="db-content" id="dashboard-main" tabIndex={-1}><Outlet /></main>
+    <main className="db-content" id="dashboard-main" tabIndex={-1}>
+      {error && <p className="db-session-error form-notice form-error" role="alert">{error}</p>}
+      <Outlet />
+    </main>
     <DashboardNavigation mobile />
   </div>
+}
+
+function SignOutButton() {
+  const { isLoggingOut, signOut } = useAuth()
+
+  return <button className="db-signout" type="button" disabled={isLoggingOut} onClick={() => void signOut()}
+    aria-label={isLoggingOut ? 'Signing out…' : 'Sign out'} title="Sign out" aria-busy={isLoggingOut}>
+    <span>{isLoggingOut ? 'Signing out…' : 'Sign out'}</span><span className="db-signout-icon" aria-hidden="true">↪</span>
+  </button>
 }

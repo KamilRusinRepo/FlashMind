@@ -16,8 +16,6 @@ export type ExploreDeck = DashboardDeck & {
   rating: string
 }
 
-export const dashboardProfile = { name: 'Alex Morgan', initials: 'AM', label: 'Sample learner' }
-
 export const dashboardStats = { streak: 7, studiedToday: 12, dailyGoal: 20, level: 6, xp: 180, nextLevelXp: 420 }
 
 export const myDecks: DashboardDeck[] = [

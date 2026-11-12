@@ -1,13 +1,17 @@
 import DashboardStats from '../components/dashboard/DashboardStats'
 import DeckCard, { LearningCard } from '../components/dashboard/DeckCard'
-import { continueDecks, dashboardProfile, exploreDecks, myDecks } from '../data/dashboard'
+import { continueDecks, exploreDecks, myDecks } from '../data/dashboard'
+import { useAuth } from '../auth/AuthContext'
 
 export default function DashboardPage() {
+  const { user } = useAuth()
+  if (!user) return null
+
   return <div className="db-page">
     <div className="db-preview-note"><span className="db-preview-badge">PREVIEW</span><p>You’re exploring a sample dashboard. Decks, streak and XP are example data.</p></div>
     <header className="db-hero">
       <div className="db-welcome"><p className="db-eyebrow">A LITTLE PRACTICE. A LASTING MEMORY.</p>
-        <h1>Welcome back, {dashboardProfile.name.split(' ')[0]}!</h1>
+        <h1>Welcome back, {user.username}!</h1>
         <p>You’re on a roll today. Keep the momentum going.</p>
       </div>
       <DashboardStats />

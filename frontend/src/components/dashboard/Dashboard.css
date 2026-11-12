@@ -30,8 +30,12 @@
 .db-profile-copy { display: grid; min-width: 0; }
 .db-profile-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95em; }
 .db-profile-copy > span { color: var(--muted); font-size: .8em; }
-.db-signout { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 13px 12px 0; border: 0; background: transparent; color: #67788e; font-size: .85em; }
-.db-signout span { font-size: .85em; }
+.db-signout { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin-top: 8px; padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; color: #67788e; font-size: .85em; }
+.db-signout:hover:not(:disabled) { background: #fff0f1; color: var(--danger); }
+.dashboard-shell .db-signout:disabled { cursor: wait; }
+.db-signout-icon { font-size: 20px; line-height: 1; }
+.db-mobile-signout { display: none; }
+.db-session-error { margin-bottom: 16px; overflow-wrap: anywhere; }
 .db-mobile-nav { display: none; }
 .db-content { min-width: 0; padding: 24px var(--db-space) 0; outline: none; }
 .db-page { width: 100%; }
@@ -98,7 +102,9 @@
 .dashboard-shell.db-collapsed { grid-template-columns: 88px minmax(0, 1fr); }
 .db-collapsed .db-sidebar { padding-inline: 12px; }
 .db-collapsed .db-sidebar-top { padding-inline: 9px; }
-.db-collapsed .brand-text, .db-collapsed .db-nav-item > span, .db-collapsed .db-profile-copy, .db-collapsed .db-signout { display: none; }
+.db-collapsed .brand-text, .db-collapsed .db-nav-item > span, .db-collapsed .db-profile-copy { display: none; }
+.db-collapsed .db-signout { justify-content: center; }
+.db-collapsed .db-signout > span:first-child { display: none; }
 .db-collapsed .db-nav-item { justify-content: center; padding-inline: 0; }
 .db-collapsed .db-profile { justify-content: center; padding: 10px 0; border: 0; }
 
@@ -136,6 +142,10 @@
   .dashboard-shell, .dashboard-shell.db-collapsed { display: block; font-size: 14px; }
   .db-sidebar, .db-collapsed .db-sidebar { height: auto; position: static; padding: 18px 20px; border-right: 0; border-bottom: 1px solid #e6ecf2; }
   .db-sidebar-top, .db-collapsed .db-sidebar-top { padding: 0; }
+  .db-sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .db-mobile-signout { display: block; }
+  .db-mobile-signout .db-signout { margin: 0; padding: 8px; white-space: nowrap; }
+  .db-collapsed .db-mobile-signout .db-signout > span:first-child { display: inline; }
   .db-collapsed .brand-text { display: grid; }
   .db-sidebar-content, .db-collapse { display: none; }
   .db-content { padding: 18px 20px calc(85px + env(safe-area-inset-bottom)); }
