@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.CookieManager;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -41,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
 @Import(SecurityConfigurationTests.ProbeConfiguration.class)
-class SecurityConfigurationTests {
+class SecurityConfigurationTests extends PostgresIntegrationTest {
     @Autowired WebApplicationContext context;
     @Autowired ObjectMapper mapper;
     @Autowired Environment environment;

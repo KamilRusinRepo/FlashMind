@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.auth.EmailNotVerifiedException;
+import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
 import com.example.backend.auth.token.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,9 +30,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(EmailNotVerifiedException.class)
-    public ResponseEntity<ApiError> handleUnverifiedEmail(EmailNotVerifiedException exception, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(createError(HttpStatus.FORBIDDEN,
-                exception.getMessage(), request.getRequestURI(), Map.of()));
+    public ResponseEntity<EmailVerificationRequiredResponse> handleUnverifiedEmail(
+            EmailNotVerifiedException exception, HttpServletRequest request) {
+        ApiError error = createError(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI(), Map.of());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(EmailVerificationRequiredResponse.from(error, exception.getEmail()));
     }
 
     @ExceptionHandler(AuthenticationException.class)

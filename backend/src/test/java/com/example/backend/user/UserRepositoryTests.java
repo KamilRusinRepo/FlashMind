@@ -1,5 +1,7 @@
 package com.example.backend.user;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.time.Instant;
 
 import com.example.backend.role.RoleName;
@@ -20,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
-class UserRepositoryTests {
+class UserRepositoryTests extends PostgresIntegrationTest {
 
     @Autowired
     private UserRepository users;

@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
@@ -27,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class RegistrationApiTests {
+class RegistrationApiTests extends PostgresIntegrationTest {
     @MockitoBean
     private VerificationMailPublisher mailPublisher;
 

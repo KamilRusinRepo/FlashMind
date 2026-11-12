@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
@@ -25,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
-class SessionApiTests {
+class SessionApiTests extends PostgresIntegrationTest {
     private static final String PASSWORD = "SessionPassword123!";
     @Autowired Environment environment;
     @Autowired ObjectMapper json;

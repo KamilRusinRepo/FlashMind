@@ -1,5 +1,7 @@
 package com.example.backend.admin;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import com.example.backend.role.RoleName;
 import com.example.backend.role.RoleRepository;
 import com.example.backend.user.User;
@@ -18,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
-class AdminInitializerIntegrationTests {
+class AdminInitializerIntegrationTests extends PostgresIntegrationTest {
 
     @Autowired
     private UserRepository users;

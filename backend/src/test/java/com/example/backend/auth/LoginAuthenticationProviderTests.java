@@ -58,7 +58,8 @@ class LoginAuthenticationProviderTests {
     void revealsUnverifiedEmailOnlyAfterCorrectPassword() {
         when(users.findByUsernameIgnoreCase("Learner")).thenReturn(Optional.of(account(true, false)));
         assertThrows(BadCredentialsException.class, () -> provider.authenticate(request("Learner", "wrong")));
-        assertThrows(EmailNotVerifiedException.class, () -> provider.authenticate(request("Learner", password)));
+        var exception = assertThrows(EmailNotVerifiedException.class, () -> provider.authenticate(request("Learner", password)));
+        assertEquals("learner@example.com", exception.getEmail());
     }
 
     @Test

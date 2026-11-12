@@ -35,7 +35,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
         }
         var user = found.get();
         // Reveal verification status only after a valid password, and never for a blocked account.
-        if (user.getEmailVerifiedAt() == null) throw new EmailNotVerifiedException();
+        if (user.getEmailVerifiedAt() == null) throw new EmailNotVerifiedException(user.getEmail());
         var roles = user.getRoles().stream().map(role -> role.getName().name()).sorted().toList();
         var authorities = roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
         var principal = new SessionUser(user.getId(), user.getUsername(), user.getEmail(), roles);

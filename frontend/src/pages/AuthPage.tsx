@@ -16,6 +16,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [registeredAccount, setRegisteredAccount] = useState<RegisterResponse | null>(null)
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
   const signedInAccount = isRegister ? null : user
   const submitting = useRef(false)
 
@@ -55,6 +56,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
     setErrors(nextErrors)
     setFormError('')
+    setVerificationEmail(null)
     const firstError = Object.keys(nextErrors)[0]
     if (firstError) {
       form.querySelector<HTMLInputElement>(`[name="${firstError}"]`)?.focus()
@@ -75,6 +77,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
       if (error instanceof RegistrationError || error instanceof LoginError) {
         setErrors(error.fieldErrors)
         setFormError(error.message)
+        if (!isRegister && error instanceof LoginError && error.verificationEmail) {
+          setVerificationEmail(error.verificationEmail)
+        }
         const firstField = Object.keys(error.fieldErrors)[0]
         if (firstField) {
           requestAnimationFrame(() => form.querySelector<HTMLInputElement>(`[name="${firstField}"]`)?.focus())
@@ -125,7 +130,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </div>
         ) : (
         <form className="auth-form" noValidate aria-busy={isSubmitting} onSubmit={handleSubmit}
-          onInput={() => setFormError('')}>
+          onInput={() => { setFormError(''); setVerificationEmail(null) }}>
           {isRegister ? (
             <>
               <FormField id="username" name="username" label="Username" placeholder="Your username"
@@ -151,6 +156,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
             {isSubmitting ? isRegister ? 'Creating account…' : 'Signing in…' : isRegister ? 'Create account' : 'Sign In'} <span aria-hidden="true">→</span>
           </button>
         </form>
+        )}
+        {!isRegister && !signedInAccount && verificationEmail && (
+          <div className="login-verification-resend">
+            <p className="field-hint">Send a new confirmation link to <strong>{verificationEmail}</strong>.</p>
+            <ResendVerificationForm key={verificationEmail} email={verificationEmail} />
+          </div>
         )}
         {!isRegister && !signedInAccount && (
           <>

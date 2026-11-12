@@ -5,11 +5,13 @@ export type LoginResponse = AuthUser
 
 export class LoginError extends Error {
   readonly fieldErrors: Record<string, string>
+  readonly verificationEmail?: string
 
-  constructor(message: string, fieldErrors: Record<string, string> = {}) {
+  constructor(message: string, fieldErrors: Record<string, string> = {}, verificationEmail?: string) {
     super(message)
     this.name = 'LoginError'
     this.fieldErrors = fieldErrors
+    this.verificationEmail = verificationEmail
   }
 }
 
@@ -30,8 +32,10 @@ export async function loginAccount(login: string, password: string): Promise<Log
     for (const field of ['login', 'password']) {
       if (response.status === 400 && typeof data?.fieldErrors?.[field] === 'string') fields[field] = data.fieldErrors[field]
     }
+    const verificationEmail = response.status === 403 && data?.code === 'EMAIL_VERIFICATION_REQUIRED'
+      && typeof data?.email === 'string' && data.email.length > 0 ? data.email : undefined
     throw new LoginError(response.status >= 500 ? 'Sign in is temporarily unavailable. Please try again later.'
-      : typeof data?.message === 'string' ? data.message : 'Unable to sign in. Please try again.', fields)
+      : typeof data?.message === 'string' ? data.message : 'Unable to sign in. Please try again.', fields, verificationEmail)
   }
   if (!isAuthUser(data)) {
     throw new LoginError('The server returned an unexpected response. Please try again later.')

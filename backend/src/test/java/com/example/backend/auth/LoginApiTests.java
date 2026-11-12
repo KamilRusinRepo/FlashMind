@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import com.example.backend.support.PostgresIntegrationTest;
+
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
@@ -34,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.dynamic=false"})
 @Import(LoginApiTests.ProbeConfiguration.class)
-class LoginApiTests {
+class LoginApiTests extends PostgresIntegrationTest {
     private static final String PASSWORD = "  ExamplePassword123!  ";
     @Autowired Environment environment;
     @Autowired ObjectMapper json;
@@ -129,10 +131,16 @@ class LoginApiTests {
     void unverifiedStatusIsReportedOnlyForCorrectPasswordWithoutCreatingAuthentication() throws Exception {
         User user = account(true, false, RoleName.USER);
         try (var client = new SessionClient()) {
-            assertEquals(401, client.post("/api/auth/login", Map.of("login", user.getEmail(), "password", "wrong-password")).statusCode());
-            var response = client.post("/api/auth/login", Map.of("login", user.getEmail(), "password", PASSWORD));
+            var wrongPassword = client.post("/api/auth/login", Map.of("login", user.getUsername(), "password", "wrong-password"));
+            assertEquals(401, wrongPassword.statusCode());
+            assertFalse(json.readTree(wrongPassword.body()).has("code"));
+            assertFalse(json.readTree(wrongPassword.body()).has("email"));
+            var response = client.post("/api/auth/login", Map.of("login", user.getUsername(), "password", PASSWORD));
             assertEquals(403, response.statusCode());
             assertEquals("Confirm your email address before signing in.", json.readTree(response.body()).get("message").asText());
+            assertEquals("EMAIL_VERIFICATION_REQUIRED", json.readTree(response.body()).get("code").asText());
+            assertEquals(user.getEmail(), json.readTree(response.body()).get("email").asText());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
             assertEquals(401, client.get("/api/login-test/protected").statusCode());
         }
     }
