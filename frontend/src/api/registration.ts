@@ -1,3 +1,5 @@
+import { postWithCsrf } from './csrf'
+
 export type RegisterRequest = {
   username: string
   email: string
@@ -25,8 +27,7 @@ export class RegistrationError extends Error {
 export async function registerAccount(request: RegisterRequest): Promise<RegisterResponse> {
   let response: Response
   try {
-    response = await fetch('/api/auth/register', {
-      method: 'POST',
+    response = await postWithCsrf('/api/auth/register', {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
       signal: AbortSignal.timeout(15000),

@@ -1,3 +1,5 @@
+import { postWithCsrf } from './csrf'
+
 export type ResendVerificationResponse = { message: string; retryAfterSeconds: number }
 
 export class ResendVerificationError extends Error {
@@ -13,8 +15,7 @@ export class ResendVerificationError extends Error {
 export async function resendVerification(email: string): Promise<ResendVerificationResponse> {
   let response: Response
   try {
-    response = await fetch('/api/auth/resend-verification', {
-      method: 'POST',
+    response = await postWithCsrf('/api/auth/resend-verification', {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
       signal: AbortSignal.timeout(15000),

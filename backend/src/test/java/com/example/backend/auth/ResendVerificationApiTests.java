@@ -253,9 +253,6 @@ class ResendVerificationApiTests {
     }
 
     private HttpResponse<String> post(String path, Map<String, ?> body) throws Exception {
-        return http.send(HttpRequest.newBuilder(endpoint(path)).timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(),
-                HttpResponse.BodyHandlers.ofString());
+        return com.example.backend.support.CsrfHttpClient.post(endpoint(path), json.writeValueAsString(body), json);
     }
 }

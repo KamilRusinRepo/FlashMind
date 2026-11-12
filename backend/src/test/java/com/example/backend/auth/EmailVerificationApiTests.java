@@ -179,9 +179,6 @@ class EmailVerificationApiTests {
     }
 
     private HttpResponse<String> post(Map<String, ?> body) throws Exception {
-        return http.send(HttpRequest.newBuilder(endpoint()).timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(),
-                HttpResponse.BodyHandlers.ofString());
+        return com.example.backend.support.CsrfHttpClient.post(endpoint(), json.writeValueAsString(body), json);
     }
 }
