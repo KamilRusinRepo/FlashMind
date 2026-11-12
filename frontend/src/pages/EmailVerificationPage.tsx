@@ -58,9 +58,10 @@ function VerificationResult({ token, onRetry }: { token: string; onRetry: () => 
           {state.status === 'success' && (
             <div className="form-notice form-success" role="status">
               <p>Your email confirmation is complete. You can close this page.</p>
-              <p>Sign in will be available soon.</p>
+              <p>You can now sign in to your account.</p>
             </div>
           )}
+          {state.status === 'success' && <Link className="button button-primary button-full" to="/login">Go to sign in</Link>}
           {state.status === 'error' && (
             <>
               <p className="form-notice form-error" role="alert">{state.message}</p>
