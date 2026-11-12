@@ -101,7 +101,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
           <div className="registration-success">
             <div className="form-notice form-success" role="status">
               <p>Your account has been created for <strong>{registeredAccount.email}</strong>.</p>
-              <p>Email verification and sign in will be available soon. No confirmation email has been sent yet.</p>
+              <p>Verification emails are processed in the background. Please check your inbox.</p>
+              <p>Opening the confirmation link and signing in will be available in the next stage.</p>
             </div>
             <Link className="button button-primary button-full" to="/">Back to home</Link>
           </div>
