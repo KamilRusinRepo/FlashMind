@@ -7,9 +7,9 @@ import com.example.backend.deck.DeckType;
 
 public record DeckListItemResponse(Long id, String name, String description, DeckType deckType,
                                    String sourceLanguage, String targetLanguage, String category,
-                                   boolean publicDeck, Instant createdAt) {
+                                   String backgroundUrl, boolean publicDeck, Instant createdAt) {
     public static DeckListItemResponse from(Deck deck) {
         return new DeckListItemResponse(deck.getId(), deck.getName(), deck.getDescription(), deck.getDeckType(),
-                deck.getSourceLanguage(), deck.getTargetLanguage(), deck.getCategory(), deck.isPublic(), deck.getCreatedAt());
+                deck.getSourceLanguage(), deck.getTargetLanguage(), deck.getCategory(), deck.getBackgroundUrl(), deck.isPublic(), deck.getCreatedAt());
     }
 }

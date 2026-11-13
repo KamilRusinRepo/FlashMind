@@ -62,8 +62,13 @@ class DeckRepositoryTests extends PostgresIntegrationTest {
         var deck = new Deck(owner, "Retained deck", DeckType.GENERAL, "English", null);
         deck.setPublic(true);
         Long id = decks.saveAndFlush(deck).getId();
-        users.delete(owner);
+        Long ownerId = owner.getId();
+        entityManager.clear();
+
+        var ownerToDelete = users.findById(ownerId).orElseThrow();
+        users.delete(ownerToDelete);
         users.flush();
+
         entityManager.clear();
         var retained = decks.findById(id).orElseThrow();
         assertNull(retained.getOwner());

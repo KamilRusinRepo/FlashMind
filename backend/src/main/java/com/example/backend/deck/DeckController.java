@@ -2,6 +2,12 @@ package com.example.backend.deck;
 
 import com.example.backend.auth.SessionUser;
 import com.example.backend.deck.dto.response.DeckPageResponse;
+import com.example.backend.deck.dto.response.DeckListItemResponse;
+import com.example.backend.deck.dto.request.CreateDeckRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -19,6 +25,12 @@ public class DeckController {
     private final DeckService decks;
 
     public DeckController(DeckService decks) { this.decks = decks; }
+
+    @PostMapping
+    public ResponseEntity<DeckListItemResponse> create(@AuthenticationPrincipal SessionUser user,
+                                                      @Valid @RequestBody CreateDeckRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(decks.create(user.id(), request));
+    }
 
     @GetMapping
     public ResponseEntity<DeckPageResponse> listOwned(@AuthenticationPrincipal SessionUser user,
