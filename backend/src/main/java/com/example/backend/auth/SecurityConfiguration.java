@@ -51,7 +51,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(requests -> requests
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/status", "/api/auth/csrf", "/api/auth/login", "/api/auth/register",
-                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                                "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/forgot-password").permitAll()
                         .anyRequest().authenticated())
                 // Public access does not exempt a POST from CSRF protection.
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))

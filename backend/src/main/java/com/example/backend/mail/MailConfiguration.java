@@ -14,13 +14,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(MailProperties.class)
+@EnableConfigurationProperties({MailProperties.class, PasswordResetMailProperties.class})
 public class MailConfiguration {
     public static final String EXCHANGE = "flashmind.mail";
     public static final String QUEUE = "flashmind.mail.verification";
     public static final String ROUTING_KEY = "verification";
     public static final String FAILED_EXCHANGE = "flashmind.mail.failed";
     public static final String FAILED_QUEUE = "flashmind.mail.verification.failed";
+    public static final String RESET_QUEUE = "flashmind.mail.password-reset";
+    public static final String RESET_ROUTING_KEY = "password-reset";
+    public static final String RESET_FAILED_QUEUE = "flashmind.mail.password-reset.failed";
 
     @Bean
     Declarables mailTopology() {
@@ -29,7 +32,12 @@ public class MailConfiguration {
         var queue = QueueBuilder.durable(QUEUE)
                 .deadLetterExchange(FAILED_EXCHANGE).deadLetterRoutingKey(ROUTING_KEY).build();
         var failed = QueueBuilder.durable(FAILED_QUEUE).build();
-        return new Declarables(exchange, failedExchange, queue, failed,
+        var reset = QueueBuilder.durable(RESET_QUEUE)
+                .deadLetterExchange(FAILED_EXCHANGE).deadLetterRoutingKey(RESET_ROUTING_KEY).build();
+        var resetFailed = QueueBuilder.durable(RESET_FAILED_QUEUE).build();
+        return new Declarables(exchange, failedExchange, queue, failed, reset, resetFailed,
+                BindingBuilder.bind(reset).to(exchange).with(RESET_ROUTING_KEY),
+                BindingBuilder.bind(resetFailed).to(failedExchange).with(RESET_ROUTING_KEY),
                 BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY),
                 BindingBuilder.bind(failed).to(failedExchange).with(ROUTING_KEY));
     }
