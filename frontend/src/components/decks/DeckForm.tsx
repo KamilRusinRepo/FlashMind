@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { CreateDeckError, type OwnedDeck, type CreateDeckErrors, type CreateDeckRequest } from '../../api/decks'
+import { DeckApiError, type OwnedDeck, type DeckFieldErrors, type SaveDeckRequest } from '../../api/decks'
 import { useAuth } from '../../auth/AuthContext'
 import FormField from '../FormField'
 import SelectField from '../SelectField'
@@ -15,7 +15,7 @@ function withCurrentValue(options: string[], current?: string | null) {
 
 type Props = {
   initialValues?: OwnedDeck
-  save?: (request: CreateDeckRequest) => Promise<OwnedDeck>
+  save: (request: SaveDeckRequest) => Promise<OwnedDeck>
   onSaved?: (deck: OwnedDeck) => void
   submitLabel?: string
   pendingLabel?: string
@@ -23,10 +23,9 @@ type Props = {
 
 export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…' }: Props) {
   const { refresh } = useAuth()
-  const [deckType, setDeckType] = useState<CreateDeckRequest['deckType']>(initialValues?.deckType ?? 'GENERAL')
-  const [errors, setErrors] = useState<CreateDeckErrors>({})
+  const [deckType, setDeckType] = useState<SaveDeckRequest['deckType']>(initialValues?.deckType ?? 'GENERAL')
+  const [errors, setErrors] = useState<DeckFieldErrors>({})
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [sending, setSending] = useState(false)
   const submitting = useRef(false)
   const mounted = useRef(true)
@@ -38,12 +37,12 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
     const form = event.currentTarget
     const data = new FormData(form)
     const value = (name: string) => String(data.get(name) ?? '').trim()
-    const request: CreateDeckRequest = {
+    const request: SaveDeckRequest = {
       name: value('name'), description: value('description') || null, deckType,
       sourceLanguage: value('sourceLanguage'), targetLanguage: deckType === 'LANGUAGE' ? value('targetLanguage') || null : null,
       category: value('category') || null, backgroundUrl: value('backgroundUrl') || null, publicDeck: data.get('publicDeck') === 'on',
     }
-    const nextErrors: CreateDeckErrors = {}
+    const nextErrors: DeckFieldErrors = {}
     if (!request.name) nextErrors.name = 'Deck name is required.'
     else if (request.name.length > 120) nextErrors.name = 'Use at most 120 characters.'
     if ((request.description?.length ?? 0) > 2000) nextErrors.description = 'Use at most 2000 characters.'
@@ -55,26 +54,21 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
         if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || request.backgroundUrl.length > 2048) throw new Error()
       } catch { nextErrors.backgroundUrl = 'Enter a valid http or https URL without embedded credentials.' }
     }
-    setNotice('')
     setErrors(nextErrors)
     setError('')
     const first = Object.keys(nextErrors)[0]
     if (first) { form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(); return }
 
-    if (!save) {
-      setNotice('Editing is coming soon. No changes have been saved.')
-      return
-    }
     submitting.current = true
     setSending(true)
     try {
-      const created = await save(request)
-      if (mounted.current) onSaved?.(created)
+      const saved = await save(request)
+      if (mounted.current) onSaved?.(saved)
     } catch (cause) {
       if (!mounted.current) return
-      if (cause instanceof CreateDeckError && cause.status === 401) { refresh(); return }
-      setError(cause instanceof CreateDeckError ? cause.message : 'Unable to save your deck. Please try again.')
-      if (cause instanceof CreateDeckError) {
+      if (cause instanceof DeckApiError && cause.status === 401) { refresh(); return }
+      setError(cause instanceof DeckApiError ? cause.message : 'Unable to save your deck. Please try again.')
+      if (cause instanceof DeckApiError) {
         setErrors(cause.fieldErrors)
         const field = Object.keys(cause.fieldErrors)[0]
         if (field) requestAnimationFrame(() => form.querySelector<HTMLElement>(`[name="${field}"]`)?.focus())
@@ -86,7 +80,7 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
   }
 
   return (
-    <form className="deck-create-form" noValidate aria-busy={sending} onSubmit={handleSubmit} onInput={() => { setError(''); setNotice('') }}>
+    <form className="deck-create-form" noValidate aria-busy={sending} onSubmit={handleSubmit} onInput={() => setError('')}>
       <div className="deck-form-grid">
         <div className="deck-form-wide"><FormField id="deck-name" name="name" label="Deck name" placeholder="e.g. English A1, Java Fundamentals…" defaultValue={initialValues?.name ?? ''} maxLength={120} required disabled={sending} error={errors.name} /></div>
         <div className="form-field deck-form-wide"><label htmlFor="deck-description">Description (optional)</label>
@@ -113,9 +107,8 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
       <label className="deck-public-choice"><input type="checkbox" name="publicDeck" defaultChecked={initialValues?.publicDeck ?? false} disabled={sending} />
         <span><strong>Make this deck public</strong><span>Allow other learners to discover it. Public decks stay available after account deletion.</span></span>
       </label>
-      {notice && <p className="form-notice" role="status">{notice}</p>}
       {error && <p className="form-notice form-error" role="alert">{error}</p>}
-      {Object.keys(errors).some(field => errors[field as keyof CreateDeckErrors]) && <p className="field-error" role="alert">Please check the highlighted fields.</p>}
+      {Object.keys(errors).some(field => errors[field as keyof DeckFieldErrors]) && <p className="field-error" role="alert">Please check the highlighted fields.</p>}
       <div className="deck-form-actions"><Link className="button button-outline" to="/decks">Cancel</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? pendingLabel : submitLabel}</button></div>
     </form>
   )

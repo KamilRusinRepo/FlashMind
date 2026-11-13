@@ -3,13 +3,13 @@ package com.example.backend.deck.validation;
 import java.net.URI;
 
 import com.example.backend.deck.DeckType;
-import com.example.backend.deck.dto.request.CreateDeckRequest;
+import com.example.backend.deck.dto.request.SaveDeckRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class DeckDetailsValidator implements ConstraintValidator<ValidDeckDetails, CreateDeckRequest> {
+public class DeckDetailsValidator implements ConstraintValidator<ValidDeckDetails, SaveDeckRequest> {
     @Override
-    public boolean isValid(CreateDeckRequest request, ConstraintValidatorContext context) {
+    public boolean isValid(SaveDeckRequest request, ConstraintValidatorContext context) {
         if (request == null) return true;
         boolean valid = true;
         if (request.deckType() == DeckType.LANGUAGE && request.targetLanguage() == null) {

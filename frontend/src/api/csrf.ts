@@ -1,7 +1,7 @@
 type CsrfToken = { headerName: string; token: string }
 
-// Share only an in-flight request. Each later POST obtains a fresh token, including after
-// session expiry or the token rotation that login/logout will introduce.
+// Share only an in-flight request. Each later mutation obtains a fresh token,
+// including after session expiry or login/logout token rotation.
 let pending: Promise<CsrfToken> | undefined
 
 async function loadToken(signal?: AbortSignal | null): Promise<CsrfToken> {
@@ -19,14 +19,18 @@ async function loadToken(signal?: AbortSignal | null): Promise<CsrfToken> {
   return data as CsrfToken
 }
 
-export async function postWithCsrf(path: string, options: Omit<RequestInit, 'method'>): Promise<Response> {
+export function postWithCsrf(path: string, options: Omit<RequestInit, 'method'>): Promise<Response> {
+  return requestWithCsrf(path, 'POST', options)
+}
+
+export async function requestWithCsrf(path: string, method: 'POST' | 'PUT' | 'DELETE', options: Omit<RequestInit, 'method'>): Promise<Response> {
   pending ??= loadToken(options.signal).finally(() => { pending = undefined })
   const csrf = await pending
   const headers = new Headers(options.headers)
   headers.set(csrf.headerName, csrf.token)
   return fetch(path, {
     ...options,
-    method: 'POST',
+    method,
     headers,
     credentials: 'same-origin',
     cache: 'no-store',

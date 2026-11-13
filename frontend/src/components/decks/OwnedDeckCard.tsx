@@ -1,14 +1,12 @@
 import type { OwnedDeck } from '../../api/decks'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useAuth } from '../../auth/AuthContext'
 import DeleteDeckDialog from './DeleteDeckDialog'
 
-export default function OwnedDeckCard({ deck }: { deck: OwnedDeck }) {
+export default function OwnedDeckCard({ deck, onChanged }: { deck: OwnedDeck; onChanged: (deleted: boolean) => void }) {
   const tone = deck.deckType === 'LANGUAGE' ? 'purple' : 'blue'
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const { user } = useAuth()
   return <><article className="db-deck-card decks-list-card">
     <div className={`db-deck-cover db-tone-${tone}`} aria-hidden="true">{deck.backgroundUrl && failedImage !== deck.backgroundUrl
       ? <img src={deck.backgroundUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedImage(deck.backgroundUrl)} />
@@ -22,9 +20,10 @@ export default function OwnedDeckCard({ deck }: { deck: OwnedDeck }) {
       </div>
       <div className="db-deck-footer"><span>Created</span><time dateTime={deck.createdAt}>{new Date(deck.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</time></div>
       <div className="deck-card-actions">
-        <Link className="button button-outline" to={`/decks/${deck.id}/edit`} state={{ deck, ownerId: user?.id }} aria-label={`Edit ${deck.name}`}>Edit</Link>
+        <Link className="button button-outline" to={`/decks/${deck.id}/edit`} aria-label={`Edit ${deck.name}`}>Edit</Link>
         <button className="button deck-delete-button" type="button" onClick={() => setConfirmingDelete(true)} aria-label={`Delete ${deck.name}`}>Delete</button>
       </div>
     </div>
-  </article>{confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)} />}</>
+  </article>{confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
+    onDeleted={() => { setConfirmingDelete(false); onChanged(true) }} onUnavailable={() => { setConfirmingDelete(false); onChanged(false) }} />}</>
 }

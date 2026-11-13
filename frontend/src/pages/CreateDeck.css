@@ -2,7 +2,6 @@
 .deck-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .deck-form-grid > * { min-width: 0; }
 .deck-form-wide { grid-column: 1 / -1; }
-.deck-preview-note { margin-bottom: 22px; }
 .deck-create-form select, .deck-create-form textarea { width: 100%; min-width: 0; min-height: calc(56 * var(--desktop-unit, 1px)); padding: calc(16 * var(--desktop-unit, 1px)); border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: calc(16 * var(--desktop-unit, 1px)); }
 .deck-create-form select:focus, .deck-create-form textarea:focus { outline: 0; }
 .deck-create-form textarea { resize: vertical; }

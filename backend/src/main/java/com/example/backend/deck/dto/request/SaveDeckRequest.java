@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @ValidDeckDetails
-public record CreateDeckRequest(
+public record SaveDeckRequest(
         @NotBlank(message = "Deck name is required.") @Size(max = 120, message = "Use at most 120 characters.") String name,
         @Size(max = 2000, message = "Use at most 2000 characters.") String description,
         @NotNull(message = "Select a deck type.") DeckType deckType,
@@ -17,7 +17,7 @@ public record CreateDeckRequest(
         @Size(max = 2048, message = "Use at most 2048 characters.") String backgroundUrl,
         Boolean publicDeck
 ) {
-    public CreateDeckRequest {
+    public SaveDeckRequest {
         name = normalize(name);
         description = normalize(description);
         sourceLanguage = normalize(sourceLanguage);
@@ -29,5 +29,5 @@ public record CreateDeckRequest(
 
     private static String normalize(String value) { return value == null || value.isBlank() ? null : value.trim(); }
 
-    @Override public String toString() { return "CreateDeckRequest[content=REDACTED]"; }
+    @Override public String toString() { return "SaveDeckRequest[content=REDACTED]"; }
 }
