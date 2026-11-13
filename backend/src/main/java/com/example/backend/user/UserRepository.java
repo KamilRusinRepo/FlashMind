@@ -12,6 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    @Query("select user.sessionVersion from User user where user.id = :id")
+    Optional<Long> findSessionVersionById(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select user from User user where lower(user.email) = lower(:email)")
     Optional<User> findByEmailForUpdate(@Param("email") String email);

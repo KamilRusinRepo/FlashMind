@@ -1,6 +1,8 @@
 package com.example.backend.auth;
 
 import com.example.backend.error.SecurityErrorHandler;
+import com.example.backend.user.UserRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import java.util.List;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
@@ -44,17 +46,19 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityErrorHandler errors,
                                            AuthenticationManager authenticationManager,
                                            HttpSessionCsrfTokenRepository csrfTokens,
-                                           SecurityContextRepository contexts) throws Exception {
+                                           SecurityContextRepository contexts, UserRepository users) throws Exception {
         return http
                 .authenticationManager(authenticationManager)
                 .securityContext(context -> context.securityContextRepository(contexts).requireExplicitSave(true))
                 .authorizeHttpRequests(requests -> requests
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/status", "/api/auth/csrf", "/api/auth/login", "/api/auth/register",
-                                "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                                "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/forgot-password",
+                                "/api/auth/reset-password").permitAll()
                         .anyRequest().authenticated())
                 // Public access does not exempt a POST from CSRF protection.
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
+                .addFilterBefore(new SessionVersionFilter(users), CsrfFilter.class)
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(errors).accessDeniedHandler(errors))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .requestCache(AbstractHttpConfigurer::disable)

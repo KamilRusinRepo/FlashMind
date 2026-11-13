@@ -12,6 +12,8 @@ export default function PublicLayout() {
       '/': 'Master your learning',
       '/login': 'Sign in',
       '/register': 'Create account',
+      '/forgot-password': 'Forgot password',
+      '/reset-password': 'Reset password',
       '/status': 'Connection status',
       '/verify-email': 'Confirm email',
     }

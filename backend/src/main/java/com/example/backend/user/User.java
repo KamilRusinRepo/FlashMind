@@ -36,6 +36,9 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "session_version", nullable = false)
+    private long sessionVersion;
+
     @Column(name = "email_verified_at")
     private Instant emailVerifiedAt;
 
@@ -97,6 +100,10 @@ public class User {
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = Objects.requireNonNull(passwordHash);
     }
+
+    public long getSessionVersion() { return sessionVersion; }
+
+    public void invalidateSessions() { sessionVersion++; }
 
     public Instant getEmailVerifiedAt() {
         return emailVerifiedAt;

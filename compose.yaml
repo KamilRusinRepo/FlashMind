@@ -77,6 +77,7 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
       APP_MAIL_FROM: ${MAIL_FROM:-no-reply@flashmind.local}
       APP_MAIL_VERIFICATION_URL: ${MAIL_VERIFICATION_URL:-http://localhost:3000/verify-email}
+      APP_MAIL_PASSWORD_RESET_URL: ${MAIL_PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
