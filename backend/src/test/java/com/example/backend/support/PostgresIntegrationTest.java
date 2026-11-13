@@ -8,7 +8,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /** Shared, disposable database for Spring integration tests, independent of Compose and .env. */
-@Sql(statements = "DELETE FROM users", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(statements = {"DELETE FROM decks", "DELETE FROM users"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public abstract class PostgresIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine")
