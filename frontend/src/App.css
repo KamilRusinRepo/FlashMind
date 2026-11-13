@@ -70,6 +70,7 @@
 .auth-heading h1 { font-size: 36px; letter-spacing: -.035em; line-height: 1.2; margin: 12px 0; }
 .auth-heading > p { color: var(--muted); font-size: 16px; line-height: 1.7; overflow-wrap: anywhere; }
 .auth-form { display: grid; gap: 22px; }
+.forgot-password-link { justify-self: end; min-height: 24px; font-size: 1.5em; }
 .auth-card .button { min-height: 58px; font-size: 17px; }
 .form-field { display: grid; gap: 8px; }
 .form-field > label { color: #35465b; font-size: 15px; font-weight: 650; }

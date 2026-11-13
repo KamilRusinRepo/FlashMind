@@ -142,6 +142,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
             placeholder={isRegister ? 'At least 8 characters' : 'Enter your password'}
             autoComplete={isRegister ? 'new-password' : 'current-password'}
             disabled={isSubmitting} required error={errors.password} />
+          {!isRegister && <Link className="forgot-password-link text-link" to="/forgot-password">Forgot password?</Link>}
           {isRegister && (
             <FormField id="confirmation" name="confirmation" label="Confirm password" type="password"
               placeholder="Repeat your password" autoComplete="new-password" disabled={isSubmitting} required error={errors.confirmation} />

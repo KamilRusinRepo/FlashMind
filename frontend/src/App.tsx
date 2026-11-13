@@ -8,6 +8,8 @@ import EmailVerificationPage from './pages/EmailVerificationPage'
 import HomePage from './pages/HomePage'
 import NotFoundPage from './pages/NotFoundPage'
 import StatusPage from './pages/StatusPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import './App.css'
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
         <Route path="register" element={<AuthPage key="register" mode="register" />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="verify-email" element={<EmailVerificationPage />} />
         <Route path="status" element={<StatusPage />} />
         <Route path="*" element={<NotFoundPage />} />
