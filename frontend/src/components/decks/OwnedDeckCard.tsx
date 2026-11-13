@@ -1,9 +1,13 @@
 import type { OwnedDeck } from '../../api/decks'
+import { useState } from 'react'
 
 export default function OwnedDeckCard({ deck }: { deck: OwnedDeck }) {
   const tone = deck.deckType === 'LANGUAGE' ? 'purple' : 'blue'
+  const [failedImage, setFailedImage] = useState<string | null>(null)
   return <article className="db-deck-card decks-list-card">
-    <div className={`db-deck-cover db-tone-${tone}`} aria-hidden="true"><span>{deck.name.slice(0, 1).toUpperCase()}</span></div>
+    <div className={`db-deck-cover db-tone-${tone}`} aria-hidden="true">{deck.backgroundUrl && failedImage !== deck.backgroundUrl
+      ? <img src={deck.backgroundUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedImage(deck.backgroundUrl)} />
+      : <span>{deck.name.slice(0, 1).toUpperCase()}</span>}</div>
     <div className="db-deck-body">
       <div className="db-tags"><span>{deck.publicDeck ? 'PUBLIC' : 'PRIVATE'}</span><span className={`db-tone-${tone}`}>{deck.category || 'Uncategorized'}</span></div>
       <h3>{deck.name}</h3>

@@ -1,0 +1,16 @@
+.deck-create-form { padding: clamp(22px, 2.5vw, 48px); border: 1px solid var(--border); border-radius: 20px; background: white; margin-bottom: 32px; display: grid; gap: 28px; }
+.deck-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.deck-form-grid > * { min-width: 0; }
+.deck-form-wide { grid-column: 1 / -1; }
+.deck-create-form select, .deck-create-form textarea { width: 100%; min-width: 0; min-height: calc(56 * var(--desktop-unit, 1px)); padding: calc(16 * var(--desktop-unit, 1px)); border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: calc(16 * var(--desktop-unit, 1px)); }
+.deck-create-form select:focus, .deck-create-form textarea:focus { outline: 0; }
+.deck-create-form textarea { resize: vertical; }
+.deck-public-choice { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.deck-public-choice input { width: 20px; height: 20px; flex-shrink: 0; margin: 3px 0 0; accent-color: var(--primary-dark); }
+.deck-public-choice > span { display: grid; gap: 5px; }
+.deck-public-choice > span > span { color: var(--muted); font-size: .85em; }
+.deck-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; padding-top: 22px; border-top: 1px solid var(--border); }
+@media (max-width: 760px) {
+  .deck-form-grid { grid-template-columns: 1fr; gap: 20px; }
+  .deck-form-actions .button { flex: 1; }
+}

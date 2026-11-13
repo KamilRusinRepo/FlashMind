@@ -2,6 +2,7 @@ import DashboardStats from '../components/dashboard/DashboardStats'
 import DeckCard, { LearningCard } from '../components/dashboard/DeckCard'
 import { continueDecks, exploreDecks, myDecks } from '../data/dashboard'
 import { useAuth } from '../auth/AuthContext'
+import { Link } from 'react-router'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -21,7 +22,7 @@ export default function DashboardPage() {
       <div className="db-learning-grid">{continueDecks.map(deck => <LearningCard key={deck.id} deck={deck} />)}</div>
     </section>
     <section className="db-section" aria-labelledby="my-decks-title">
-      <div className="db-section-heading"><h2 id="my-decks-title">My Decks</h2><button className="db-create-action" type="button" disabled title="Creating decks is coming soon"><span aria-hidden="true">＋</span> Create Deck</button></div>
+      <div className="db-section-heading"><h2 id="my-decks-title">My Decks</h2><Link className="db-create-action" to="/decks/create"><span aria-hidden="true">＋</span> Create Deck</Link></div>
       <div className="db-deck-grid">{myDecks.map(deck => <DeckCard key={deck.id} deck={deck} />)}</div>
     </section>
     <section className="db-section" aria-labelledby="explore-title">

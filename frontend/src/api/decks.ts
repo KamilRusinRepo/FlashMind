@@ -1,3 +1,5 @@
+import { postWithCsrf } from './csrf'
+
 export type OwnedDeck = {
   id: number
   name: string
@@ -6,6 +8,7 @@ export type OwnedDeck = {
   sourceLanguage: string
   targetLanguage: string | null
   category: string | null
+  backgroundUrl: string | null
   publicDeck: boolean
   createdAt: string
 }
@@ -25,6 +28,7 @@ function isDeck(value: unknown): value is OwnedDeck {
     && (deck.deckType === 'GENERAL' || deck.deckType === 'LANGUAGE')
     && typeof deck.sourceLanguage === 'string' && (deck.targetLanguage === null || typeof deck.targetLanguage === 'string')
     && (deck.category === null || typeof deck.category === 'string') && typeof deck.publicDeck === 'boolean'
+    && (deck.backgroundUrl === null || typeof deck.backgroundUrl === 'string')
     && typeof deck.createdAt === 'string' && !Number.isNaN(Date.parse(deck.createdAt))
 }
 
@@ -49,4 +53,39 @@ export async function getMyDecks(page: number, search: string, signal: AbortSign
     throw new DeckListError('The server returned an unexpected deck list. Please try again.')
   }
   return data as DeckPage
+}
+export type CreateDeckRequest = {
+  name: string; description: string | null; deckType: OwnedDeck['deckType']; sourceLanguage: string
+  targetLanguage: string | null; category: string | null; backgroundUrl: string | null; publicDeck: boolean
+}
+export type CreateDeckField = Exclude<keyof CreateDeckRequest, 'publicDeck'>
+export type CreateDeckErrors = Partial<Record<CreateDeckField, string>>
+
+export class CreateDeckError extends Error {
+  readonly status: number
+  readonly fieldErrors: CreateDeckErrors
+  constructor(message: string, status = 0, fieldErrors: CreateDeckErrors = {}) {
+    super(message); this.name = 'CreateDeckError'; this.status = status; this.fieldErrors = fieldErrors
+  }
+}
+
+export async function createDeck(request: CreateDeckRequest): Promise<OwnedDeck> {
+  let response: Response
+  try {
+    response = await postWithCsrf('/api/decks', {
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: AbortSignal.timeout(15000),
+    })
+  } catch {
+    throw new CreateDeckError('Unable to confirm creation. Check My Decks before trying again, then check your connection.')
+  }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    const fieldErrors: CreateDeckErrors = {}
+    const fields: CreateDeckField[] = ['name', 'description', 'deckType', 'sourceLanguage', 'targetLanguage', 'category', 'backgroundUrl']
+    for (const field of fields) if (typeof data?.fieldErrors?.[field] === 'string') fieldErrors[field] = data.fieldErrors[field]
+    throw new CreateDeckError(Object.keys(fieldErrors).length ? 'Please check the highlighted fields.'
+      : response.status === 401 ? 'Your session has expired. Please sign in again.' : 'Unable to create your deck. Please try again.', response.status, fieldErrors)
+  }
+  if (response.status !== 201 || !isDeck(data)) throw new CreateDeckError('The server returned an unexpected response. Check My Decks before creating another deck.')
+  return data
 }

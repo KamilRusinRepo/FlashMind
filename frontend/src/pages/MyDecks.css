@@ -12,6 +12,7 @@
 .decks-result-count { color: var(--muted); margin-bottom: 16px; overflow-wrap: anywhere; }
 .decks-list-card .db-deck-description { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .decks-list-card .db-tags > span { max-width: 100%; overflow-wrap: anywhere; }
+.decks-list-card .db-deck-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .decks-language { display: grid; gap: 4px; margin-bottom: 14px; overflow-wrap: anywhere; }
 .decks-language > span { color: var(--muted); font-size: .75em; }
 .decks-language strong { font-size: .85em; font-weight: 600; }

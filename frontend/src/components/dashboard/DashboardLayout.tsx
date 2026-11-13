@@ -20,7 +20,7 @@ const navigation = [
 function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   return <nav className={mobile ? 'db-mobile-nav' : 'db-nav'} aria-label={mobile ? 'Mobile dashboard navigation' : 'Dashboard navigation'}>
     {navigation.map(item => item.path
-      ? <NavLink key={item.label} to={item.path} end aria-label={item.label} className={({ isActive }) => `db-nav-item${isActive ? ' is-active' : ''}`}>
+      ? <NavLink key={item.label} to={item.path} end={item.path === '/dashboard'} aria-label={item.label} className={({ isActive }) => `db-nav-item${isActive ? ' is-active' : ''}`}>
           <img src={item.icon} alt="" /><span>{item.label}</span>
         </NavLink>
       : <button key={item.label} className="db-nav-item" type="button" disabled title="Coming soon" aria-label={`${item.label} — coming soon`}>
@@ -35,7 +35,7 @@ export default function DashboardLayout() {
   const { pathname } = useLocation()
 
   useEffect(() => {
-    document.title = `${pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
+    document.title = `${pathname === '/decks/create' ? 'Create Deck' : pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
     window.scrollTo(0, 0)
     document.getElementById('dashboard-main')?.focus({ preventScroll: true })
   }, [pathname])

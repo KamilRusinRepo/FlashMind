@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { DeckListError, getMyDecks, type DeckPage } from '../api/decks'
 import { useAuth } from '../auth/AuthContext'
 import FormField from '../components/FormField'
@@ -9,6 +9,7 @@ import './MyDecks.css'
 export default function MyDecksPage() {
   const [params, setParams] = useSearchParams()
   const { user } = useAuth()
+  const { state } = useLocation()
   const search = (params.get('search') ?? '').trim().slice(0, 120)
   const pageValue = params.get('page') ?? '0'
   const page = /^\d+$/.test(pageValue) && Number(pageValue) <= 1000000 ? Number(pageValue) : 0
@@ -27,9 +28,10 @@ export default function MyDecksPage() {
   }
 
   return <div className="db-page">
+    {typeof state?.createdDeckId === 'number' && <p className="form-notice form-success" role="status">Your deck has been created.</p>}
     <header className="db-section-heading decks-heading"><div><p className="db-eyebrow">YOUR PERSONAL LIBRARY</p><h1>My Decks</h1>
       <p>Your ideas, organized for your next learning session.</p></div>
-      <button className="db-create-action" type="button" disabled title="Creating decks is coming soon">＋ Create Deck</button>
+      <Link className="db-create-action" to="/decks/create">＋ Create Deck</Link>
     </header>
     <form key={search} className="decks-search" role="search" onSubmit={handleSearch}>
       <FormField id="deck-search" name="search" label="Search your decks" type="search" defaultValue={search} maxLength={120} placeholder="Search by deck name…" />
