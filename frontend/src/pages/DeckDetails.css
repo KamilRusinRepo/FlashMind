@@ -1,15 +1,17 @@
-.deck-details-hero { display: flex; align-items: center; gap: clamp(20px, 2vw, 38px); margin-block: 8px 26px; }
+.deck-details-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: clamp(24px, 3vw, 56px); margin-block: 8px 38px; }
+.deck-details-summary { min-width: 0; }
+.deck-details-hero { display: flex; align-items: center; gap: clamp(20px, 2vw, 38px); min-width: 0; }
 .deck-details-cover { width: clamp(90px, 8vw, 150px); height: clamp(90px, 8vw, 150px); flex-shrink: 0; border-radius: 22px; display: grid; place-items: center; overflow: hidden; font-size: clamp(36px, 3vw, 64px); font-weight: 750; }
 .deck-details-cover img { width: 100%; height: 100%; object-fit: cover; }
 .deck-details-heading { min-width: 0; }
 .deck-details-heading h1 { font-size: clamp(28px, 2.4vw, 52px); line-height: 1.2; letter-spacing: -.04em; overflow-wrap: anywhere; }
 .deck-details-heading > p { color: var(--muted); margin-top: 12px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-line; }
 .deck-details-heading .db-tags > span { max-width: 100%; overflow-wrap: anywhere; }
-.deck-details-meta { display: flex; flex-wrap: wrap; gap: 22px 48px; margin: 0 0 24px; padding: 22px 26px; border: 1px solid var(--border); border-radius: 16px; background: white; }
+.deck-details-meta { display: flex; flex-wrap: wrap; gap: 22px 48px; margin: 0 0 24px; padding: 22px 26px; border: 1px solid var(--border); border-radius: 16px; background: white; justify-content: center }
 .deck-details-meta > div { min-width: 0; }
 .deck-details-meta dt { color: var(--muted); font-size: .8em; margin-bottom: 5px; }
 .deck-details-meta dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
-.deck-details-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 38px; }
+.deck-details-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .deck-details-actions .button { font-size: .9em; }
 .deck-details-flashcards { padding-bottom: 32px; }
 .deck-details-flashcards > .db-section-heading { flex-wrap: wrap; }
@@ -20,13 +22,42 @@
 .flashcard-preview { background: white; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
 .flashcard-preview-top { display: flex; align-items: center; gap: 10px; padding: 16px 24px; border-bottom: 1px solid #edf1f5; color: var(--muted); font-size: .65em; font-weight: 700; letter-spacing: .08em; }
 .flashcard-preview-number { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #e8f7ee; color: var(--primary-dark); font-size: 12px; }
+.flashcard-preview-top { flex-wrap: wrap; }
+.flashcard-preview-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.flashcard-preview-actions .button { min-height: 38px; padding: 8px 14px; font-size: 13px; letter-spacing: normal; }
+.flashcard-local-status:empty { display: none; }
+.flashcard-local-status { margin-bottom: 20px; color: var(--primary-dark); }
+.flashcard-dialog { width: min(780px, calc(100% - 32px)); max-height: calc(100svh - 40px); margin: auto; padding: clamp(22px, 3vw, 36px); border: 1px solid var(--border); border-radius: 20px; color: var(--text); background: white; box-shadow: var(--shadow); overflow-y: auto; }
+.flashcard-dialog::backdrop { background: #14233880; }
+.flashcard-dialog h2 { font-size: clamp(24px, 2vw, 32px); margin-bottom: 16px; }
+.flashcard-dialog > .form-notice { margin-bottom: 24px; }
+.flashcard-form-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.flashcard-form .form-field { min-width: 0; }
+.flashcard-image-field { grid-column: 1 / -1; min-width: 0; }
+.flashcard-image { margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #f7f9fc; }
+.flashcard-image img { display: block; width: 100%; max-height: 260px; object-fit: contain; border-radius: 8px; }
+.flashcard-form textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: #f7f9fc; color: var(--text); font: inherit; resize: vertical; min-height: 100px; }
+.flashcard-form textarea:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 2px; }
+.flashcard-form textarea[aria-invalid="true"] { border-color: var(--danger); }
+.flashcard-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); }
+.flashcard-dialog-actions .button { font-size: 15px; }
+.flashcard-delete-question { overflow-wrap: anywhere; line-height: 1.7; }
 .flashcard-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .flashcard-preview-side { min-width: 0; padding: clamp(22px, 2vw, 36px); overflow-wrap: anywhere; }
 .flashcard-preview-side + .flashcard-preview-side { border-left: 1px solid #edf1f5; background: #fbfdfc; }
 .flashcard-side-label { color: var(--muted); font-size: .7em; font-weight: 700; letter-spacing: .08em; margin-bottom: 14px; }
 .flashcard-preview-side h3, .flashcard-answer { font-size: 1.2em; line-height: 1.65; }
+.flashcard-answer-with-image { position: relative; padding-right: calc(clamp(22px, 2vw, 36px) + clamp(64px, 8vw, 120px) + 16px); }
+.flashcard-answer-with-image .flashcard-image { position: absolute; right: clamp(22px, 2vw, 36px); top: 50%; transform: translateY(-50%); width: clamp(64px, 8vw, 120px); height: 96px; max-height: calc(100% - 44px); margin: 0; padding: 6px; overflow: auto; }
+.flashcard-answer-with-image .flashcard-image img { width: 100%; height: 100%; object-fit: contain; }
+.flashcard-answer-with-image .field-hint { margin: 0; font-size: 11px; overflow-wrap: anywhere; }
 .flashcard-example { color: var(--muted); font-size: .9em; line-height: 1.7; margin-top: 14px; font-style: italic; }
+@media (max-width: 1100px) {
+  .deck-details-overview { grid-template-columns: 1fr; }
+}
 @media (max-width: 700px) {
+  .flashcard-form-fields { grid-template-columns: 1fr; }
+  .flashcard-dialog-actions .button { flex: 1; }
   .deck-details-hero { align-items: flex-start; gap: 16px; }
   .deck-details-cover { width: 70px; height: 70px; border-radius: 16px; font-size: 30px; }
   .deck-details-heading h1 { font-size: 26px; }

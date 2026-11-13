@@ -5,6 +5,16 @@ export type PreviewFlashcard = {
   answer: string
   exampleSentence?: string
   translatedExample?: string
+  imageUrl?: string
+}
+
+export function isFlashcardImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return (url.protocol === 'https:' || url.protocol === 'http:') && !!url.hostname && !url.username && !url.password
+  } catch {
+    return false
+  }
 }
 
 export const generalFlashcardExamples: PreviewFlashcard[] = [
