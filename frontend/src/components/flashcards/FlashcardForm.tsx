@@ -13,8 +13,8 @@ const fields: { name: Field; label: string; required?: boolean; limit: number }[
   { name: 'imageUrl', label: 'Image URL (optional)', limit: 2048 },
 ]
 
-export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
-  initialValues?: FlashcardValues; onSubmit: (values: FlashcardValues) => void; onCancel: () => void
+export default function FlashcardForm({ initialValues, onSubmit, onCancel, previewOnly = false }: {
+  initialValues?: FlashcardValues; onSubmit: (values: FlashcardValues) => void; onCancel: () => void; previewOnly?: boolean
 }) {
   const id = useId()
   const formRef = useRef<HTMLFormElement>(null)
@@ -23,6 +23,7 @@ export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (previewOnly) return
     const nextErrors: Partial<Record<Field, string>> = {}
     for (const field of fields) {
       const value = (values[field.name] ?? '').trim()
@@ -60,7 +61,7 @@ export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
     })}</div>
     <div className="flashcard-dialog-actions">
       <button className="button button-outline" type="button" onClick={onCancel}>Cancel</button>
-      <button className="button button-primary" type="submit">{initialValues ? 'Update preview' : 'Add to preview'}</button>
+      <button className="button button-primary" type="submit" disabled={previewOnly}>{previewOnly ? 'Saving coming soon' : initialValues ? 'Update preview' : 'Add to preview'}</button>
     </div>
   </form>
 }

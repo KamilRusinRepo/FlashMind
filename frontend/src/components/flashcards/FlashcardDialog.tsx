@@ -14,7 +14,7 @@ export default function FlashcardDialog({ title, onCancel, children }: { title: 
   return <dialog ref={dialogRef} className="flashcard-dialog" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); onCancel() }}>
     <h2 id={titleId}>{title}</h2>
-    <p className="form-notice">Preview only. Changes stay on this page and disappear when you leave or reload.</p>
+    <p className="form-notice">Form preview only. Saving changes will be available soon.</p>
     {children}
   </dialog>
 }

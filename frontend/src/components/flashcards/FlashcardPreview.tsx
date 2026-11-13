@@ -1,11 +1,11 @@
 import type { PreviewFlashcard } from '../../data/flashcardPreview'
 import FlashcardImage from './FlashcardImage'
 
-export default function FlashcardPreview({ card, index, onEdit, onDelete }: {
-  card: PreviewFlashcard; index: number; onEdit: () => void; onDelete: () => void
+export default function FlashcardPreview({ card, index, onEdit, onDelete, preview = true }: {
+  card: PreviewFlashcard; index: number; onEdit: () => void; onDelete: () => void; preview?: boolean
 }) {
   return <article className="flashcard-preview">
-    <div className="flashcard-preview-top"><span className="flashcard-preview-number">{String(index + 1).padStart(2, '0')}</span><span>PREVIEW CARD</span>
+    <div className="flashcard-preview-top"><span className="flashcard-preview-number">{String(index + 1).padStart(2, '0')}</span><span>{preview ? 'PREVIEW CARD' : 'FLASHCARD'}</span>
       <div className="flashcard-preview-actions">
         <button className="button button-outline" type="button" onClick={onEdit} aria-label={`Edit flashcard ${index + 1}`}>Edit</button>
         <button className="button deck-delete-button" type="button" onClick={onDelete} aria-label={`Delete flashcard ${index + 1}`}>Delete</button>
