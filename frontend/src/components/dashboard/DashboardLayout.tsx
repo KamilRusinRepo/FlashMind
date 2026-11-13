@@ -35,7 +35,7 @@ export default function DashboardLayout() {
   const { pathname } = useLocation()
 
   useEffect(() => {
-    document.title = `${pathname === '/decks/create' ? 'Create Deck' : pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
+    document.title = `${pathname === '/decks/create' ? 'Create Deck' : /^\/decks\/\d+\/edit$/.test(pathname) ? 'Edit Deck' : pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
     window.scrollTo(0, 0)
     document.getElementById('dashboard-main')?.focus({ preventScroll: true })
   }, [pathname])

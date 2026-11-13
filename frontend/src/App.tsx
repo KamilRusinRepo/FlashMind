@@ -4,6 +4,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout'
 import DashboardPage from './pages/DashboardPage'
 import MyDecksPage from './pages/MyDecksPage'
 import CreateDeckPage from './pages/CreateDeckPage'
+import EditDeckPage from './pages/EditDeckPage'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthPage from './pages/AuthPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
@@ -22,6 +23,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="decks" element={<MyDecksPage />} />
           <Route path="decks/create" element={<CreateDeckPage />} />
+          <Route path="decks/:deckId/edit" element={<EditDeckPage />} />
         </Route>
       </Route>
       <Route element={<PublicLayout />}>

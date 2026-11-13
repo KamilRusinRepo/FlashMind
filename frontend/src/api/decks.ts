@@ -20,7 +20,7 @@ export class DeckListError extends Error {
   constructor(message: string, status = 0) { super(message); this.name = 'DeckListError'; this.status = status }
 }
 
-function isDeck(value: unknown): value is OwnedDeck {
+export function isOwnedDeck(value: unknown): value is OwnedDeck {
   if (!value || typeof value !== 'object') return false
   const deck = value as Record<string, unknown>
   return typeof deck.id === 'number' && Number.isSafeInteger(deck.id) && deck.id > 0 && typeof deck.name === 'string'
@@ -46,7 +46,7 @@ export async function getMyDecks(page: number, search: string, signal: AbortSign
   if (!response.ok) throw new DeckListError(response.status === 401 ? 'Your session has expired. Please sign in again.'
     : 'Unable to load your decks. Please try again.', response.status)
   const data = await response.json().catch(() => null)
-  if (!data || !Array.isArray(data.content) || !data.content.every(isDeck)
+  if (!data || !Array.isArray(data.content) || !data.content.every(isOwnedDeck)
     || data.page !== page || data.size !== 12 || data.content.length > data.size
     || !Number.isSafeInteger(data.totalElements) || data.totalElements < data.content.length
     || !Number.isSafeInteger(data.totalPages) || data.totalPages !== Math.ceil(data.totalElements / data.size)) {
@@ -86,6 +86,6 @@ export async function createDeck(request: CreateDeckRequest): Promise<OwnedDeck>
     throw new CreateDeckError(Object.keys(fieldErrors).length ? 'Please check the highlighted fields.'
       : response.status === 401 ? 'Your session has expired. Please sign in again.' : 'Unable to create your deck. Please try again.', response.status, fieldErrors)
   }
-  if (response.status !== 201 || !isDeck(data)) throw new CreateDeckError('The server returned an unexpected response. Check My Decks before creating another deck.')
+  if (response.status !== 201 || !isOwnedDeck(data)) throw new CreateDeckError('The server returned an unexpected response. Check My Decks before creating another deck.')
   return data
 }
