@@ -61,9 +61,13 @@
 .db-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .db-section-heading h2 { font-size: 1.35em; font-weight: 750; letter-spacing: -.025em; }
 .db-section-heading p { color: var(--muted); font-size: .85em; margin-top: 4px; }
+.db-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 16px; }
+.db-section-placeholder { padding: 22px; border: 1px solid var(--border); border-radius: 16px; background: white; color: var(--muted); }
+.db-dashboard-notice { margin-bottom: 24px; }
+.db-learning-copy p { overflow-wrap: anywhere; }
 .db-text-action, .db-create-action { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 8px 0; border: 0; background: transparent; color: #159a51; font-size: .9em; font-weight: 700; text-align: right; }
 .db-create-action { padding: 9px 16px; border: 1px solid #cfe9da; border-radius: 10px; background: #edf9f1; }
-.db-learning-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.db-learning-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .db-learning-card { display: flex; align-items: center; gap: 18px; padding: 24px; border: 1px solid #e1e8ef; border-radius: 20px; background: #fff; box-shadow: 0 4px 14px #152d4703; }
 .db-learning-icon { display: grid; place-items: center; flex: 0 0 64px; height: 64px; border-radius: 17px; font-size: 1.65em; font-weight: 750; }
 .db-learning-copy { flex: 1; min-width: 0; }
@@ -124,6 +128,7 @@
   .db-collapsed .db-sidebar { padding-inline: 12px; }
 }
 @media (max-width: 1350px) {
+  .db-learning-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .db-learning-card { flex-wrap: wrap; }
   .db-learning-card .db-action { margin-left: 82px; }
   .db-metrics { width: 100%; }
@@ -156,6 +161,8 @@
   .db-level { min-width: 100%; }
   .db-preview-note { font-size: 11px; align-items: flex-start; gap: 8px; }
   .db-section-heading { align-items: flex-start; gap: 12px; }
+  .db-section-heading { flex-wrap: wrap; }
+  .db-heading-actions { justify-content: flex-start; gap: 12px; }
   .db-section-heading h2 { font-size: 20px; }
   .db-text-action { font-size: 12px; }
   .db-create-action { padding: 8px 10px; font-size: 12px; }
