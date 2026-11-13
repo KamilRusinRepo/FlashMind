@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
+import { createFlashcard } from '../api/flashcards'
 import { useAuth } from '../auth/AuthContext'
 import DeckFlashcards from '../components/flashcards/DeckFlashcards'
 import FlashcardDialog from '../components/flashcards/FlashcardDialog'
@@ -53,6 +54,8 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const languageDeck = deck.deckType === 'LANGUAGE'
   const [dialog, setDialog] = useState<{ mode: 'create' } | { mode: 'edit' | 'delete'; card: PreviewFlashcard } | null>(null)
+  const [flashcardRevision, setFlashcardRevision] = useState(0)
+  const [notice, setNotice] = useState('')
   const tone = languageDeck ? 'purple' : 'blue'
 
   useEffect(() => { document.title = `${deck.name} | FlashMind` }, [deck.name])
@@ -82,10 +85,17 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     </div>
     </div>
     </div>
-    <DeckFlashcards key={deck.id} deckId={deck.id} onAdd={() => setDialog({ mode: 'create' })}
+    {notice && <p className="form-notice form-success" role="status">{notice}</p>}
+    <DeckFlashcards key={`${deck.id}:${flashcardRevision}`} deckId={deck.id} onAdd={() => setDialog({ mode: 'create' })}
       onEdit={card => setDialog({ mode: 'edit', card })} onDelete={card => setDialog({ mode: 'delete', card })} />
-    {dialog && dialog.mode !== 'delete' && <FlashcardDialog title={dialog.mode === 'edit' ? 'Edit Flashcard' : 'Add Flashcard'} onCancel={() => setDialog(null)}>
-      <FlashcardForm initialValues={dialog.mode === 'edit' ? dialog.card : undefined} previewOnly onSubmit={() => {}} onCancel={() => setDialog(null)} />
+    {dialog && dialog.mode !== 'delete' && <FlashcardDialog title={dialog.mode === 'edit' ? 'Edit Flashcard' : 'Add Flashcard'} previewOnly={dialog.mode === 'edit'} onCancel={() => setDialog(null)}>
+      <FlashcardForm initialValues={dialog.mode === 'edit' ? dialog.card : undefined} previewOnly={dialog.mode === 'edit'} onSubmit={async values => {
+        if (dialog.mode !== 'create') return
+        await createFlashcard(deck.id, values)
+        setNotice('Your flashcard has been added.')
+        setFlashcardRevision(value => value + 1)
+        setDialog(null)
+      }} onCancel={() => setDialog(null)} />
     </FlashcardDialog>}
     {dialog?.mode === 'delete' && <DeleteFlashcardDialog card={dialog.card} previewOnly onCancel={() => setDialog(null)} onDelete={() => {}} />}
   </>

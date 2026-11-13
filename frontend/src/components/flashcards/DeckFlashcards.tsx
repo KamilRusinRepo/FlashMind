@@ -44,8 +44,8 @@ function FlashcardResults({ deckId, page, onPageChange, onAdd, onEdit, onDelete 
   const { data } = state
   if (data.totalElements === 0) return <div className="decks-empty">
     <span className="decks-empty-icon" aria-hidden="true">▤</span><h3>No flashcards yet</h3>
-    <p>This deck has no saved flashcards. Adding flashcards will be available soon.</p>
-    <button className="button button-primary" type="button" onClick={onAdd}>Preview Add Flashcard</button>
+    <p>This deck has no saved flashcards. Add your first card to get started.</p>
+    <button className="button button-primary" type="button" onClick={onAdd}>Add your first flashcard</button>
   </div>
 
   return <>

@@ -1,6 +1,8 @@
 package com.example.backend.flashcard;
 
 import com.example.backend.deck.DeckRepository;
+import com.example.backend.user.UserRepository;
+import com.example.backend.flashcard.dto.request.SaveFlashcardRequest;
 import com.example.backend.flashcard.dto.response.FlashcardPageResponse;
 import com.example.backend.flashcard.dto.response.FlashcardResponse;
 import org.springframework.data.domain.PageRequest;
@@ -14,10 +16,27 @@ import org.springframework.web.server.ResponseStatusException;
 public class FlashcardService {
     private final FlashcardRepository flashcards;
     private final DeckRepository decks;
+    private final UserRepository users;
 
-    public FlashcardService(FlashcardRepository flashcards, DeckRepository decks) {
+    public FlashcardService(FlashcardRepository flashcards, DeckRepository decks, UserRepository users) {
         this.flashcards = flashcards;
         this.decks = decks;
+        this.users = users;
+    }
+
+    @Transactional
+    public FlashcardResponse create(Long ownerId, Long deckId, SaveFlashcardRequest request) {
+        // Match deck/account deletion lock order: user first, then deck.
+        var owner = users.findByIdForUpdate(ownerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (!owner.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        var deck = decks.findOwnedForUpdate(deckId, ownerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var card = new Flashcard(deck, request.question(), request.answer());
+        card.setExampleSentence(request.exampleSentence());
+        card.setTranslatedExample(request.translatedExample());
+        card.setImageUrl(request.imageUrl());
+        return FlashcardResponse.from(flashcards.saveAndFlush(card));
     }
 
     @Transactional(readOnly = true)
