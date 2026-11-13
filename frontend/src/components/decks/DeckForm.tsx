@@ -19,9 +19,10 @@ type Props = {
   onSaved?: (deck: OwnedDeck) => void
   submitLabel?: string
   pendingLabel?: string
+  cancelTo?: string
 }
 
-export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…' }: Props) {
+export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…', cancelTo = '/decks' }: Props) {
   const { refresh } = useAuth()
   const [deckType, setDeckType] = useState<SaveDeckRequest['deckType']>(initialValues?.deckType ?? 'GENERAL')
   const [errors, setErrors] = useState<DeckFieldErrors>({})
@@ -109,7 +110,7 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
       </label>
       {error && <p className="form-notice form-error" role="alert">{error}</p>}
       {Object.keys(errors).some(field => errors[field as keyof DeckFieldErrors]) && <p className="field-error" role="alert">Please check the highlighted fields.</p>}
-      <div className="deck-form-actions"><Link className="button button-outline" to="/decks">Cancel</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? pendingLabel : submitLabel}</button></div>
+      <div className="deck-form-actions"><Link className="button button-outline" to={cancelTo}>Cancel</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? pendingLabel : submitLabel}</button></div>
     </form>
   )
 }
