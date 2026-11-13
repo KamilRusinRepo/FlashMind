@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage'
 import MyDecksPage from './pages/MyDecksPage'
 import CreateDeckPage from './pages/CreateDeckPage'
 import EditDeckPage from './pages/EditDeckPage'
+import DeckDetailsPage from './pages/DeckDetailsPage'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthPage from './pages/AuthPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
@@ -24,6 +25,7 @@ function App() {
           <Route path="decks" element={<MyDecksPage />} />
           <Route path="decks/create" element={<CreateDeckPage />} />
           <Route path="decks/:deckId/edit" element={<EditDeckPage />} />
+          <Route path="decks/:deckId" element={<DeckDetailsPage />} />
         </Route>
       </Route>
       <Route element={<PublicLayout />}>

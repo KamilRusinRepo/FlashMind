@@ -13,7 +13,7 @@ export default function OwnedDeckCard({ deck, onChanged }: { deck: OwnedDeck; on
       : <span>{deck.name.slice(0, 1).toUpperCase()}</span>}</div>
     <div className="db-deck-body">
       <div className="db-tags"><span>{deck.publicDeck ? 'PUBLIC' : 'PRIVATE'}</span><span className={`db-tone-${tone}`}>{deck.category || 'Uncategorized'}</span></div>
-      <h3>{deck.name}</h3>
+      <h3><Link className="deck-details-link" to={`/decks/${deck.id}`} aria-label={`Open ${deck.name}`}>{deck.name}</Link></h3>
       <p className="db-deck-description">{deck.description || 'No description yet.'}</p>
       <div className="decks-language"><span>{deck.deckType === 'LANGUAGE' ? 'Language deck' : 'General deck'}</span>
         <strong>{deck.sourceLanguage}{deck.targetLanguage && <> <span aria-hidden="true">→</span> {deck.targetLanguage}</>}</strong>

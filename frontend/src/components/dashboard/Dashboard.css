@@ -41,7 +41,7 @@
 .db-page { width: 100%; }
 .db-preview-note { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border: 1px solid #dce7f1; border-radius: 10px; background: #edf3f9; color: #60768e; font-size: .8em; }
 .db-preview-badge { color: #425e7b; font-weight: 750; font-size: .8em; letter-spacing: .12em; }
-.db-hero { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 28px; padding: 32px 0 36px; }
+.db-hero { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 28px; padding: 0px 0 15px; }
 .db-welcome { min-width: 0; }
 .db-eyebrow { color: #72859b; font-size: .65em; font-weight: 750; letter-spacing: .14em; margin-bottom: 9px; }
 .db-welcome h1 { font-size: clamp(26px, 2vw, 48px); line-height: 1.2; letter-spacing: -.045em; overflow-wrap: anywhere; }
@@ -118,7 +118,6 @@
   .db-nav-item { min-height: 66px; padding: 18px 20px; }
   .db-nav-item img { width: 26px; height: 26px; }
   .db-content { padding-top: 32px; }
-  .db-hero { padding-block: 42px; }
   .db-metric { padding: 18px 24px; }
   .db-level { min-width: 280px; }
   .db-learning-card { padding: 30px; }
