@@ -4,14 +4,14 @@ import { useAuth } from '../../auth/AuthContext'
 import type { PreviewFlashcard } from '../../data/flashcardPreview'
 import FlashcardPreview from './FlashcardPreview'
 
-type Props = { deckId: number; onAdd: () => void; onEdit: (card: PreviewFlashcard) => void; onDelete: (card: PreviewFlashcard) => void }
+type Props = { deckId: number; revision: number; onAdd: () => void; onEdit: (card: PreviewFlashcard) => void; onDelete: (card: PreviewFlashcard) => void }
 type LoadState = { status: 'loading' } | { status: 'ready'; data: FlashcardPage } | { status: 'error'; message: string; code: number }
 
 export default function DeckFlashcards(props: Props) {
   const [page, setPage] = useState(0)
   return <section className="deck-details-flashcards" aria-labelledby="flashcards-title">
     <div className="db-section-heading"><div><h2 id="flashcards-title">Flashcards</h2></div></div>
-    <FlashcardResults key={`${props.deckId}:${page}`} {...props} page={page} onPageChange={setPage} />
+    <FlashcardResults key={`${props.deckId}:${page}:${props.revision}`} {...props} page={page} onPageChange={setPage} />
   </section>
 }
 

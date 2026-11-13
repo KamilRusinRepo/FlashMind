@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/api/decks/{deckId}/flashcards")
@@ -25,6 +27,21 @@ public class FlashcardController {
     private final FlashcardService flashcards;
 
     public FlashcardController(FlashcardService flashcards) { this.flashcards = flashcards; }
+
+    @PutMapping("/{cardId}")
+    public ResponseEntity<FlashcardResponse> updateOwned(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "deckId") Long deckId, @PathVariable(name = "cardId") Long cardId,
+            @Valid @RequestBody SaveFlashcardRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(flashcards.updateOwned(user.id(), deckId, cardId, request));
+    }
+
+    @DeleteMapping("/{cardId}")
+    public ResponseEntity<Void> deleteOwned(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "deckId") Long deckId, @PathVariable(name = "cardId") Long cardId) {
+        flashcards.deleteOwned(user.id(), deckId, cardId);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
 
     @PostMapping
     public ResponseEntity<FlashcardResponse> create(@AuthenticationPrincipal SessionUser user,

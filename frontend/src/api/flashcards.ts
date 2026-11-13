@@ -1,4 +1,4 @@
-import { postWithCsrf } from './csrf'
+import { requestWithCsrf } from './csrf'
 
 export type Flashcard = {
   id: number; question: string; answer: string; exampleSentence: string | null
@@ -19,9 +19,17 @@ export class FlashcardApiError extends Error {
 }
 
 export async function createFlashcard(deckId: number, request: SaveFlashcardRequest): Promise<Flashcard> {
+  return saveFlashcard(deckId, request, 'POST')
+}
+
+export async function updateFlashcard(deckId: number, cardId: number, request: SaveFlashcardRequest): Promise<Flashcard> {
+  return saveFlashcard(deckId, request, 'PUT', cardId)
+}
+
+async function saveFlashcard(deckId: number, request: SaveFlashcardRequest, method: 'POST' | 'PUT', cardId?: number): Promise<Flashcard> {
   let response: Response
   try {
-    response = await postWithCsrf(`/api/decks/${deckId}/flashcards`, {
+    response = await requestWithCsrf(`/api/decks/${deckId}/flashcards${cardId === undefined ? '' : `/${cardId}`}`, method, {
       headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(15000),
       body: JSON.stringify({ question: request.question, answer: request.answer,
         exampleSentence: request.exampleSentence ?? null, translatedExample: request.translatedExample ?? null, imageUrl: request.imageUrl ?? null }),
@@ -35,11 +43,24 @@ export async function createFlashcard(deckId: number, request: SaveFlashcardRequ
     }
     throw new FlashcardApiError(response.status === 400 ? 'Please check the submitted fields.'
       : response.status === 401 ? 'Your session has expired. Please sign in again.'
-        : response.status === 404 ? 'This deck is unavailable or does not belong to your account.'
+        : response.status === 404 ? 'This flashcard or deck is unavailable or does not belong to your account.'
           : 'Unable to save the flashcard. Please try again.', response.status, errors)
   }
-  if (response.status !== 201 || !isFlashcard(data)) throw new FlashcardApiError('The save could not be confirmed. Check the deck list before trying again.')
+  if (response.status !== (method === 'POST' ? 201 : 200) || !isFlashcard(data) || (cardId !== undefined && data.id !== cardId)) {
+    throw new FlashcardApiError('The save could not be confirmed. Check the deck list before trying again.')
+  }
   return data
+}
+
+export async function deleteFlashcard(deckId: number, cardId: number): Promise<void> {
+  let response: Response
+  try {
+    response = await requestWithCsrf(`/api/decks/${deckId}/flashcards/${cardId}`, 'DELETE', { signal: AbortSignal.timeout(15000) })
+  } catch { throw new FlashcardApiError('Unable to confirm deletion. Check your connection and refresh the list before trying again.') }
+  if (response.status === 204) return
+  throw new FlashcardApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
+    : response.status === 404 ? 'This flashcard or deck is unavailable. Refresh the list to see the current data.'
+      : 'Unable to delete the flashcard. Please try again.', response.status)
 }
 
 function isFlashcard(value: unknown): value is Flashcard {

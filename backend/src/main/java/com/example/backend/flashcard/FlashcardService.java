@@ -1,6 +1,7 @@
 package com.example.backend.flashcard;
 
 import com.example.backend.deck.DeckRepository;
+import com.example.backend.deck.Deck;
 import com.example.backend.user.UserRepository;
 import com.example.backend.flashcard.dto.request.SaveFlashcardRequest;
 import com.example.backend.flashcard.dto.response.FlashcardPageResponse;
@@ -26,17 +27,48 @@ public class FlashcardService {
 
     @Transactional
     public FlashcardResponse create(Long ownerId, Long deckId, SaveFlashcardRequest request) {
+        var deck = lockOwnedDeck(ownerId, deckId);
+        var card = new Flashcard(deck, request.question(), request.answer());
+        applyDetails(card, request);
+        return FlashcardResponse.from(flashcards.saveAndFlush(card));
+    }
+
+    @Transactional
+    public FlashcardResponse updateOwned(Long ownerId, Long deckId, Long cardId, SaveFlashcardRequest request) {
+        var card = findOwnedCardForMutation(ownerId, deckId, cardId);
+        card.setQuestion(request.question());
+        card.setAnswer(request.answer());
+        applyDetails(card, request);
+        return FlashcardResponse.from(flashcards.saveAndFlush(card));
+    }
+
+    @Transactional
+    public void deleteOwned(Long ownerId, Long deckId, Long cardId) {
+        var card = findOwnedCardForMutation(ownerId, deckId, cardId);
+        flashcards.delete(card);
+        flashcards.flush();
+    }
+
+    private Flashcard findOwnedCardForMutation(Long ownerId, Long deckId, Long cardId) {
+        // The deck lock serializes card mutations against each other and deck deletion.
+        lockOwnedDeck(ownerId, deckId);
+        return flashcards.findByIdAndDeck_IdAndDeck_Owner_Id(cardId, deckId, ownerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private Deck lockOwnedDeck(Long ownerId, Long deckId) {
         // Match deck/account deletion lock order: user first, then deck.
         var owner = users.findByIdForUpdate(ownerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!owner.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        var deck = decks.findOwnedForUpdate(deckId, ownerId)
+        return decks.findOwnedForUpdate(deckId, ownerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        var card = new Flashcard(deck, request.question(), request.answer());
+    }
+
+    private void applyDetails(Flashcard card, SaveFlashcardRequest request) {
         card.setExampleSentence(request.exampleSentence());
         card.setTranslatedExample(request.translatedExample());
         card.setImageUrl(request.imageUrl());
-        return FlashcardResponse.from(flashcards.saveAndFlush(card));
     }
 
     @Transactional(readOnly = true)

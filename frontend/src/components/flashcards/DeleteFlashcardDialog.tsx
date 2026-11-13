@@ -1,14 +1,47 @@
+import { useEffect, useRef, useState } from 'react'
+import { deleteFlashcard, FlashcardApiError } from '../../api/flashcards'
+import { useAuth } from '../../auth/AuthContext'
 import type { PreviewFlashcard } from '../../data/flashcardPreview'
 import FlashcardDialog from './FlashcardDialog'
 
-export default function DeleteFlashcardDialog({ card, onCancel, onDelete, previewOnly = false }: {
-  card: PreviewFlashcard; onCancel: () => void; onDelete: () => void; previewOnly?: boolean
+export default function DeleteFlashcardDialog({ deckId, card, onCancel, onDeleted, onUnavailable }: {
+  deckId: number; card: PreviewFlashcard; onCancel: () => void; onDeleted: () => void; onUnavailable: () => void
 }) {
-  return <FlashcardDialog title="Delete flashcard?" onCancel={onCancel}>
-    <p className="flashcard-delete-question">Delete <strong>{card.question}</strong>?</p>
+  const { refresh } = useAuth()
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [unavailable, setUnavailable] = useState(false)
+  const submitting = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+
+  async function handleDelete() {
+    if (submitting.current || unavailable) return
+    submitting.current = true
+    setSending(true)
+    setError('')
+    try {
+      await deleteFlashcard(deckId, Number(card.id))
+      if (mounted.current) onDeleted()
+    } catch (cause) {
+      if (!mounted.current) return
+      if (cause instanceof FlashcardApiError && cause.status === 401) { refresh(); return }
+      setError(cause instanceof FlashcardApiError ? cause.message : 'Unable to delete the flashcard. Please try again.')
+      setUnavailable(cause instanceof FlashcardApiError && cause.status === 404)
+    } finally {
+      submitting.current = false
+      if (mounted.current) setSending(false)
+    }
+  }
+
+  const cancel = () => { if (!submitting.current) onCancel() }
+  return <FlashcardDialog title="Delete flashcard?" onCancel={cancel}>
+    <p className="flashcard-delete-question">Delete <strong>{card.question}</strong>? This action is permanent.</p>
+    {error && <p className="form-notice form-error" role="alert">{error}</p>}
     <div className="flashcard-dialog-actions">
-      <button className="button button-outline" type="button" onClick={onCancel}>Cancel</button>
-      <button className="button deck-delete-button" type="button" disabled={previewOnly} onClick={onDelete}>{previewOnly ? 'Deletion coming soon' : 'Delete from preview'}</button>
+      <button className="button button-outline" type="button" disabled={sending} onClick={cancel}>Cancel</button>
+      {unavailable ? <button className="button button-primary" type="button" onClick={onUnavailable}>Refresh flashcards</button>
+        : <button className="button deck-delete-button" type="button" disabled={sending} onClick={() => void handleDelete()}>{sending ? 'Deleting…' : 'Delete Flashcard'}</button>}
     </div>
   </FlashcardDialog>
 }

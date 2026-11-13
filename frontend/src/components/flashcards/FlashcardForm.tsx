@@ -15,8 +15,8 @@ const fields: { name: Field; label: string; required?: boolean; limit: number }[
   { name: 'imageUrl', label: 'Image URL (optional)', limit: 2048 },
 ]
 
-export default function FlashcardForm({ initialValues, onSubmit, onCancel, previewOnly = false }: {
-  initialValues?: FlashcardValues; onSubmit: (values: FlashcardValues) => void | Promise<void>; onCancel: () => void; previewOnly?: boolean
+export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
+  initialValues?: FlashcardValues; onSubmit: (values: FlashcardValues) => void | Promise<void>; onCancel: () => void
 }) {
   const id = useId()
   const formRef = useRef<HTMLFormElement>(null)
@@ -31,7 +31,7 @@ export default function FlashcardForm({ initialValues, onSubmit, onCancel, previ
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (previewOnly || submitting.current) return
+    if (submitting.current) return
     setError('')
     const nextErrors: Partial<Record<Field, string>> = {}
     for (const field of fields) {
@@ -87,7 +87,7 @@ export default function FlashcardForm({ initialValues, onSubmit, onCancel, previ
     })}</div>
     <div className="flashcard-dialog-actions">
       <button className="button button-outline" type="button" disabled={sending} onClick={() => { if (!submitting.current) onCancel() }}>Cancel</button>
-      <button className="button button-primary" type="submit" disabled={previewOnly || sending}>{sending ? 'Saving…' : previewOnly ? 'Saving coming soon' : initialValues ? 'Save changes' : 'Add Flashcard'}</button>
+      <button className="button button-primary" type="submit" disabled={sending}>{sending ? 'Saving…' : initialValues ? 'Save changes' : 'Add Flashcard'}</button>
     </div>
   </form>
 }
