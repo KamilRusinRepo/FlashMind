@@ -38,7 +38,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
         if (user.getEmailVerifiedAt() == null) throw new EmailNotVerifiedException(user.getEmail());
         var roles = user.getRoles().stream().map(role -> role.getName().name()).sorted().toList();
         var authorities = roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
-        var principal = new SessionUser(user.getId(), user.getUsername(), user.getEmail(), roles);
+        var principal = new SessionUser(user.getId(), user.getUsername(), user.getEmail(), roles, user.getSessionVersion());
         return UsernamePasswordAuthenticationToken.authenticated(principal, null, authorities);
     }
 
