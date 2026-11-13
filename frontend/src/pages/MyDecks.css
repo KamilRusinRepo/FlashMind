@@ -1,0 +1,27 @@
+.decks-heading { margin-block: 14px 28px; flex-wrap: wrap; }
+.decks-heading h1 { font-size: clamp(28px, 2vw, 48px); line-height: 1.2; letter-spacing: -.04em; }
+.decks-search { display: flex; align-items: flex-end; gap: 12px; padding: 22px; margin-bottom: 26px; border: 1px solid var(--border); border-radius: 16px; background: white; }
+.decks-search .form-field { flex: 1; min-width: 0; }
+.decks-search .button { min-height: max(56px, calc(56 * var(--desktop-unit, 1px))); }
+.decks-message, .decks-empty { background: white; border: 1px solid var(--border); border-radius: 20px; padding: clamp(24px, 4vw, 60px); }
+.decks-message { display: grid; justify-items: start; gap: 18px; color: var(--muted); }
+.decks-empty { display: grid; justify-items: center; gap: 15px; text-align: center; }
+.decks-empty h2 { font-size: 1.5em; }
+.decks-empty p { color: var(--muted); max-width: 500px; }
+.decks-empty-icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 20px; background: #e7f7ed; color: var(--primary-dark); font-size: 36px; }
+.decks-result-count { color: var(--muted); margin-bottom: 16px; overflow-wrap: anywhere; }
+.decks-list-card .db-deck-description { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.decks-list-card .db-tags > span { max-width: 100%; overflow-wrap: anywhere; }
+.decks-language { display: grid; gap: 4px; margin-bottom: 14px; overflow-wrap: anywhere; }
+.decks-language > span { color: var(--muted); font-size: .75em; }
+.decks-language strong { font-size: .85em; font-weight: 600; }
+.decks-list-card .db-deck-footer { border-top: 1px solid var(--border); padding-top: 12px; gap: 12px; }
+.decks-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; margin-block: 28px; color: var(--muted); }
+.decks-pagination .button { font-size: .9em; padding: 12px 18px; }
+@media (max-width: 760px) {
+  .decks-search { flex-wrap: wrap; padding: 16px; }
+  .decks-search .form-field { flex-basis: 100%; }
+  .decks-search .button { flex: 1; }
+  .decks-pagination { justify-content: center; }
+  .decks-pagination > span { order: -1; flex-basis: 100%; text-align: center; }
+}

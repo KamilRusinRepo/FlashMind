@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import Brand from '../Brand'
 import { useAuth } from '../../auth/AuthContext'
 import homeIcon from '../../assets/icons/sidebar/home.svg'
@@ -11,7 +11,7 @@ import './Dashboard.css'
 
 const navigation = [
   { label: 'Home', icon: homeIcon, path: '/dashboard' },
-  { label: 'My Decks', icon: decksIcon },
+  { label: 'My Decks', icon: decksIcon, path: '/decks' },
   { label: 'Explore Decks', icon: exploreIcon },
   { label: 'Statistics', icon: statsIcon },
   { label: 'Settings', icon: settingsIcon },
@@ -32,8 +32,13 @@ function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const { user, error } = useAuth()
+  const { pathname } = useLocation()
 
-  useEffect(() => { document.title = 'Dashboard | FlashMind' }, [])
+  useEffect(() => {
+    document.title = `${pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
+    window.scrollTo(0, 0)
+    document.getElementById('dashboard-main')?.focus({ preventScroll: true })
+  }, [pathname])
 
   if (!user) return null
 
