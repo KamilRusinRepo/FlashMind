@@ -4,6 +4,7 @@ import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
 import { createFlashcard, updateFlashcard } from '../api/flashcards'
 import { useAuth } from '../auth/AuthContext'
 import DeckFlashcards from '../components/flashcards/DeckFlashcards'
+import StudyStartButton from '../components/study/StudyStartButton'
 import FlashcardDialog from '../components/flashcards/FlashcardDialog'
 import FlashcardForm from '../components/flashcards/FlashcardForm'
 import DeleteFlashcardDialog from '../components/flashcards/DeleteFlashcardDialog'
@@ -83,7 +84,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     <div className="deck-details-actions">
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>Edit Deck</Link>
       <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>＋ Add Flashcard</button>
-      <button className="button button-primary" type="button" disabled title="Study sessions are coming soon">Start Study</button>
+      <StudyStartButton deckId={deck.id} />
     </div>
     </div>
     </div>

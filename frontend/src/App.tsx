@@ -6,6 +6,7 @@ import MyDecksPage from './pages/MyDecksPage'
 import CreateDeckPage from './pages/CreateDeckPage'
 import EditDeckPage from './pages/EditDeckPage'
 import DeckDetailsPage from './pages/DeckDetailsPage'
+import StudyPage from './pages/StudyPage'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthPage from './pages/AuthPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
@@ -20,6 +21,8 @@ function App() {
   return (
     <Routes>
       <Route element={<ProtectedRoute />}>
+        <Route path="decks/:deckId/study" element={<StudyPage />} />
+        <Route path="decks/:deckId/study/:sessionId" element={<StudyPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="decks" element={<MyDecksPage />} />
