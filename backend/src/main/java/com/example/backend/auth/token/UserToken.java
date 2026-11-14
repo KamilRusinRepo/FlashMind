@@ -44,10 +44,21 @@ public class UserToken {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "target_email", length = 255, updatable = false)
+    private String targetEmail;
+
     protected UserToken() {
     }
 
     public UserToken(User user, String tokenHash, TokenType type, Instant createdAt, Instant expiresAt) {
+        this(user, tokenHash, type, createdAt, expiresAt, null);
+    }
+
+    public UserToken(User user, String tokenHash, TokenType type, Instant createdAt, Instant expiresAt, String targetEmail) {
+        if (type == TokenType.EMAIL_CHANGE ? targetEmail == null || targetEmail.isBlank() : targetEmail != null) {
+            throw new IllegalArgumentException("Only email change tokens require a target address.");
+        }
+        this.targetEmail = targetEmail;
         this.user = Objects.requireNonNull(user);
         this.tokenHash = Objects.requireNonNull(tokenHash);
         this.type = Objects.requireNonNull(type);
@@ -59,6 +70,7 @@ public class UserToken {
     }
 
     public Long getId() { return id; }
+    public String getTargetEmail() { return targetEmail; }
 
     public User getUser() { return user; }
 

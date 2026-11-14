@@ -24,6 +24,9 @@ public class MailConfiguration {
     public static final String RESET_QUEUE = "flashmind.mail.password-reset";
     public static final String RESET_ROUTING_KEY = "password-reset";
     public static final String RESET_FAILED_QUEUE = "flashmind.mail.password-reset.failed";
+    public static final String CHANGE_QUEUE = "flashmind.mail.email-change";
+    public static final String CHANGE_ROUTING_KEY = "email-change";
+    public static final String CHANGE_FAILED_QUEUE = "flashmind.mail.email-change.failed";
 
     @Bean
     Declarables mailTopology() {
@@ -35,7 +38,12 @@ public class MailConfiguration {
         var reset = QueueBuilder.durable(RESET_QUEUE)
                 .deadLetterExchange(FAILED_EXCHANGE).deadLetterRoutingKey(RESET_ROUTING_KEY).build();
         var resetFailed = QueueBuilder.durable(RESET_FAILED_QUEUE).build();
-        return new Declarables(exchange, failedExchange, queue, failed, reset, resetFailed,
+        var change = QueueBuilder.durable(CHANGE_QUEUE)
+                .deadLetterExchange(FAILED_EXCHANGE).deadLetterRoutingKey(CHANGE_ROUTING_KEY).build();
+        var changeFailed = QueueBuilder.durable(CHANGE_FAILED_QUEUE).build();
+        return new Declarables(exchange, failedExchange, queue, failed, reset, resetFailed, change, changeFailed,
+                BindingBuilder.bind(change).to(exchange).with(CHANGE_ROUTING_KEY),
+                BindingBuilder.bind(changeFailed).to(failedExchange).with(CHANGE_ROUTING_KEY),
                 BindingBuilder.bind(reset).to(exchange).with(RESET_ROUTING_KEY),
                 BindingBuilder.bind(resetFailed).to(failedExchange).with(RESET_ROUTING_KEY),
                 BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY),

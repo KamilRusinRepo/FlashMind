@@ -33,6 +33,15 @@ public class TokenService {
 
     @Transactional
     public IssuedToken issue(Long userId, TokenType type) {
+        return issueToken(userId, type, null);
+    }
+
+    @Transactional
+    public IssuedToken issueEmailChange(Long userId, String targetEmail) {
+        return issueToken(userId, TokenType.EMAIL_CHANGE, Objects.requireNonNull(targetEmail));
+    }
+
+    private IssuedToken issueToken(Long userId, TokenType type, String targetEmail) {
         Objects.requireNonNull(type);
         User user = users.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot issue a token for a missing user."));
@@ -41,10 +50,10 @@ public class TokenService {
         String value = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         Instant createdAt = clock.instant();
         Instant expiresAt = createdAt.plus(switch (type) {
-            case EMAIL_VERIFICATION -> properties.emailVerificationTtl();
+            case EMAIL_VERIFICATION, EMAIL_CHANGE -> properties.emailVerificationTtl();
             case PASSWORD_RESET -> properties.passwordResetTtl();
         });
-        tokens.saveAndFlush(new UserToken(user, hash(value), type, createdAt, expiresAt));
+        tokens.saveAndFlush(new UserToken(user, hash(value), type, createdAt, expiresAt, targetEmail));
         return new IssuedToken(value, expiresAt);
     }
 
@@ -54,6 +63,15 @@ public class TokenService {
      */
     @Transactional
     public User consume(String value, TokenType expectedType) {
+        return consumeToken(value, expectedType).getUser();
+    }
+
+    @Transactional
+    public UserToken consumeEmailChange(String value) {
+        return consumeToken(value, TokenType.EMAIL_CHANGE);
+    }
+
+    private UserToken consumeToken(String value, TokenType expectedType) {
         Objects.requireNonNull(expectedType);
         if (value == null || !value.matches("[A-Za-z0-9_-]{43}")) {
             throw new InvalidTokenException();
@@ -68,7 +86,7 @@ public class TokenService {
             throw new InvalidTokenException();
         }
         token.markUsed(clock.instant());
-        return token.getUser();
+        return token;
     }
 
     private String hash(String value) {

@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { ProfileApiError } from '../api/profile'
 import FormField from '../components/FormField'
 import SettingsPasswordDialog from '../components/settings/SettingsPasswordDialog'
+import SettingsEmailDialog from '../components/settings/SettingsEmailDialog'
 import passwordIcon from '../assets/icons/settings/password.svg'
 import themeIcon from '../assets/icons/settings/theme.svg'
 import languageIcon from '../assets/icons/settings/language.svg'
@@ -16,6 +17,7 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState<'en' | 'pl'>('en')
   const [reminders, setReminders] = useState(true)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [usernameError, setUsernameError] = useState('')
@@ -54,7 +56,7 @@ export default function SettingsPage() {
 
   return <div className="settings-page">
     <header className="settings-header"><h1>Profile Settings</h1></header>
-    <p className="settings-preview-note">Username changes are saved to your account. Password and preference controls are still previews; appearance and language apply only to the controls below.</p>
+    <p className="settings-preview-note">You can save your username and request an email change. Password and preference controls are still previews; appearance and language apply only to the controls below.</p>
     <section className="settings-card" aria-label="Profile details">
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>
@@ -62,7 +64,8 @@ export default function SettingsPage() {
       </div>
       <form className="settings-profile-form" onSubmit={saveProfile} aria-busy={sending}>
         <FormField id="settings-username" label="Username" name="username" value={username} onChange={event => { setUsername(event.target.value); setUsernameError(''); setNotice('') }} error={usernameError} disabled={sending || isLoggingOut} required autoComplete="username" />
-        <FormField id="settings-email" label="Email Address" name="email" type="email" value={user?.email ?? ''} readOnly hint="Changing your email address will be available in a later update." autoComplete="email" />
+        <div className="settings-email-control"><FormField id="settings-email" label="Email Address" name="email" type="email" value={user?.email ?? ''} readOnly hint="Your current address remains active until you confirm the new one." autoComplete="email" />
+          <button className="button button-outline" type="button" disabled={sending || isLoggingOut} aria-haspopup="dialog" onClick={() => setEmailOpen(true)}>Change Email</button></div>
         <div className="settings-profile-actions"><button className="button button-primary" type="submit" disabled={sending || isLoggingOut}>{sending ? 'Saving…' : 'Save Changes'}</button></div>
       </form>
       {error && <p className="form-notice form-error" role="alert">{error}</p>}
@@ -105,5 +108,6 @@ export default function SettingsPage() {
       </div>
     </section>
     {passwordOpen && <SettingsPasswordDialog onClose={() => setPasswordOpen(false)} />}
+    {emailOpen && <SettingsEmailDialog onClose={() => setEmailOpen(false)} />}
   </div>
 }

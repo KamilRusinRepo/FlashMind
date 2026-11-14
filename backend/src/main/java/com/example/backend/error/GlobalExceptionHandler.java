@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
+import com.example.backend.user.EmailChangeException;
 import com.example.backend.auth.EmailNotVerifiedException;
 import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
@@ -31,6 +32,14 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(EmailChangeException.class)
+    public ResponseEntity<ApiError> handleEmailChange(EmailChangeException exception, HttpServletRequest request) {
+        var response = ResponseEntity.status(exception.getStatus()).header(HttpHeaders.CACHE_CONTROL, "no-store");
+        if (exception.getStatus() == HttpStatus.TOO_MANY_REQUESTS) response.header(HttpHeaders.RETRY_AFTER, "60");
+        return response.body(createError(exception.getStatus(), exception.getMessage(), request.getRequestURI(),
+                exception.getField() == null ? Map.of() : Map.of(exception.getField(), exception.getMessage())));
+    }
 
     @ExceptionHandler(UsernameConflictException.class)
     public ResponseEntity<ApiError> handleUsernameConflict(UsernameConflictException exception, HttpServletRequest request) {
