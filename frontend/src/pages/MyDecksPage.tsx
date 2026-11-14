@@ -11,7 +11,9 @@ export default function MyDecksPage() {
   const { user } = useAuth()
   const { state } = useLocation()
   const [revision, setRevision] = useState(0)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState<string | null>(null)
+  const successNotice = notice ?? (typeof state?.updatedDeckId === 'number' ? 'Your deck has been updated.'
+    : typeof state?.createdDeckId === 'number' ? 'Your deck has been created.' : '')
   const search = (params.get('search') ?? '').trim().slice(0, 120)
   const pageValue = params.get('page') ?? '0'
   const page = /^\d+$/.test(pageValue) && Number(pageValue) <= 1000000 ? Number(pageValue) : 0
@@ -30,7 +32,7 @@ export default function MyDecksPage() {
   }
 
   return <div className="db-page">
-    {(notice || typeof state?.createdDeckId === 'number' || typeof state?.updatedDeckId === 'number') && <p className="form-notice form-success" role="status">{notice || (typeof state?.updatedDeckId === 'number' ? 'Your deck has been updated.' : 'Your deck has been created.')}</p>}
+    {successNotice && <p className="form-notice form-success" role="status">{successNotice}</p>}
     <header className="db-section-heading decks-heading"><div><p className="db-eyebrow">YOUR PERSONAL LIBRARY</p><h1>My Decks</h1>
       <p>Your ideas, organized for your next learning session.</p></div>
       <Link className="db-create-action" to="/decks/create">＋ Create Deck</Link>
@@ -83,7 +85,7 @@ function DeckResults({ page, search, goToPage, onChanged }: { page: number; sear
 
   return <section aria-label="Your decks">
     <p className="decks-result-count" role="status">{data.totalElements} {data.totalElements === 1 ? 'deck' : 'decks'}{search && ` matching “${search}”`}</p>
-    <div className="db-deck-grid">{data.content.map(deck => <OwnedDeckCard key={deck.id} deck={deck} onChanged={onChanged} />)}</div>
+    <div className="db-deck-grid">{data.content.map(deck => <OwnedDeckCard key={deck.id} deck={deck} showActions onChanged={onChanged} />)}</div>
     <nav className="decks-pagination" aria-label="Deck pagination">
       <button className="button button-outline" type="button" disabled={page === 0} onClick={() => goToPage(page - 1)}>← Previous</button>
       <span>Page {page + 1} of {data.totalPages}</span>

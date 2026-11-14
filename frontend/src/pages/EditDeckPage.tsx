@@ -40,7 +40,7 @@ function DeckEditor({ deckId }: { deckId: number }) {
     <p className="form-notice form-error" role="alert">{state.message}</p>
     <button className="button button-outline" type="button" onClick={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }}>Try again</button>
   </div>
-  return <DeckForm key={state.deck.id} initialValues={state.deck} save={request => updateDeck(deckId, request)}
+  return <DeckForm key={state.deck.id} initialValues={state.deck} cancelTo={`/decks/${deckId}`} save={request => updateDeck(deckId, request)}
     submitLabel="Save changes" pendingLabel="Saving changes…" onSaved={deck => navigate('/decks', { replace: true, state: { updatedDeckId: deck.id } })} />
 }
 
