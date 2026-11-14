@@ -7,7 +7,7 @@
 .settings-profile-info { min-width: 0; }
 .settings-profile-info h2 { font-size: 1.15em; overflow-wrap: anywhere; }
 .settings-profile-info p { margin-top: 4px; color: var(--muted); font-size: .85em; }
-.settings-profile-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.settings-profile-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 22px; }
 .settings-profile-form .form-field { min-width: 0; }
 .settings-profile-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
 .settings-page .button, .settings-password-dialog .button { font-size: .9em; border-radius: 999px; }

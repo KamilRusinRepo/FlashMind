@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.example.backend.auth.RegistrationConflictException;
+import com.example.backend.user.UsernameConflictException;
 import com.example.backend.auth.EmailNotVerifiedException;
 import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
@@ -30,6 +31,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(UsernameConflictException.class)
+    public ResponseEntity<ApiError> handleUsernameConflict(UsernameConflictException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of("username", exception.getMessage())));
+    }
 
     @ExceptionHandler({StudyStartException.class, StudyActionException.class})
     public ResponseEntity<ApiError> handleStudyConflict(RuntimeException exception, HttpServletRequest request) {

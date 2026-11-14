@@ -143,6 +143,79 @@ class SessionApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test
+    void usernameChangePersistsAndMeReadsItInExistingSessionsWithoutChangingOtherAccountData() throws Exception {
+        var owner = account();
+        var other = account();
+        String newName = "Updated_" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+        try (var client = new Client(); var secondBrowser = new Client()) {
+            client.login(owner);
+            secondBrowser.login(owner);
+            var response = client.updateUsername(Map.of("username", "  " + newName + "  ", "email", "ignored@example.invalid", "id", other.getId(), "roles", new String[]{"ADMIN"}), true);
+            assertEquals(200, response.statusCode(), response.body());
+            assertTrue(response.headers().firstValue("Cache-Control").orElse("").contains("no-store"));
+            var body = json.readTree(response.body());
+            assertEquals(newName, body.get("username").asText());
+            assertEquals(owner.getEmail(), body.get("email").asText());
+            assertEquals("USER", body.get("roles").get(0).asText());
+            assertEquals(4, body.size());
+            assertEquals(newName, json.readTree(client.get("/api/auth/me").body()).get("username").asText());
+            assertEquals(newName, json.readTree(secondBrowser.get("/api/auth/me").body()).get("username").asText());
+            assertEquals(200, client.updateUsername(Map.of("username", newName), true).statusCode());
+            assertEquals(200, client.updateUsername(Map.of("username", newName.toLowerCase(java.util.Locale.ROOT)), true).statusCode());
+            var stored = users.findById(owner.getId()).orElseThrow();
+            assertEquals(newName.toLowerCase(java.util.Locale.ROOT), stored.getUsername());
+            assertEquals(owner.getPasswordHash(), stored.getPasswordHash());
+            assertEquals(owner.getEmail(), stored.getEmail());
+            assertEquals(owner.getSessionVersion(), stored.getSessionVersion());
+            assertEquals(other.getUsername(), users.findById(other.getId()).orElseThrow().getUsername());
+            assertEquals(204, client.logout().statusCode());
+            owner.setUsername(stored.getUsername());
+            client.login(owner); // The new name is now the login identifier.
+        }
+    }
+
+    @Test
+    void usernameChangeRequiresAuthenticationCsrfValidInputAndAvailableName() throws Exception {
+        var owner = account();
+        var other = account();
+        try (var client = new Client()) {
+            assertEquals(401, client.updateUsername(Map.of("username", "valid_name"), true).statusCode());
+            client.login(owner);
+            assertEquals(403, client.updateUsername(Map.of("username", "valid_name"), false).statusCode());
+            for (String value : new String[]{"", "  ", "ab", "a".repeat(51), "name with spaces", "invalid!"}) {
+                var response = client.updateUsername(Map.of("username", value), true);
+                assertEquals(400, response.statusCode(), response.body());
+                assertTrue(json.readTree(response.body()).get("fieldErrors").has("username"));
+            }
+            assertEquals(400, client.updateUsername(Map.of(), true).statusCode());
+            var conflict = client.updateUsername(Map.of("username", other.getUsername().toUpperCase(java.util.Locale.ROOT)), true);
+            assertEquals(409, conflict.statusCode(), conflict.body());
+            assertEquals("This username is already taken.", json.readTree(conflict.body()).get("fieldErrors").get("username").asText());
+            assertEquals(owner.getUsername(), users.findById(owner.getId()).orElseThrow().getUsername());
+        }
+    }
+
+    @Test
+    void concurrentAccountsCannotClaimTheSameUsername() throws Exception {
+        var firstUser = account();
+        var secondUser = account();
+        String name = "Claim_" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+        try (var first = new Client(); var second = new Client()) {
+            first.login(firstUser);
+            second.login(secondUser);
+            first.csrf();
+            second.csrf();
+            var firstRequest = java.util.concurrent.CompletableFuture.supplyAsync(() -> first.claimUsername(name));
+            var secondRequest = java.util.concurrent.CompletableFuture.supplyAsync(() -> second.claimUsername(name));
+            var one = firstRequest.get(20, java.util.concurrent.TimeUnit.SECONDS);
+            var two = secondRequest.get(20, java.util.concurrent.TimeUnit.SECONDS);
+            assertTrue((one.statusCode() == 200 && two.statusCode() == 409) || (one.statusCode() == 409 && two.statusCode() == 200));
+            var failed = one.statusCode() == 409 ? one : two;
+            assertEquals("This username is already taken.", json.readTree(failed.body()).get("fieldErrors").get("username").asText());
+        }
+    }
+
     private User account() {
         String name = "session_" + UUID.randomUUID().toString().replace("-", "");
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));
@@ -177,6 +250,15 @@ class SessionApiTests extends PostgresIntegrationTest {
                     .findFirst().orElseThrow().getValue();
         }
         HttpResponse<String> logout() throws Exception { return postWithToken("/api/auth/logout", csrf()); }
+        HttpResponse<String> updateUsername(Map<String, ?> body, boolean protectedRequest) throws Exception {
+            var request = HttpRequest.newBuilder(endpoint("/api/users/me/username")).header("Content-Type", "application/json");
+            if (protectedRequest) request.header("X-CSRF-TOKEN", csrf());
+            return http.send(request.PUT(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build(), HttpResponse.BodyHandlers.ofString());
+        }
+        HttpResponse<String> claimUsername(String username) {
+            try { return updateUsername(Map.of("username", username), true); }
+            catch (Exception exception) { throw new RuntimeException(exception); }
+        }
         HttpResponse<String> postWithToken(String path, String token) throws Exception {
             var request = HttpRequest.newBuilder(endpoint(path));
             if (token != null) request.header("X-CSRF-TOKEN", token);

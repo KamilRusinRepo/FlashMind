@@ -11,6 +11,7 @@ export type AuthContextValue = AuthState & {
   isLoggingOut: boolean
   signIn: (login: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  changeUsername: (username: string) => Promise<AuthUser>
   refresh: () => void
 }
 

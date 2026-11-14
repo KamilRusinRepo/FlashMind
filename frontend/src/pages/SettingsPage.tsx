@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import { ProfileApiError } from '../api/profile'
 import FormField from '../components/FormField'
 import SettingsPasswordDialog from '../components/settings/SettingsPasswordDialog'
 import passwordIcon from '../assets/icons/settings/password.svg'
@@ -9,33 +10,62 @@ import reminderIcon from '../assets/icons/settings/reminder.svg'
 import './Settings.css'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, changeUsername, refresh, isLoggingOut } = useAuth()
   const [username, setUsername] = useState(user?.username ?? '')
-  const [email, setEmail] = useState(user?.email ?? '')
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [language, setLanguage] = useState<'en' | 'pl'>('en')
   const [reminders, setReminders] = useState(true)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [sending, setSending] = useState(false)
+  const busy = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
 
-  function previewProfile(event: FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setNotice('Profile changes have not been saved. Saving will be available when account settings are connected.')
+    if (busy.current || isLoggingOut) return
+    const value = username.trim()
+    const invalid = value.length < 3 || value.length > 50 ? 'Username must contain between 3 and 50 characters.'
+      : !/^[a-zA-Z0-9_.-]+$/.test(value) ? 'Username may contain letters, digits, dots, hyphens and underscores.' : ''
+    setNotice('')
+    setError('')
+    setUsernameError(invalid)
+    if (invalid) { event.currentTarget.querySelector<HTMLInputElement>('[name="username"]')?.focus(); return }
+    busy.current = true
+    setSending(true)
+    try {
+      const saved = await changeUsername(value)
+      if (!mounted.current) return
+      setUsername(saved.username)
+      setNotice('Your username has been updated.')
+    } catch (cause) {
+      if (!mounted.current) return
+      if (cause instanceof ProfileApiError && cause.status === 401) { refresh(); return }
+      setUsernameError(cause instanceof ProfileApiError ? cause.usernameError : '')
+      setError(cause instanceof ProfileApiError ? cause.message : 'Unable to save your username. Please try again.')
+    } finally {
+      busy.current = false
+      if (mounted.current) setSending(false)
+    }
   }
 
   return <div className="settings-page">
     <header className="settings-header"><h1>Profile Settings</h1></header>
-    <p className="settings-preview-note">Settings preview: edits and preferences are temporary. They are not saved, and appearance and language apply only to the controls below.</p>
+    <p className="settings-preview-note">Username changes are saved to your account. Password and preference controls are still previews; appearance and language apply only to the controls below.</p>
     <section className="settings-card" aria-label="Profile details">
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>
         <div className="settings-profile-info"><h2>{user?.username}</h2><p>FlashMind Member</p></div>
       </div>
-      <form className="settings-profile-form" onSubmit={previewProfile}>
-        <FormField id="settings-username" label="Username" name="username" value={username} onChange={event => setUsername(event.target.value)} required autoComplete="username" />
-        <FormField id="settings-email" label="Email Address" name="email" type="email" value={email} onChange={event => setEmail(event.target.value)} required autoComplete="email" />
-        <div className="settings-profile-actions"><button className="button button-primary" type="submit">Save Changes</button></div>
+      <form className="settings-profile-form" onSubmit={saveProfile} aria-busy={sending}>
+        <FormField id="settings-username" label="Username" name="username" value={username} onChange={event => { setUsername(event.target.value); setUsernameError(''); setNotice('') }} error={usernameError} disabled={sending || isLoggingOut} required autoComplete="username" />
+        <FormField id="settings-email" label="Email Address" name="email" type="email" value={user?.email ?? ''} readOnly hint="Changing your email address will be available in a later update." autoComplete="email" />
+        <div className="settings-profile-actions"><button className="button button-primary" type="submit" disabled={sending || isLoggingOut}>{sending ? 'Saving…' : 'Save Changes'}</button></div>
       </form>
+      {error && <p className="form-notice form-error" role="alert">{error}</p>}
       {notice && <p className="settings-preview-note" role="status">{notice}</p>}
     </section>
 
