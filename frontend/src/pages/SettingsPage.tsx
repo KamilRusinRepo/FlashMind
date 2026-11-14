@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import { useTheme } from '../theme/ThemeContext'
 import { ProfileApiError } from '../api/profile'
 import FormField from '../components/FormField'
 import SettingsPasswordDialog from '../components/settings/SettingsPasswordDialog'
@@ -13,7 +14,7 @@ import './Settings.css'
 export default function SettingsPage() {
   const { user, changeUsername, refresh, isLoggingOut } = useAuth()
   const [username, setUsername] = useState(user?.username ?? '')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const { theme, setTheme } = useTheme()
   const [language, setLanguage] = useState<'en' | 'pl'>('en')
   const [reminders, setReminders] = useState(true)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -56,7 +57,7 @@ export default function SettingsPage() {
 
   return <div className="settings-page">
     <header className="settings-header"><h1>Profile Settings</h1></header>
-    <p className="settings-preview-note">You can update your username, email address and password. Preference controls are still previews; appearance and language apply only to the controls below.</p>
+    <p className="settings-preview-note">You can update your account and appearance. Your theme is remembered in this browser. Language and daily reminder controls are still previews.</p>
     <section className="settings-card" aria-label="Profile details">
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>
