@@ -1,7 +1,8 @@
 import { isOwnedDeck, type OwnedDeck } from './decks'
 import { postWithCsrf } from './csrf'
 
-export type StudyQuestion = { id: number; flashcardId: number | null; position: number; question: string; exampleSentence: string | null; imageUrl: string | null }
+export type StudyResult = { userAnswer: string; correct: boolean; usedHint: boolean; skipped: boolean; answeredAt: string; answer: string; translatedExample: string | null }
+export type StudyQuestion = { id: number; flashcardId: number | null; position: number; question: string; exampleSentence: string | null; imageUrl: string | null; usedHint: boolean; hint: string | null; result: StudyResult | null }
 export type StudySessionData = { id: number; deck: OwnedDeck; totalCards: number; status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'; startedAt: string; cards: StudyQuestion[] }
 
 export class StudyApiError extends Error {
@@ -11,13 +12,50 @@ export class StudyApiError extends Error {
 
 const positiveId = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 
-function isQuestion(value: unknown, index: number): value is StudyQuestion {
+function isResult(value: unknown): value is StudyResult {
+  if (!value || typeof value !== 'object') return false
+  const result = value as Record<string, unknown>
+  return typeof result.userAnswer === 'string' && typeof result.correct === 'boolean' && typeof result.usedHint === 'boolean'
+    && typeof result.skipped === 'boolean' && (!result.skipped || (!result.correct && result.userAnswer === ''))
+    && typeof result.answeredAt === 'string' && !Number.isNaN(Date.parse(result.answeredAt))
+    && typeof result.answer === 'string' && (result.translatedExample === null || typeof result.translatedExample === 'string')
+}
+
+function isQuestion(value: unknown, index?: number): value is StudyQuestion {
   if (!value || typeof value !== 'object') return false
   const card = value as Record<string, unknown>
-  return positiveId(card.id) && (card.flashcardId === null || positiveId(card.flashcardId)) && card.position === index + 1
+  return positiveId(card.id) && (card.flashcardId === null || positiveId(card.flashcardId))
+    && positiveId(card.position) && card.position <= 10 && (index === undefined || card.position === index + 1)
     && typeof card.question === 'string' && card.question.trim().length > 0
     && (card.exampleSentence === null || typeof card.exampleSentence === 'string')
     && (card.imageUrl === null || typeof card.imageUrl === 'string')
+    && typeof card.usedHint === 'boolean' && (card.hint === null || typeof card.hint === 'string')
+    && (card.result === null ? card.usedHint === (typeof card.hint === 'string')
+      : isResult(card.result) && card.result.usedHint === card.usedHint && card.hint === null)
+}
+
+export async function submitStudyAnswer(sessionId: number, answerId: number, userAnswer: string, skipped: boolean): Promise<StudyQuestion> {
+  return mutateQuestion(sessionId, answerId, { userAnswer, skipped })
+}
+
+export async function requestStudyHint(sessionId: number, answerId: number): Promise<StudyQuestion> {
+  return mutateQuestion(sessionId, answerId)
+}
+
+async function mutateQuestion(sessionId: number, answerId: number, body?: { userAnswer: string; skipped: boolean }): Promise<StudyQuestion> {
+  let response: Response
+  try {
+    response = await postWithCsrf(`/api/study-sessions/${sessionId}/answers/${answerId}${body === undefined ? '/hint' : ''}`, {
+      headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(15000),
+    })
+  } catch { throw new StudyApiError('The save could not be confirmed. Refresh the session before trying again.') }
+  if (!response.ok) throw await responseError(response, 'Unable to save this action. Please try again or refresh the session.')
+  const data: unknown = await response.json().catch(() => null)
+  if (response.status !== 200 || !isQuestion(data) || data.id !== answerId
+    || (body === undefined ? data.result !== null || !data.usedHint : data.result === null)) {
+    throw new StudyApiError('The action could not be confirmed. Refresh the session to see the saved state.')
+  }
+  return data
 }
 
 function readSession(value: unknown): StudySessionData {

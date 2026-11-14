@@ -10,6 +10,7 @@ import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
 import com.example.backend.auth.token.InvalidTokenException;
 import com.example.backend.study.StudyStartException;
+import com.example.backend.study.StudyActionException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +31,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(StudyStartException.class)
-    public ResponseEntity<ApiError> handleStudyStart(StudyStartException exception, HttpServletRequest request) {
+    @ExceptionHandler({StudyStartException.class, StudyActionException.class})
+    public ResponseEntity<ApiError> handleStudyConflict(RuntimeException exception, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(createError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of()));
     }

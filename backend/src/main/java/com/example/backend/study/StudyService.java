@@ -1,6 +1,8 @@
 package com.example.backend.study;
 
 import java.time.Clock;
+import java.time.temporal.ChronoUnit;
+import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
 import java.util.ArrayList;
 import com.example.backend.deck.DeckRepository;
 import com.example.backend.deck.dto.response.DeckListItemResponse;
@@ -22,15 +24,71 @@ public class StudyService {
     private final DeckRepository decks;
     private final UserRepository users;
     private final Clock clock;
+    private final FlashcardProgressRepository progress;
 
     public StudyService(StudySessionRepository sessions, StudyAnswerRepository answers, FlashcardRepository flashcards,
-                        DeckRepository decks, UserRepository users, Clock clock) {
+                        DeckRepository decks, UserRepository users, Clock clock, FlashcardProgressRepository progress) {
         this.sessions = sessions;
         this.answers = answers;
         this.flashcards = flashcards;
         this.decks = decks;
         this.users = users;
         this.clock = clock;
+        this.progress = progress;
+    }
+
+    @Transactional
+    public StudyQuestionResponse submit(Long userId, Long sessionId, Long answerId, SubmitStudyAnswerRequest request) {
+        var session = lockOwnedSession(userId, sessionId);
+        var answer = findAnswer(sessionId, answerId);
+        if (answer.isAnswered()) {
+            if (answer.isSkipped() == request.skipped() && (answer.isSkipped() || answer.getUserAnswer().equals(request.userAnswer()))) {
+                return StudyQuestionResponse.from(answer); // Idempotent retry, no second progress update.
+            }
+            throw new StudyActionException("This answer has already been saved. Refresh the session to see the result.");
+        }
+        requireCurrentQuestion(session, answer);
+        boolean correct = !request.skipped() && StudyRules.matches(request.userAnswer(), answer.getAnswerSnapshot());
+        var now = clock.instant();
+        answer.recordAnswer(request.userAnswer(), correct, request.skipped(), now);
+        if (answer.getFlashcard() != null) {
+            var state = progress.findByUser_IdAndFlashcard_Id(userId, answer.getFlashcard().getId())
+                    .orElseGet(() -> new FlashcardProgress(session.getUser(), answer.getFlashcard()));
+            var plan = StudyRules.schedule(correct, state.getMasteryLevel(), state.getWrongStreak());
+            state.recordReview(correct, plan.masteryLevel(), plan.wrongStreak(), now, now.plus(plan.intervalDays(), ChronoUnit.DAYS));
+            progress.saveAndFlush(state);
+        }
+        return StudyQuestionResponse.from(answers.saveAndFlush(answer));
+    }
+
+    @Transactional
+    public StudyQuestionResponse hint(Long userId, Long sessionId, Long answerId) {
+        var session = lockOwnedSession(userId, sessionId);
+        var answer = findAnswer(sessionId, answerId);
+        if (answer.isAnswered()) throw new StudyActionException("This flashcard has already been answered.");
+        requireCurrentQuestion(session, answer);
+        answer.markHintUsed();
+        return StudyQuestionResponse.from(answers.saveAndFlush(answer));
+    }
+
+    private StudySession lockOwnedSession(Long userId, Long sessionId) {
+        var user = users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (!user.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        var session = sessions.findByIdAndUser_Id(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        decks.findOwnedForUpdate(session.getDeck().getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return sessions.findOwnedForUpdate(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private StudyAnswer findAnswer(Long sessionId, Long answerId) {
+        return answers.findByIdAndSession_Id(answerId, sessionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private void requireCurrentQuestion(StudySession session, StudyAnswer answer) {
+        if (!session.isActive()) throw new StudyActionException("This study session has already ended.");
+        var first = answers.findFirstBySession_IdAndAnsweredAtIsNullOrderByPositionAsc(session.getId());
+        if (first.isEmpty() || !first.get().getId().equals(answer.getId())) {
+            throw new StudyActionException("Answer the current flashcard before continuing.");
+        }
     }
 
     @Transactional

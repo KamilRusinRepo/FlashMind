@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
-import { getStudySession, StudyApiError, type StudySessionData } from '../api/study'
+import { getStudySession, requestStudyHint, submitStudyAnswer, StudyApiError, type StudySessionData } from '../api/study'
 import { useAuth } from '../auth/AuthContext'
 import StudySidebar from '../components/study/StudySidebar'
 import StudyCard from '../components/study/StudyCard'
@@ -72,34 +72,105 @@ function StudyLoader({ deckId, sessionId }: { deckId: number; sessionId: number 
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   if (state.data.status !== 'ACTIVE') return <section className="study-load-message study-entry"><h1>This session has ended</h1>
     <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link></section>
-  return <StudySession session={state.data} />
+  return <StudySession session={state.data} onReload={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
 }
 
-function StudySession({ session }: { session: StudySessionData }) {
+function StudySession({ session, onReload }: { session: StudySessionData; onReload: () => void }) {
+  const { refresh } = useAuth()
+  const [cards, setCards] = useState(session.cards)
+  const [index, setIndex] = useState(() => {
+    const pending = session.cards.findIndex(card => card.result === null)
+    return pending === -1 ? session.cards.length - 1 : pending
+  })
+  const card = cards[index]
+  const result = card.result
+  const [guess, setGuess] = useState(result?.userAnswer ?? card.hint ?? '')
+  const [sending, setSending] = useState<'answer' | 'hint' | 'skip' | null>(null)
+  const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+  const savedRef = useRef<HTMLSpanElement>(null)
+  const busy = useRef(false)
+  const mounted = useRef(true)
   const { deck } = session
-  const card = session.cards[0]
-  useEffect(() => { document.title = `Study: ${deck.name} | FlashMind`; inputRef.current?.focus() }, [deck.name])
+  const correct = cards.filter(card => card.result?.correct === true).length
+  const answered = cards.filter(card => card.result !== null).length
+  const allSaved = answered === cards.length
+  const last = index === cards.length - 1
+
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => {
+    document.title = `Study: ${deck.name} | FlashMind`
+    if (sending) return
+    if (result) {
+      if (last) savedRef.current?.focus()
+      else submitRef.current?.focus()
+    } else inputRef.current?.focus()
+  }, [deck.name, card.id, result, last, sending])
+
+  async function act(action: 'answer' | 'hint' | 'skip') {
+    if (busy.current || result) return
+    busy.current = true
+    setSending(action)
+    setError('')
+    try {
+      const updated = action === 'hint' ? await requestStudyHint(session.id, card.id)
+        : await submitStudyAnswer(session.id, card.id, action === 'skip' ? '' : guess, action === 'skip')
+      if (!mounted.current) return
+      if (updated.position !== card.position) throw new StudyApiError('Unexpected flashcard result. Refresh the session.')
+      setCards(current => current.map(item => item.id === updated.id ? updated : item))
+      setGuess(updated.result?.userAnswer ?? updated.hint ?? '')
+    } catch (cause) {
+      if (!mounted.current) return
+      if (cause instanceof StudyApiError && cause.status === 401) { refresh(); return }
+      setError(cause instanceof StudyApiError ? cause.message : 'Unable to save this action. Please try again.')
+    } finally {
+      busy.current = false
+      if (mounted.current) setSending(null)
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy.current) return
+    if (!result) { void act('answer'); return }
+    if (last) return // Completing the session is the next implementation step.
+    const next = cards[index + 1]
+    setIndex(value => value + 1)
+    setGuess(next.result?.userAnswer ?? next.hint ?? '')
+    setError('')
+  }
 
   return <div className="study-layout">
-    <StudySidebar deck={deck} correct={0} wrong={0} />
+    <StudySidebar deck={deck} correct={correct} wrong={answered - correct} />
     <section className="study-content" aria-label="Study practice">
-      <div className="study-progress-label"><span>Session Progress</span><strong>1 of {session.totalCards} cards</strong></div>
-      <progress className="study-progress study-session-progress" max={session.totalCards} value={0} aria-label="Answered flashcards" />
-      <StudyCard key={card.id} card={{ id: String(card.id), question: card.question, exampleSentence: card.exampleSentence ?? undefined, imageUrl: card.imageUrl ?? undefined }} />
-      <form className="study-answer-form" onSubmit={event => event.preventDefault()}>
+      <div className="study-progress-label"><span>Session Progress</span><strong>{index + 1} of {session.totalCards} cards</strong></div>
+      <progress className="study-progress study-session-progress" max={session.totalCards} value={answered} aria-label="Answered flashcards" />
+      <StudyCard key={card.id} card={{ id: String(card.id), question: card.question, answer: result?.answer,
+        exampleSentence: card.exampleSentence ?? undefined, translatedExample: result?.translatedExample ?? undefined, imageUrl: card.imageUrl ?? undefined }}
+        result={result ? { cardId: String(card.id), userAnswer: result.userAnswer, correct: result.correct, usedHint: result.usedHint, skipped: result.skipped } : undefined} />
+      {error && <div className="form-notice form-error study-action-error" role="alert"><p>{error}</p>
+        <button className="button button-outline" type="button" disabled={!!sending} onClick={onReload}>Refresh session</button></div>}
+      <form className="study-answer-form" onSubmit={handleSubmit} aria-busy={!!sending}>
         <div className="study-answer-field"><label className="study-input-label" htmlFor="study-answer">{deck.deckType === 'LANGUAGE' ? 'Your translation' : 'Your answer'}</label>
-          <input ref={inputRef} id="study-answer" type="text" maxLength={2000} autoComplete="off" spellCheck={false}
+          <input ref={inputRef} id="study-answer" type="text" value={guess} onChange={event => setGuess(event.target.value)} maxLength={2000}
+            disabled={!!result || !!sending} autoComplete="off" spellCheck={false}
             placeholder={deck.deckType === 'LANGUAGE' ? 'Type translation…' : 'Type your answer…'} aria-describedby="study-answer-help" /></div>
-        <button className="button button-primary study-submit" type="submit" disabled title="Answer checking is coming next"><span>Submit</span><img src={submitIcon} alt="" /></button>
+        <button ref={submitRef} className="button button-primary study-submit" type="submit" disabled={!!sending || (!!result && last)}
+          onClick={event => { if (event.detail > 1) event.preventDefault() }}
+          title={result && last ? 'Session completion will be connected next' : undefined}>
+          <span>{sending === 'answer' ? 'Checking…' : result ? last ? 'Finish session' : 'Next' : 'Submit'}</span><img src={submitIcon} alt="" /></button>
       </form>
-      <div className="study-actions"><button className="study-text-action" type="button" disabled title="Hints are coming next"><img src={hintIcon} alt="" />Hint</button>
-        <button className="study-text-action" type="button" disabled title="Saving answers is coming next"><img src={skipIcon} alt="" />Skip</button>
-        <span id="study-answer-help">Session started. Answer checking will be connected in the next step.</span></div>
+      <div className="study-actions"><button className="study-text-action" type="button" disabled={!!sending || !!result} onClick={() => void act('hint')}>
+          <img src={hintIcon} alt="" />{sending === 'hint' ? 'Loading…' : 'Hint'}</button>
+        <button className="study-text-action" type="button" disabled={!!sending || !!result} onClick={() => void act('skip')}>
+          <img src={skipIcon} alt="" />{sending === 'skip' ? 'Saving…' : 'Skip'}</button>
+        <span id="study-answer-help" ref={savedRef} tabIndex={allSaved ? -1 : undefined}>{allSaved
+          ? 'All answers saved. Session completion will be connected next.'
+          : result ? 'Press Enter to continue' : card.usedHint ? 'Hint used · Press Enter to submit' : 'Press Enter to submit'}</span></div>
     </section>
   </div>
 }
-
 function StudyLoadError({ state, deckId, retry }: { state: { message: string; code: number }; deckId: number; retry: () => void }) {
   if (state.code === 404) return <StudyUnavailable />
   return <div className="study-load-message"><p className="form-notice form-error" role="alert">{state.message}</p>

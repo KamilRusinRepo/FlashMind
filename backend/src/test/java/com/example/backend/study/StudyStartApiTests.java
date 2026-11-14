@@ -78,9 +78,12 @@ class StudyStartApiTests extends PostgresIntegrationTest {
                 var question = body.get("cards").get(i);
                 assertEquals(i + 1, question.get("position").asInt());
                 assertNotEquals(future.getId().longValue(), question.get("flashcardId").asLong());
-                for (String hidden : new String[]{"answer", "answerSnapshot", "translatedExample", "userAnswer", "correct", "usedHint"}) {
+                for (String hidden : new String[]{"answer", "answerSnapshot", "translatedExample", "userAnswer", "correct"}) {
                     assertFalse(question.has(hidden), hidden);
                 }
+                assertTrue(question.get("result").isNull());
+                assertTrue(question.get("hint").isNull());
+                assertFalse(question.get("usedHint").asBoolean());
             }
             var selected = answers.findBySession_IdOrderByPositionAsc(id);
             assertEquals(10, selected.size());

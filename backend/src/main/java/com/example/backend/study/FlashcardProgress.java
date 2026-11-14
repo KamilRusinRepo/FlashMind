@@ -68,7 +68,7 @@ public class FlashcardProgress {
     public Instant getNextReviewAt() { return nextReviewAt; }
     public long getVersion() { return version; }
 
-    // The scheduling algorithm belongs to the future study service.
+    // StudyService supplies the schedule calculated by StudyRules.
     public void recordReview(boolean correct, int masteryLevel, int wrongStreak, Instant answeredAt, Instant nextReviewAt) {
         if (masteryLevel < 0 || masteryLevel > 4 || wrongStreak < 0) throw new IllegalArgumentException("Invalid progress level or streak.");
         if (correct && wrongStreak != 0) throw new IllegalArgumentException("A correct answer must reset the wrong streak.");

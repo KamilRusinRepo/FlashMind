@@ -80,6 +80,8 @@
 .study-text-action:hover:not(:disabled) { color: var(--primary-dark); }
 .study-text-action + .study-text-action { margin-left: 4px; padding-left: 16px; border-left: 1px solid var(--border); border-radius: 0; }
 .study-actions > span { margin-left: auto; color: var(--muted); font-size: .8em; }
+.study-action-error { margin-top: 16px; overflow-wrap: anywhere; }
+.study-action-error .button { margin-top: 10px; min-height: 40px; padding: 8px 14px; font-size: .9em; }
 .study-shell button:disabled { cursor: not-allowed; }
 .study-load-message { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; padding: 30px; }
 .study-entry { max-width: 760px; border: 1px solid var(--border); border-radius: 22px; background: white; }
