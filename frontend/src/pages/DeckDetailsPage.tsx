@@ -83,7 +83,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     <div className="deck-details-actions">
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>Edit Deck</Link>
       <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>＋ Add Flashcard</button>
-      <button className="button button-primary" type="button" disabled title="Study sessions are coming soon">Start Study</button>
+      <Link className="button button-primary" to={`/decks/${deck.id}/study`} title="Preview with sample flashcards">Start Study</Link>
     </div>
     </div>
     </div>
