@@ -13,6 +13,7 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
     Page<Flashcard> findByDeck_IdAndDeck_Owner_Id(Long deckId, Long ownerId, Pageable pageable);
     Optional<Flashcard> findByIdAndDeck_IdAndDeck_Owner_Id(Long id, Long deckId, Long ownerId);
     boolean existsByDeck_IdAndDeck_Owner_Id(Long deckId, Long ownerId);
+    List<Flashcard> findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(Long deckId, Long ownerId);
 
     @Query("""
             select card from Flashcard card

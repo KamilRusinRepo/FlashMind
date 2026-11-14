@@ -1,17 +1,20 @@
 import { isOwnedDeck, type OwnedDeck } from './decks'
 import { postWithCsrf } from './csrf'
 
+export type StudyMode = 'SCHEDULED_REVIEW' | 'FREE_PRACTICE'
+const isMode = (value: unknown): value is StudyMode => value === 'SCHEDULED_REVIEW' || value === 'FREE_PRACTICE'
+
 export type StudyResult = { userAnswer: string; correct: boolean; usedHint: boolean; skipped: boolean; answeredAt: string; answer: string; translatedExample: string | null }
 export type StudyQuestion = { id: number; flashcardId: number | null; position: number; question: string; exampleSentence: string | null; imageUrl: string | null; usedHint: boolean; hint: string | null; result: StudyResult | null }
-export type StudySessionData = { id: number; deck: OwnedDeck; totalCards: number; status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'; startedAt: string; cards: StudyQuestion[] }
-export type StudySummaryData = { sessionId: number; deckId: number; deckName: string; totalCards: number; correctCards: number; wrongCards: number; accuracy: number; xpEarned: number; durationSeconds: number; startedAt: string; endedAt: string }
+export type StudySessionData = { id: number; deck: OwnedDeck; totalCards: number; status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'; startedAt: string; cards: StudyQuestion[]; mode: StudyMode }
+export type StudySummaryData = { sessionId: number; deckId: number; deckName: string; totalCards: number; correctCards: number; wrongCards: number; accuracy: number; xpEarned: number; durationSeconds: number; startedAt: string; endedAt: string; mode: StudyMode }
 
 function readSummary(value: unknown, sessionId: number): StudySummaryData {
   if (!value || typeof value !== 'object') throw new StudyApiError('Unable to confirm the session summary. Refresh the session.')
   const data = value as StudySummaryData
   if (data.sessionId !== sessionId || !positiveId(data.deckId) || typeof data.deckName !== 'string'
     || ![data.totalCards, data.correctCards, data.wrongCards, data.accuracy, data.xpEarned, data.durationSeconds].every(value => Number.isSafeInteger(value) && value >= 0)
-    || data.totalCards < 1 || data.totalCards > 10 || data.correctCards + data.wrongCards !== data.totalCards
+    || !isMode(data.mode) || data.totalCards < 1 || (data.mode === 'SCHEDULED_REVIEW' && data.totalCards > 10) || data.correctCards + data.wrongCards !== data.totalCards
     || data.accuracy !== Math.round(100 * data.correctCards / data.totalCards) || data.xpEarned > data.correctCards * 10
     || typeof data.startedAt !== 'string' || typeof data.endedAt !== 'string'
     || !Number.isFinite(Date.parse(data.startedAt)) || !Number.isFinite(Date.parse(data.endedAt)) || Date.parse(data.endedAt) < Date.parse(data.startedAt)) {
@@ -58,7 +61,7 @@ function isQuestion(value: unknown, index?: number): value is StudyQuestion {
   if (!value || typeof value !== 'object') return false
   const card = value as Record<string, unknown>
   return positiveId(card.id) && (card.flashcardId === null || positiveId(card.flashcardId))
-    && positiveId(card.position) && card.position <= 10 && (index === undefined || card.position === index + 1)
+    && positiveId(card.position) && (index === undefined || card.position === index + 1)
     && typeof card.question === 'string' && card.question.trim().length > 0
     && (card.exampleSentence === null || typeof card.exampleSentence === 'string')
     && (card.imageUrl === null || typeof card.imageUrl === 'string')
@@ -95,7 +98,7 @@ function readSession(value: unknown): StudySessionData {
   if (!value || typeof value !== 'object') throw new StudyApiError('The server returned an unexpected study session.')
   const data = value as Record<string, unknown>
   if (!positiveId(data.id) || !isOwnedDeck(data.deck) || typeof data.totalCards !== 'number' || !Number.isSafeInteger(data.totalCards)
-    || data.totalCards < 1 || data.totalCards > 10
+    || !isMode(data.mode) || data.totalCards < 1 || (data.mode === 'SCHEDULED_REVIEW' && data.totalCards > 10)
     || !['ACTIVE', 'COMPLETED', 'ABANDONED'].includes(String(data.status))
     || typeof data.startedAt !== 'string' || Number.isNaN(Date.parse(data.startedAt))
     || !Array.isArray(data.cards) || data.cards.length !== data.totalCards || !data.cards.every(isQuestion)
@@ -112,14 +115,16 @@ async function responseError(response: Response, fallback: string): Promise<Stud
       : response.status === 409 && typeof data?.message === 'string' ? data.message : fallback, response.status)
 }
 
-export async function startStudySession(deckId: number): Promise<StudySessionData> {
+export async function startStudySession(deckId: number, mode: StudyMode): Promise<StudySessionData> {
   let response: Response
   try {
-    response = await postWithCsrf(`/api/decks/${deckId}/study-sessions`, { signal: AbortSignal.timeout(15000) })
+    response = await postWithCsrf(`/api/decks/${deckId}/study-sessions`, {
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }), signal: AbortSignal.timeout(15000),
+    })
   } catch { throw new StudyApiError('Unable to confirm whether the study session started. Check your connection before trying again.') }
   if (!response.ok) throw await responseError(response, 'Unable to start the study session. Please try again.')
   const session = readSession(await response.json().catch(() => null))
-  if (response.status !== 201 || session.deck.id !== deckId || session.status !== 'ACTIVE') throw new StudyApiError('The study session could not be confirmed.')
+  if (response.status !== 201 || session.deck.id !== deckId || session.status !== 'ACTIVE' || session.mode !== mode) throw new StudyApiError('The study session could not be confirmed.')
   return session
 }
 

@@ -75,7 +75,7 @@ public class StudyService {
         int xp = savedAnswers.stream().mapToInt(answer -> StudyRules.sessionXp(Boolean.TRUE.equals(answer.getCorrect()), answer.isUsedHint())).sum();
         return new StudySummaryResponse(session.getId(), session.getDeck().getId(), session.getDeck().getName(), total,
                 correct, total - correct, (int) Math.round(100.0 * correct / total), xp,
-                Duration.between(session.getStartedAt(), session.getEndedAt()).getSeconds(), session.getStartedAt(), session.getEndedAt());
+                Duration.between(session.getStartedAt(), session.getEndedAt()).getSeconds(), session.getStartedAt(), session.getEndedAt(), session.getMode());
     }
 
     private StudySession findOwnedSession(Long userId, Long sessionId) {
@@ -98,7 +98,7 @@ public class StudyService {
         boolean correct = !request.skipped() && StudyRules.matches(request.userAnswer(), answer.getAnswerSnapshot());
         var now = clock.instant();
         answer.recordAnswer(request.userAnswer(), correct, request.skipped(), now);
-        if (answer.getFlashcard() != null) {
+        if (session.getMode() == StudyMode.SCHEDULED_REVIEW && answer.getFlashcard() != null) {
             var state = progress.findByUser_IdAndFlashcard_Id(userId, answer.getFlashcard().getId())
                     .orElseGet(() -> new FlashcardProgress(session.getUser(), answer.getFlashcard()));
             var plan = StudyRules.schedule(correct, state.getMasteryLevel(), state.getWrongStreak());
@@ -139,24 +139,26 @@ public class StudyService {
     }
 
     @Transactional
-    public StudySessionResponse start(Long userId, Long deckId) {
+    public StudySessionResponse start(Long userId, Long deckId, StudyMode mode) {
         // Same lock order as deck/card mutations and account deletion.
         var user = users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!user.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         var deck = decks.findOwnedForUpdate(deckId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         var now = clock.instant();
-        var cards = flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, 10));
+        var cards = mode == StudyMode.FREE_PRACTICE
+                ? flashcards.findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(deckId, userId)
+                : flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, 10));
         if (cards.isEmpty()) {
             throw new StudyStartException(flashcards.existsByDeck_IdAndDeck_Owner_Id(deckId, userId)
                     ? "No flashcards are due for review yet."
                     : "Add at least one flashcard before starting a study session.");
         }
-        var session = sessions.saveAndFlush(new StudySession(user, deck, cards.size(), now));
+        var session = sessions.saveAndFlush(new StudySession(user, deck, cards.size(), now, mode));
         var selected = new ArrayList<StudyAnswer>();
         for (int i = 0; i < cards.size(); i++) selected.add(new StudyAnswer(session, cards.get(i), i + 1));
         answers.saveAllAndFlush(selected);
         return new StudySessionResponse(session.getId(), DeckListItemResponse.from(deck), session.getTotalCards(),
-                session.getStatus(), session.getStartedAt(), selected.stream().map(StudyQuestionResponse::from).toList());
+                session.getStatus(), session.getStartedAt(), selected.stream().map(StudyQuestionResponse::from).toList(), session.getMode());
     }
 
     @Transactional(readOnly = true)
@@ -164,6 +166,6 @@ public class StudyService {
         var session = findOwnedSession(userId, sessionId);
         var cards = answers.findBySession_IdOrderByPositionAsc(sessionId).stream().map(StudyQuestionResponse::from).toList();
         return new StudySessionResponse(session.getId(), DeckListItemResponse.from(session.getDeck()), session.getTotalCards(),
-                session.getStatus(), session.getStartedAt(), cards);
+                session.getStatus(), session.getStartedAt(), cards, session.getMode());
     }
 }

@@ -6,6 +6,7 @@ import com.example.backend.study.dto.response.StudySessionResponse;
 import com.example.backend.study.dto.response.StudySummaryResponse;
 import com.example.backend.study.dto.response.StudyQuestionResponse;
 import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
+import com.example.backend.study.dto.request.StartStudyRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.CacheControl;
@@ -50,8 +51,9 @@ public class StudyController {
 
     @PostMapping("/decks/{deckId}/study-sessions")
     public ResponseEntity<StudySessionResponse> start(@AuthenticationPrincipal SessionUser user,
-            @PathVariable(name = "deckId") Long deckId) {
-        var session = study.start(user.id(), deckId);
+            @PathVariable(name = "deckId") Long deckId,
+            @Valid @RequestBody(required = false) StartStudyRequest request) {
+        var session = study.start(user.id(), deckId, request == null ? StudyMode.SCHEDULED_REVIEW : request.mode());
         return ResponseEntity.created(URI.create("/api/study-sessions/" + session.id()))
                 .cacheControl(CacheControl.noStore()).body(session);
     }

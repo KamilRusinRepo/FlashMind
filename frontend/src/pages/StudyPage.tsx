@@ -45,7 +45,7 @@ function StudyLanding({ deckId }: { deckId: number }) {
   if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your deck…</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   return <section className="study-load-message study-entry"><h1>{state.data.name}</h1>
-    <p>Start a session with up to 10 flashcards. Due reviews are selected first, followed by new cards.</p>
+    <p>Choose Scheduled Review for due and new cards, or Free Practice to practise the whole deck.</p>
     <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link>
   </section>
 }
@@ -140,7 +140,7 @@ function StudySession({ session, onReload }: { session: StudySessionData; onRelo
     try {
       const saved = await completeStudySession(session.id)
       if (!mounted.current) return
-      if (saved.deckId !== deck.id) throw new StudyApiError('Unexpected session summary. Refresh the session.')
+      if (saved.deckId !== deck.id || saved.mode !== session.mode) throw new StudyApiError('Unexpected session summary. Refresh the session.')
       setSummary(saved)
     } catch (cause) {
       if (!mounted.current) return
@@ -189,7 +189,7 @@ function StudySession({ session, onReload }: { session: StudySessionData; onRelo
   return <div className="study-layout">
     <StudySidebar deck={deck} correct={correct} wrong={answered - correct} />
     <section className="study-content" aria-label="Study practice">
-      <div className="study-progress-label"><span>Session Progress</span><strong>{index + 1} of {session.totalCards} cards</strong></div>
+      <div className="study-progress-label"><span>{session.mode === 'FREE_PRACTICE' ? 'Free Practice' : 'Scheduled Review'}</span><strong>{index + 1} of {session.totalCards} cards</strong></div>
       <progress className="study-progress study-session-progress" max={session.totalCards} value={answered} aria-label="Answered flashcards" />
       <StudyCard key={card.id} card={{ id: String(card.id), question: card.question, answer: result?.answer,
         exampleSentence: card.exampleSentence ?? undefined, translatedExample: result?.translatedExample ?? undefined, imageUrl: card.imageUrl ?? undefined }}

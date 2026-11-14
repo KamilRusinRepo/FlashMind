@@ -25,7 +25,7 @@ export default function StudySummary({ summary }: { summary: StudySummaryData })
 
   return <section className="study-summary" aria-labelledby="study-summary-title">
     <span className="study-summary-check" aria-hidden="true">✓</span>
-    <p className="study-eyebrow">SESSION RESULTS</p>
+    <p className="study-eyebrow">{summary.mode === 'FREE_PRACTICE' ? 'FREE PRACTICE' : 'SCHEDULED REVIEW'} · SESSION RESULTS</p>
     <h1 id="study-summary-title" ref={headingRef} tabIndex={-1}>Session Complete!</h1>
     <p className="study-summary-intro">Great job! Here’s how you did in <strong>“{deckName}”</strong>.</p>
 
@@ -49,7 +49,7 @@ export default function StudySummary({ summary }: { summary: StudySummaryData })
     <p className="study-summary-accuracy">{total} {total === 1 ? 'card practised' : 'cards practised'}<span aria-hidden="true"> · </span>{accuracy}% accuracy<span aria-hidden="true"> · </span>{duration}</p>
     <div className="study-summary-actions">
       <Link className="button button-outline" to="/dashboard"><img src={dashboardIcon} alt="" />Dashboard</Link>
-      <StudyStartButton deckId={summary.deckId} label="Study Again" icon={studyAgainIcon} />
+      <StudyStartButton deckId={summary.deckId} label="Study Again" icon={studyAgainIcon} mode={summary.mode} />
     </div>
   </section>
 }

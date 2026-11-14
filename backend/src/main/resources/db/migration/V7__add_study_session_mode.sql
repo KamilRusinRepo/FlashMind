@@ -1,0 +1,5 @@
+ALTER TABLE study_sessions
+    ADD COLUMN mode VARCHAR(30) NOT NULL DEFAULT 'SCHEDULED_REVIEW';
+
+ALTER TABLE study_sessions
+    ADD CONSTRAINT chk_study_sessions_mode CHECK (mode IN ('SCHEDULED_REVIEW', 'FREE_PRACTICE'));

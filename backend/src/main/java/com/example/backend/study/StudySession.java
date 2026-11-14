@@ -34,6 +34,10 @@ public class StudySession {
     private int totalCards;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false, length = 30)
+    private StudyMode mode;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StudySessionStatus status;
 
@@ -46,10 +50,15 @@ public class StudySession {
     protected StudySession() {}
 
     public StudySession(User user, Deck deck, int totalCards, Instant startedAt) {
+        this(user, deck, totalCards, startedAt, StudyMode.SCHEDULED_REVIEW);
+    }
+
+    public StudySession(User user, Deck deck, int totalCards, Instant startedAt, StudyMode mode) {
         if (totalCards < 1) throw new IllegalArgumentException("A study session must contain at least one flashcard.");
         this.user = Objects.requireNonNull(user);
         this.deck = Objects.requireNonNull(deck);
         this.totalCards = totalCards;
+        this.mode = Objects.requireNonNull(mode);
         this.startedAt = Objects.requireNonNull(startedAt);
         this.status = StudySessionStatus.ACTIVE;
     }
@@ -58,6 +67,7 @@ public class StudySession {
     public User getUser() { return user; }
     public Deck getDeck() { return deck; }
     public int getTotalCards() { return totalCards; }
+    public StudyMode getMode() { return mode; }
     public StudySessionStatus getStatus() { return status; }
     public Instant getStartedAt() { return startedAt; }
     public Instant getEndedAt() { return endedAt; }

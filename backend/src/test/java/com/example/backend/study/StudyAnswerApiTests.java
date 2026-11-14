@@ -227,6 +227,79 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test
+    void freePracticeIncludesWholeDeckAndFutureCardsWithoutChangingReviewProgress() throws Exception {
+        var fixture = fixture(12);
+        var card = fixture.answers().getFirst().getFlashcard();
+        var state = new FlashcardProgress(fixture.user(), card);
+        var previousReview = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MICROS);
+        var nextReview = previousReview.plus(30, ChronoUnit.DAYS);
+        state.recordReview(true, 3, 0, previousReview, nextReview);
+        progress.saveAndFlush(state);
+        long version = state.getVersion();
+        try (var client = new Client()) {
+            client.login(fixture.user());
+            String startPath = "/api/decks/" + fixture.deck().getId() + "/study-sessions";
+            var started = client.post(startPath, Map.of("mode", "FREE_PRACTICE"), true);
+            assertEquals(201, started.statusCode(), started.body());
+            var body = json.readTree(started.body());
+            assertEquals("FREE_PRACTICE", body.get("mode").asText());
+            assertEquals(12, body.get("totalCards").asInt());
+            assertEquals(12, body.get("cards").size());
+            long sessionId = body.get("id").asLong();
+            assertEquals(StudyMode.FREE_PRACTICE, sessions.findById(sessionId).orElseThrow().getMode());
+            assertEquals("FREE_PRACTICE", json.readTree(client.get(sessionId).body()).get("mode").asText());
+            assertEquals(card.getId().longValue(), body.get("cards").get(0).get("flashcardId").asLong());
+            for (int i = 0; i < 12; i++) {
+                String answerPath = "/api/study-sessions/" + sessionId + "/answers/" + body.get("cards").get(i).get("id").asLong();
+                if (i == 0) assertEquals(200, client.post(answerPath + "/hint", Map.of(), true).statusCode());
+                var response = client.post(answerPath, Map.of("userAnswer", i == 1 ? "" : "ciekawość", "skipped", i == 1), true);
+                assertEquals(200, response.statusCode(), response.body());
+            }
+            var completion = client.post("/api/study-sessions/" + sessionId + "/complete", Map.of(), true);
+            assertEquals(200, completion.statusCode(), completion.body());
+            var summary = json.readTree(completion.body());
+            assertEquals("FREE_PRACTICE", summary.get("mode").asText());
+            assertEquals(11, summary.get("correctCards").asInt());
+            assertEquals(1, summary.get("wrongCards").asInt());
+            assertEquals(summary, json.readTree(client.getPath("/api/study-sessions/" + sessionId + "/summary").body()));
+            assertEquals(1, progress.count()); // No progress created for new cards during practice.
+            var unchanged = progress.findById(state.getId()).orElseThrow();
+            assertEquals(1, unchanged.getAttempts());
+            assertEquals(3, unchanged.getMasteryLevel());
+            assertEquals(0, unchanged.getWrongStreak());
+            assertEquals(previousReview, unchanged.getLastAnsweredAt());
+            assertEquals(nextReview, unchanged.getNextReviewAt());
+            assertEquals(version, unchanged.getVersion());
+            // Repeating the same mode still includes the whole deck, despite future review dates.
+            var repeated = client.post(startPath, Map.of("mode", summary.get("mode").asText()), true);
+            assertEquals(201, repeated.statusCode(), repeated.body());
+            assertEquals(12, json.readTree(repeated.body()).get("totalCards").asInt());
+            var scheduled = client.post(startPath, Map.of("mode", "SCHEDULED_REVIEW"), true);
+            assertEquals(201, scheduled.statusCode(), scheduled.body());
+            var review = json.readTree(scheduled.body());
+            assertEquals("SCHEDULED_REVIEW", review.get("mode").asText());
+            assertEquals(10, review.get("totalCards").asInt());
+            for (var question : review.get("cards")) assertNotEquals(card.getId().longValue(), question.get("flashcardId").asLong());
+        }
+    }
+
+    @Test
+    void validatesStudyModeAndProtectsFreePracticeStart() throws Exception {
+        var own = fixture(1);
+        var foreign = fixture(1);
+        String path = "/api/decks/" + own.deck().getId() + "/study-sessions";
+        try (var client = new Client()) {
+            client.login(own.user());
+            assertEquals(400, client.post(path, Map.of("mode", "INVALID"), true).statusCode());
+            assertEquals(400, client.post(path, Map.of(), true).statusCode());
+            assertEquals(403, client.post(path, Map.of("mode", "FREE_PRACTICE"), false).statusCode());
+            assertEquals(404, client.post("/api/decks/" + foreign.deck().getId() + "/study-sessions", Map.of("mode", "FREE_PRACTICE"), true).statusCode());
+            var empty = decks.saveAndFlush(new Deck(own.user(), "Empty", DeckType.GENERAL, "English", null));
+            assertEquals(409, client.post("/api/decks/" + empty.getId() + "/study-sessions", Map.of("mode", "FREE_PRACTICE"), true).statusCode());
+        }
+    }
+
     private record Fixture(User user, Deck deck, StudySession session, List<StudyAnswer> answers) {}
     private Fixture fixture(int count) {
         String name = "Answer" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
