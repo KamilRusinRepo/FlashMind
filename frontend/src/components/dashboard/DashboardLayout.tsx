@@ -14,7 +14,7 @@ const navigation = [
   { label: 'My Decks', icon: decksIcon, path: '/decks' },
   { label: 'Explore Decks', icon: exploreIcon },
   { label: 'Statistics', icon: statsIcon },
-  { label: 'Settings', icon: settingsIcon },
+  { label: 'Settings', icon: settingsIcon, path: '/settings' },
 ]
 
 function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
@@ -35,7 +35,7 @@ export default function DashboardLayout() {
   const { pathname } = useLocation()
 
   useEffect(() => {
-    document.title = `${pathname === '/decks/create' ? 'Create Deck' : /^\/decks\/\d+\/edit$/.test(pathname) ? 'Edit Deck' : /^\/decks\/\d+$/.test(pathname) ? 'Deck details' : pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
+    document.title = `${pathname === '/settings' ? 'Settings' : pathname === '/decks/create' ? 'Create Deck' : /^\/decks\/\d+\/edit$/.test(pathname) ? 'Edit Deck' : /^\/decks\/\d+$/.test(pathname) ? 'Deck details' : pathname === '/decks' ? 'My Decks' : 'Dashboard'} | FlashMind`
     window.scrollTo(0, 0)
     document.getElementById('dashboard-main')?.focus({ preventScroll: true })
   }, [pathname])
