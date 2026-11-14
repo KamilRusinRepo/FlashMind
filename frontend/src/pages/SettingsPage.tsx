@@ -56,7 +56,7 @@ export default function SettingsPage() {
 
   return <div className="settings-page">
     <header className="settings-header"><h1>Profile Settings</h1></header>
-    <p className="settings-preview-note">You can save your username and request an email change. Password and preference controls are still previews; appearance and language apply only to the controls below.</p>
+    <p className="settings-preview-note">You can update your username, email address and password. Preference controls are still previews; appearance and language apply only to the controls below.</p>
     <section className="settings-card" aria-label="Profile details">
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>

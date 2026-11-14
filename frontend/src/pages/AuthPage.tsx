@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { registerAccount, RegistrationError, type RegisterResponse } from '../api/registration'
 import { LoginError } from '../api/login'
 import { useAuth } from '../auth/AuthContext'
@@ -11,6 +11,7 @@ type FieldErrors = Partial<Record<'login' | 'username' | 'email' | 'password' | 
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const isRegister = mode === 'register'
+  const location = useLocation()
   const { user, status, signIn } = useAuth()
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState('')
@@ -127,6 +128,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         ) : (
         <form className="auth-form" noValidate aria-busy={isSubmitting} onSubmit={handleSubmit}
           onInput={() => { setFormError(''); setVerificationEmail(null) }}>
+          {!isRegister && location.state?.passwordChanged === true && <p className="form-notice form-success" role="status">Your password has been changed. Sign in with your new password.</p>}
           {isRegister ? (
             <>
               <FormField id="username" name="username" label="Username" placeholder="Your username"

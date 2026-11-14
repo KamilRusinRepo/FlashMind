@@ -26,7 +26,7 @@ public class EmailChangeController {
 
     @PostMapping("/api/users/me/email-change")
     public ResponseEntity<PendingEmailChangeResponse> request(@AuthenticationPrincipal SessionUser user, @Valid @RequestBody RequestEmailChange request) {
-        return ResponseEntity.accepted().cacheControl(CacheControl.noStore()).body(changes.request(user.id(), request));
+        return ResponseEntity.accepted().cacheControl(CacheControl.noStore()).body(changes.request(user.id(), user.sessionVersion(), request));
     }
 
     @PostMapping("/api/auth/confirm-email-change")

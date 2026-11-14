@@ -43,8 +43,9 @@ public class EmailChangeService {
     }
 
     @Transactional
-    public PendingEmailChangeResponse request(Long userId, RequestEmailChange request) {
+    public PendingEmailChangeResponse request(Long userId, long sessionVersion, RequestEmailChange request) {
         var user = requireEnabled(users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)));
+        if (user.getSessionVersion() != sessionVersion) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         if (!encoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new EmailChangeException(HttpStatus.BAD_REQUEST, "currentPassword", "The current password is incorrect.");
         }

@@ -7,6 +7,7 @@ import java.util.Map;
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
 import com.example.backend.user.EmailChangeException;
+import com.example.backend.user.PasswordChangeException;
 import com.example.backend.auth.EmailNotVerifiedException;
 import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
@@ -32,6 +33,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(PasswordChangeException.class)
+    public ResponseEntity<ApiError> handlePasswordChange(PasswordChangeException exception, HttpServletRequest request) {
+        return ResponseEntity.badRequest().header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.BAD_REQUEST, "Please check the highlighted fields.", request.getRequestURI(),
+                        Map.of(exception.getField(), exception.getMessage())));
+    }
 
     @ExceptionHandler(EmailChangeException.class)
     public ResponseEntity<ApiError> handleEmailChange(EmailChangeException exception, HttpServletRequest request) {

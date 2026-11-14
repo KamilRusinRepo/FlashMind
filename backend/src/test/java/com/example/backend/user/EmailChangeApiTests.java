@@ -146,7 +146,7 @@ class EmailChangeApiTests extends PostgresIntegrationTest {
     void rollbackDoesNotPublishAnEmailOrLeavePendingChange() {
         var owner = account();
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            changes.request(owner.getId(), new RequestEmailChange("rolledback@example.invalid", PASSWORD));
+            changes.request(owner.getId(), owner.getSessionVersion(), new RequestEmailChange("rolledback@example.invalid", PASSWORD));
             status.setRollbackOnly();
         });
         verifyNoInteractions(publisher);
