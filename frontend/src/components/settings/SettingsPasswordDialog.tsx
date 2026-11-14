@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageContext'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { changePassword, PasswordChangeError, type PasswordChangeFields, type PasswordChangeRequest } from '../../api/passwordChange'
@@ -5,6 +6,7 @@ import { useAuth } from '../../auth/AuthContext'
 import FormField from '../FormField'
 
 export default function SettingsPasswordDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { refresh } = useAuth()
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -65,16 +67,16 @@ export default function SettingsPasswordDialog({ onClose }: { onClose: () => voi
 
   return <dialog ref={dialogRef} className="settings-password-dialog" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={sending}
     onCancel={event => { event.preventDefault(); if (!busy.current) onClose() }}>
-    <div className="settings-dialog-heading"><h2 id={titleId}>Change Password</h2>
-      <button className="settings-dialog-close" type="button" disabled={sending} aria-label="Close change password" onClick={onClose}>×</button></div>
-    <p className="settings-preview-note" id={descriptionId}>After changing your password, you will be signed out on all devices. Pending email changes and password reset links will be cancelled.</p>
+    <div className="settings-dialog-heading"><h2 id={titleId}>{t("Change Password")}</h2>
+      <button className="settings-dialog-close" type="button" disabled={sending} aria-label={t("Close change password")} onClick={onClose}>×</button></div>
+    <p className="settings-preview-note" id={descriptionId}>{t("After changing your password, you will be signed out on all devices. Pending email changes and password reset links will be cancelled.")}</p>
     <form className="settings-password-form" onSubmit={savePassword} noValidate aria-busy={sending} onInput={() => { setFields({}); setError('') }}>
-      <FormField id="settings-current-password" label="Current Password" name="currentPassword" type="password" autoComplete="current-password" required error={fields.currentPassword} disabled={sending} />
-      <FormField id="settings-new-password" label="New Password" name="newPassword" type="password" autoComplete="new-password" required error={fields.newPassword} disabled={sending} hint="Use at least 8 characters and no more than 72 UTF-8 bytes." />
-      <FormField id="settings-confirm-password" label="Confirm New Password" name="confirmPassword" type="password" autoComplete="new-password" required error={fields.confirmPassword} disabled={sending} />
-      {error && <p className="form-notice form-error" role="alert">{error}</p>}
-      <div className="settings-dialog-actions"><button className="button button-outline" type="button" disabled={sending} onClick={onClose}>Cancel</button>
-        <button className="button button-primary" type="submit" disabled={sending}>{sending ? 'Saving…' : 'Save Password'}</button></div>
+      <FormField id="settings-current-password" label={t("Current Password")} name="currentPassword" type="password" autoComplete="current-password" required error={fields.currentPassword} disabled={sending} />
+      <FormField id="settings-new-password" label={t("New Password")} name="newPassword" type="password" autoComplete="new-password" required error={fields.newPassword} disabled={sending} hint={t("Use at least 8 characters and no more than 72 UTF-8 bytes.")} />
+      <FormField id="settings-confirm-password" label={t("Confirm New Password")} name="confirmPassword" type="password" autoComplete="new-password" required error={fields.confirmPassword} disabled={sending} />
+      {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
+      <div className="settings-dialog-actions"><button className="button button-outline" type="button" disabled={sending} onClick={onClose}>{t("Cancel")}</button>
+        <button className="button button-primary" type="submit" disabled={sending}>{sending ? t("Saving…") : t("Save Password")}</button></div>
     </form>
   </dialog>
 }

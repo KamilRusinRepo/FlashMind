@@ -6,11 +6,12 @@ import './theme/theme.css'
 import App from './App.tsx'
 import AuthProvider from './auth/AuthProvider'
 import ThemeProvider from './theme/ThemeProvider'
+import LanguageProvider from './i18n/LanguageProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider><AuthProvider><App /></AuthProvider></ThemeProvider>
+      <ThemeProvider><LanguageProvider><AuthProvider><App /></AuthProvider></LanguageProvider></ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

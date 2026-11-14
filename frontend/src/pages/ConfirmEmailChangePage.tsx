@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { confirmEmailChange } from '../api/emailChange'
@@ -13,6 +14,7 @@ export default function ConfirmEmailChangePage() {
 }
 
 function Confirmation({ token, onRetry }: { token: string; onRetry: () => void }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const valid = /^[A-Za-z0-9_-]{43}$/.test(token)
   const [state, setState] = useState<'pending' | 'success' | 'error'>(valid ? 'pending' : 'error')
@@ -20,7 +22,6 @@ function Confirmation({ token, onRetry }: { token: string; onRetry: () => void }
   const [retryable, setRetryable] = useState(false)
   const request = useRef<Promise<void> | null>(null)
   useEffect(() => {
-    document.title = 'Confirm email change | FlashMind'
     if (!valid) return
     let active = true
     request.current ??= confirmEmailChange(token)
@@ -36,15 +37,15 @@ function Confirmation({ token, onRetry }: { token: string; onRetry: () => void }
   }, [token, valid, refresh])
 
   return <div className="auth-page"><section className="auth-card" aria-labelledby="email-change-title" aria-busy={state === 'pending'}>
-    <div className="auth-heading"><span className="eyebrow">EMAIL ADDRESS CHANGE</span>
-      <h1 id="email-change-title">{state === 'success' ? 'Email address changed' : state === 'pending' ? 'Confirming your new email' : 'Unable to change email'}</h1></div>
+    <div className="auth-heading"><span className="eyebrow">{t("EMAIL ADDRESS CHANGE")}</span>
+      <h1 id="email-change-title">{state === 'success' ? t("Email address changed") : state === 'pending' ? t("Confirming your new email") : t("Unable to change email")}</h1></div>
     <div className="registration-success">
-      {state === 'pending' && <p className="form-notice" role="status">Checking your confirmation link…</p>}
-      {state === 'success' && <p className="form-notice form-success" role="status">Your new address is active. Sign in again using your new email address or username.</p>}
-      {state === 'error' && <><p className="form-notice form-error" role="alert">{message}</p>
-        {retryable && <button className="button button-outline button-full" type="button" onClick={onRetry}>Try again</button>}
-        <Link className="button button-outline button-full" to="/settings">Back to Settings</Link></>}
-      <Link className="button button-primary button-full" to="/login">Go to sign in</Link>
+      {state === 'pending' && <p className="form-notice" role="status">{t("Checking your confirmation link…")}</p>}
+      {state === 'success' && <p className="form-notice form-success" role="status">{t("Your new address is active. Sign in again using your new email address or username.")}</p>}
+      {state === 'error' && <><p className="form-notice form-error" role="alert">{t(message)}</p>
+        {retryable && <button className="button button-outline button-full" type="button" onClick={onRetry}>{t("Try again")}</button>}
+        <Link className="button button-outline button-full" to="/settings">{t("Back to Settings")}</Link></>}
+      <Link className="button button-primary button-full" to="/login">{t("Go to sign in")}</Link>
     </div>
   </section></div>
 }

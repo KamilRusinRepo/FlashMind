@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { registerAccount, RegistrationError, type RegisterResponse } from '../api/registration'
@@ -10,6 +11,7 @@ type AuthPageProps = { mode: 'login' | 'register' }
 type FieldErrors = Partial<Record<'login' | 'username' | 'email' | 'password' | 'confirmation', string>>
 
 export default function AuthPage({ mode }: AuthPageProps) {
+  const { t } = useLanguage()
   const isRegister = mode === 'register'
   const location = useLocation()
   const { user, status, signIn } = useAuth()
@@ -99,79 +101,79 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   if (!isRegister && (status === 'loading' || status === 'error')) {
     return <div className="auth-page"><section className="auth-card" aria-labelledby="auth-title">
-      <div className="auth-heading"><span className="eyebrow">WELCOME BACK</span><h1 id="auth-title">Sign In</h1></div>
-      {status === 'loading' && <p className="form-notice" role="status">Checking your session…</p>}
-      {status === 'error' && <p className="field-hint">Use the retry button above to check your session again.</p>}
+      <div className="auth-heading"><span className="eyebrow">{t("WELCOME BACK")}</span><h1 id="auth-title">{t("Sign In")}</h1></div>
+      {status === 'loading' && <p className="form-notice" role="status">{t("Checking your session…")}</p>}
+      {status === 'error' && <p className="field-hint">{t("Use the retry button above to check your session again.")}</p>}
     </section></div>
   }
 
   return (
     <div className="auth-page">
-      <Link to="/" className="back-link"><span aria-hidden="true">←</span> Back to home</Link>
+      <Link to="/" className="back-link"><span aria-hidden="true">←</span> {t("Back to home")}</Link>
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-heading">
-          <span className="eyebrow">{isRegister ? 'START YOUR JOURNEY' : 'WELCOME BACK'}</span>
-          <h1 id="auth-title">{registeredAccount ? 'Account created' : isRegister ? 'Create account' : 'Sign In'}</h1>
-          <p>{registeredAccount ? `Welcome, ${registeredAccount.username}.` : isRegister ? 'Make a little room for learning, every day.' : 'Pick up where you left off.'}</p>
+          <span className="eyebrow">{isRegister ? t("START YOUR JOURNEY") : t("WELCOME BACK")}</span>
+          <h1 id="auth-title">{registeredAccount ? t("Account created") : isRegister ? t("Create account") : t("Sign In")}</h1>
+          <p>{registeredAccount ? t("Welcome, {0}.", [registeredAccount.username]) : isRegister ? t("Make a little room for learning, every day.") : t("Pick up where you left off.")}</p>
         </div>
         {registeredAccount ? (
           <div className="registration-success">
             <div className="form-notice form-success" role="status">
-              <p>Your account has been created for <strong>{registeredAccount.email}</strong>.</p>
-              <p>Verification emails are processed in the background. Please check your inbox.</p>
-              <p>Open the link in your confirmation email to verify your address before signing in.</p>
+              <p>{t("Your account has been created for")} <strong>{registeredAccount.email}</strong>.</p>
+              <p>{t("Verification emails are processed in the background. Please check your inbox.")}</p>
+              <p>{t("Open the link in your confirmation email to verify your address before signing in.")}</p>
             </div>
             <ResendVerificationForm email={registeredAccount.email} initialCooldownSeconds={60} />
-            <Link className="button button-outline button-full" to="/login">Go to sign in</Link>
-            <Link className="button button-primary button-full" to="/">Back to home</Link>
+            <Link className="button button-outline button-full" to="/login">{t("Go to sign in")}</Link>
+            <Link className="button button-primary button-full" to="/">{t("Back to home")}</Link>
           </div>
         ) : (
         <form className="auth-form" noValidate aria-busy={isSubmitting} onSubmit={handleSubmit}
           onInput={() => { setFormError(''); setVerificationEmail(null) }}>
-          {!isRegister && location.state?.passwordChanged === true && <p className="form-notice form-success" role="status">Your password has been changed. Sign in with your new password.</p>}
+          {!isRegister && location.state?.passwordChanged === true && <p className="form-notice form-success" role="status">{t("Your password has been changed. Sign in with your new password.")}</p>}
           {isRegister ? (
             <>
-              <FormField id="username" name="username" label="Username" placeholder="Your username"
-                autoComplete="username" maxLength={50} disabled={isSubmitting} required error={errors.username} />
-              <FormField id="email" name="email" label="Email" type="email" placeholder="name@example.com"
-                autoComplete="email" maxLength={255} disabled={isSubmitting} required error={errors.email} />
+              <FormField id="username" name="username" label={t("Username")} placeholder={t("Your username")}
+                autoComplete="username" maxLength={50} disabled={isSubmitting} required error={t(errors.username)} />
+              <FormField id="email" name="email" label={t("Email")} type="email" placeholder={t("name@example.com")}
+                autoComplete="email" maxLength={255} disabled={isSubmitting} required error={t(errors.email)} />
             </>
           ) : (
-            <FormField id="login" name="login" label="Email or username" placeholder="name@example.com"
-              autoComplete="username" maxLength={255} disabled={isSubmitting} required error={errors.login} />
+            <FormField id="login" name="login" label={t("Email or username")} placeholder={t("name@example.com")}
+              autoComplete="username" maxLength={255} disabled={isSubmitting} required error={t(errors.login)} />
           )}
-          <FormField id="password" name="password" label="Password" type="password"
-            placeholder={isRegister ? 'At least 8 characters' : 'Enter your password'}
+          <FormField id="password" name="password" label={t("Password")} type="password"
+            placeholder={isRegister ? t("At least 8 characters") : t("Enter your password")}
             autoComplete={isRegister ? 'new-password' : 'current-password'}
-            disabled={isSubmitting} required error={errors.password} />
-          {!isRegister && <Link className="forgot-password-link text-link" to="/forgot-password">Forgot password?</Link>}
+            disabled={isSubmitting} required error={t(errors.password)} />
+          {!isRegister && <Link className="forgot-password-link text-link" to="/forgot-password">{t("Forgot password?")}</Link>}
           {isRegister && (
-            <FormField id="confirmation" name="confirmation" label="Confirm password" type="password"
-              placeholder="Repeat your password" autoComplete="new-password" disabled={isSubmitting} required error={errors.confirmation} />
+            <FormField id="confirmation" name="confirmation" label={t("Confirm password")} type="password"
+              placeholder={t("Repeat your password")} autoComplete="new-password" disabled={isSubmitting} required error={t(errors.confirmation)} />
           )}
-          {Object.keys(errors).length > 0 && <p role="alert" className="field-error">Please check the highlighted fields.</p>}
-          {formError && <p className="form-notice form-error" role="alert">{formError}</p>}
+          {Object.keys(errors).length > 0 && <p role="alert" className="field-error">{t("Please check the highlighted fields.")}</p>}
+          {formError && <p className="form-notice form-error" role="alert">{t(formError)}</p>}
           <button type="submit" className="button button-primary button-full" disabled={isSubmitting}>
-            {isSubmitting ? isRegister ? 'Creating account…' : 'Signing in…' : isRegister ? 'Create account' : 'Sign In'} <span aria-hidden="true">→</span>
+            {isSubmitting ? isRegister ? t("Creating account…") : t("Signing in…") : isRegister ? t("Create account") : t("Sign In")} <span aria-hidden="true">→</span>
           </button>
         </form>
         )}
         {!isRegister && verificationEmail && (
           <div className="login-verification-resend">
-            <p className="field-hint">Send a new confirmation link to <strong>{verificationEmail}</strong>.</p>
+            <p className="field-hint">{t("Send a new confirmation link to")} <strong>{verificationEmail}</strong>.</p>
             <ResendVerificationForm key={verificationEmail} email={verificationEmail} />
           </div>
         )}
         {!isRegister && (
           <>
-            <div className="or-separator"><span>OR TAKE A LOOK AROUND</span></div>
-            <Link className="button button-secondary button-full" to="/#preview">Try a sample flashcard</Link>
+            <div className="or-separator"><span>{t("OR TAKE A LOOK AROUND")}</span></div>
+            <Link className="button button-secondary button-full" to="/#preview">{t("Try a sample flashcard")}</Link>
           </>
         )}
       </section>
       {!registeredAccount && <p className="auth-footer">
-        {isRegister ? 'Already have an account? ' : "Don't have an account? "}
-        <Link to={isRegister ? '/login' : '/register'}>{isRegister ? 'Sign in' : 'Sign up for free'}</Link>
+        {isRegister ? t("Already have an account? ") : t("Don't have an account? ")}
+        <Link to={isRegister ? '/login' : '/register'}>{isRegister ? t("Sign in") : t("Sign up for free")}</Link>
       </p>}
     </div>
   )

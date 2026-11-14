@@ -1,9 +1,11 @@
+import { useLanguage } from '../../i18n/LanguageContext'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { EmailChangeError, getPendingEmailChange, requestEmailChange, type PendingEmailChange } from '../../api/emailChange'
 import { useAuth } from '../../auth/AuthContext'
 import FormField from '../FormField'
 
 export default function SettingsEmailDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -75,19 +77,19 @@ export default function SettingsEmailDialog({ onClose }: { onClose: () => void }
 
   return <dialog ref={dialogRef} className="settings-password-dialog" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={loading || sending}
     onCancel={event => { event.preventDefault(); if (!busy.current) onClose() }}>
-    <div className="settings-dialog-heading"><h2 id={titleId}>Change Email Address</h2>
-      <button className="settings-dialog-close" type="button" disabled={sending} aria-label="Close email change" onClick={onClose}>×</button></div>
-    <p className="settings-preview-note" id={descriptionId}>Confirm the link sent to your new address. Until then, your current address remains active. After confirmation, you will need to sign in again.</p>
-    {loading && <p role="status">Checking pending changes…</p>}
-    {pending?.pendingEmail && <p className="settings-preview-note">Awaiting confirmation: <strong>{pending.pendingEmail}</strong>. Requesting another link replaces the previous one.</p>}
-    {error && <p className="form-notice form-error" role="alert">{error}</p>}
-    {loadFailed && <button className="button button-outline" type="button" onClick={() => { setLoading(true); setLoadFailed(false); setError(''); setAttempt(value => value + 1) }}>Try again</button>}
+    <div className="settings-dialog-heading"><h2 id={titleId}>{t("Change Email Address")}</h2>
+      <button className="settings-dialog-close" type="button" disabled={sending} aria-label={t("Close email change")} onClick={onClose}>×</button></div>
+    <p className="settings-preview-note" id={descriptionId}>{t("Confirm the link sent to your new address. Until then, your current address remains active. After confirmation, you will need to sign in again.")}</p>
+    {loading && <p role="status">{t("Checking pending changes…")}</p>}
+    {pending?.pendingEmail && <p className="settings-preview-note">{t("Awaiting confirmation:")} <strong>{pending.pendingEmail}</strong>{t(". Requesting another link replaces the previous one.")}</p>}
+    {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
+    {loadFailed && <button className="button button-outline" type="button" onClick={() => { setLoading(true); setLoadFailed(false); setError(''); setAttempt(value => value + 1) }}>{t("Try again")}</button>}
     <form className="settings-password-form" onSubmit={submit}>
-      <FormField id="settings-new-email" label="New Email Address" name="email" type="email" autoComplete="email" required maxLength={255} value={email} onChange={event => setEmail(event.target.value)} error={fields.email} disabled={loading || sending || loadFailed} />
-      <FormField id="settings-email-current-password" label="Current Password" name="currentPassword" type="password" autoComplete="current-password" required error={fields.currentPassword} disabled={loading || sending || loadFailed} />
-      {notice && <p className="form-notice form-success" role="status">{notice}</p>}
-      <div className="settings-dialog-actions"><button className="button button-outline" type="button" disabled={sending} onClick={onClose}>Cancel</button>
-        <button className="button button-primary" type="submit" disabled={loading || sending || loadFailed || remaining > 0}>{sending ? 'Requesting…' : remaining > 0 ? `Wait ${remaining}s` : 'Send confirmation'}</button></div>
+      <FormField id="settings-new-email" label={t("New Email Address")} name="email" type="email" autoComplete="email" required maxLength={255} value={email} onChange={event => setEmail(event.target.value)} error={fields.email} disabled={loading || sending || loadFailed} />
+      <FormField id="settings-email-current-password" label={t("Current Password")} name="currentPassword" type="password" autoComplete="current-password" required error={fields.currentPassword} disabled={loading || sending || loadFailed} />
+      {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+      <div className="settings-dialog-actions"><button className="button button-outline" type="button" disabled={sending} onClick={onClose}>{t("Cancel")}</button>
+        <button className="button button-primary" type="submit" disabled={loading || sending || loadFailed || remaining > 0}>{sending ? t("Requesting…") : remaining > 0 ? t("Wait {0}s", [remaining]) : t("Send confirmation")}</button></div>
     </form>
   </dialog>
 }

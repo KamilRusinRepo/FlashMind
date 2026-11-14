@@ -25,6 +25,7 @@
 .settings-segment button { min-width: 76px; padding: 9px 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: .85em; font-weight: 650; cursor: pointer; }
 .settings-segment button.is-active { background: white; color: var(--primary-dark); box-shadow: 0 4px 12px #0f172a12; }
 .settings-language { min-width: 130px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 999px; background: #f8fafc; color: var(--text); font: inherit; font-size: .85em; font-weight: 650; cursor: pointer; }
+.settings-language:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 4px; }
 .settings-toggle { position: relative; display: inline-flex; width: 50px; height: 28px; cursor: pointer; }
 .settings-toggle input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .settings-toggle > span { width: 100%; height: 100%; border-radius: 999px; background: #cbd5e1; pointer-events: none; transition: background .15s; }

@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageContext'
 import { useEffect, useRef, useState } from 'react'
 import { deleteFlashcard, FlashcardApiError } from '../../api/flashcards'
 import { useAuth } from '../../auth/AuthContext'
@@ -7,6 +8,7 @@ import FlashcardDialog from './FlashcardDialog'
 export default function DeleteFlashcardDialog({ deckId, card, onCancel, onDeleted, onUnavailable }: {
   deckId: number; card: PreviewFlashcard; onCancel: () => void; onDeleted: () => void; onUnavailable: () => void
 }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -35,13 +37,13 @@ export default function DeleteFlashcardDialog({ deckId, card, onCancel, onDelete
   }
 
   const cancel = () => { if (!submitting.current) onCancel() }
-  return <FlashcardDialog title="Delete flashcard?" onCancel={cancel}>
-    <p className="flashcard-delete-question">Delete <strong>{card.question}</strong>? This action is permanent.</p>
-    {error && <p className="form-notice form-error" role="alert">{error}</p>}
+  return <FlashcardDialog title={t("Delete flashcard?")} onCancel={cancel}>
+    <p className="flashcard-delete-question">{t("Delete")} <strong>{card.question}</strong>{t("? This action is permanent.")}</p>
+    {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
     <div className="flashcard-dialog-actions">
-      <button className="button button-outline" type="button" disabled={sending} onClick={cancel}>Cancel</button>
-      {unavailable ? <button className="button button-primary" type="button" onClick={onUnavailable}>Refresh flashcards</button>
-        : <button className="button deck-delete-button" type="button" disabled={sending} onClick={() => void handleDelete()}>{sending ? 'Deleting…' : 'Delete Flashcard'}</button>}
+      <button className="button button-outline" type="button" disabled={sending} onClick={cancel}>{t("Cancel")}</button>
+      {unavailable ? <button className="button button-primary" type="button" onClick={onUnavailable}>{t("Refresh flashcards")}</button>
+        : <button className="button deck-delete-button" type="button" disabled={sending} onClick={() => void handleDelete()}>{sending ? t("Deleting…") : t("Delete Flashcard")}</button>}
     </div>
   </FlashcardDialog>
 }

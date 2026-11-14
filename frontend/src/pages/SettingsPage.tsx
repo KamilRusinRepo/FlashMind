@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { useTheme } from '../theme/ThemeContext'
@@ -12,10 +13,10 @@ import reminderIcon from '../assets/icons/settings/reminder.svg'
 import './Settings.css'
 
 export default function SettingsPage() {
+  const { t, language, setLanguage } = useLanguage()
   const { user, changeUsername, refresh, isLoggingOut } = useAuth()
   const [username, setUsername] = useState(user?.username ?? '')
   const { theme, setTheme } = useTheme()
-  const [language, setLanguage] = useState<'en' | 'pl'>('en')
   const [reminders, setReminders] = useState(true)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [emailOpen, setEmailOpen] = useState(false)
@@ -56,51 +57,53 @@ export default function SettingsPage() {
   }
 
   return <div className="settings-page">
-    <header className="settings-header"><h1>Profile Settings</h1></header>
-    <p className="settings-preview-note">You can update your account and appearance. Your theme is remembered in this browser. Language and daily reminder controls are still previews.</p>
-    <section className="settings-card" aria-label="Profile details">
+    <header className="settings-header"><h1>{t("Profile Settings")}</h1></header>
+    <p className="settings-preview-note">{t("You can update your account, theme and language. Appearance and language are remembered in this browser. Daily reminders are still a preview.")}</p>
+    <section className="settings-card" aria-label={t("Profile details")}>
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>
-        <div className="settings-profile-info"><h2>{user?.username}</h2><p>FlashMind Member</p></div>
+        <div className="settings-profile-info"><h2>{user?.username}</h2><p>{t("FlashMind Member")}</p></div>
       </div>
       <form className="settings-profile-form" onSubmit={saveProfile} aria-busy={sending}>
-        <FormField id="settings-username" label="Username" name="username" value={username} onChange={event => { setUsername(event.target.value); setUsernameError(''); setNotice('') }} error={usernameError} disabled={sending || isLoggingOut} required autoComplete="username" />
-        <div className="settings-email-control"><FormField id="settings-email" label="Email Address" name="email" type="email" value={user?.email ?? ''} readOnly hint="Your current address remains active until you confirm the new one." autoComplete="email" />
-          <button className="button button-outline" type="button" disabled={sending || isLoggingOut} aria-haspopup="dialog" onClick={() => setEmailOpen(true)}>Change Email</button></div>
-        <div className="settings-profile-actions"><button className="button button-primary" type="submit" disabled={sending || isLoggingOut}>{sending ? 'Saving…' : 'Save Changes'}</button></div>
+        <FormField id="settings-username" label={t("Username")} name="username" value={username} onChange={event => { setUsername(event.target.value); setUsernameError(''); setNotice('') }} error={t(usernameError)} disabled={sending || isLoggingOut} required autoComplete="username" />
+        <div className="settings-email-control"><FormField id="settings-email" label={t("Email Address")} name="email" type="email" value={user?.email ?? ''} readOnly hint={t("Your current address remains active until you confirm the new one.")} autoComplete="email" />
+          <button className="button button-outline" type="button" disabled={sending || isLoggingOut} aria-haspopup="dialog" onClick={() => setEmailOpen(true)}>{t("Change Email")}</button></div>
+        <div className="settings-profile-actions"><button className="button button-primary" type="submit" disabled={sending || isLoggingOut}>{sending ? t("Saving…") : t("Save Changes")}</button></div>
       </form>
-      {error && <p className="form-notice form-error" role="alert">{error}</p>}
-      {notice && <p className="settings-preview-note" role="status">{notice}</p>}
+      {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
+      {notice && <p className="settings-preview-note" role="status">{t(notice)}</p>}
     </section>
 
     <section className="settings-section" aria-labelledby="settings-security-title">
-      <h2 id="settings-security-title">Security</h2>
+      <h2 id="settings-security-title">{t("Security")}</h2>
       <div className="settings-card settings-preference-row">
         <span className="settings-row-icon"><img src={passwordIcon} alt="" /></span>
-        <div className="settings-row-copy"><h3>Password</h3><p>Keep your account secure with a strong password.</p></div>
-        <button className="button button-outline settings-password-button" type="button" aria-haspopup="dialog" onClick={() => setPasswordOpen(true)}>Change Password</button>
+        <div className="settings-row-copy"><h3>{t("Password")}</h3><p>{t("Keep your account secure with a strong password.")}</p></div>
+        <button className="button button-outline settings-password-button" type="button" aria-haspopup="dialog" onClick={() => setPasswordOpen(true)}>{t("Change Password")}</button>
       </div>
     </section>
 
     <section className="settings-section" aria-labelledby="settings-preferences-title">
-      <h2 id="settings-preferences-title">Preferences</h2>
+      <h2 id="settings-preferences-title">{t("Preferences")}</h2>
       <div className="settings-card settings-preferences">
         <div className="settings-preference-row">
           <span className="settings-row-icon"><img src={themeIcon} alt="" /></span>
-          <div className="settings-row-copy"><h3 id="settings-appearance-label">Appearance</h3><p>Choose light or dark theme</p></div>
+          <div className="settings-row-copy"><h3 id="settings-appearance-label">{t("Appearance")}</h3><p>{t("Choose light or dark theme")}</p></div>
           <div className="settings-segment" role="group" aria-labelledby="settings-appearance-label">
-            <button className={theme === 'light' ? 'is-active' : ''} type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>Light</button>
-            <button className={theme === 'dark' ? 'is-active' : ''} type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>Dark</button>
+            <button className={theme === 'light' ? 'is-active' : ''} type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>{t("Light")}</button>
+            <button className={theme === 'dark' ? 'is-active' : ''} type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>{t("Dark")}</button>
           </div>
         </div>
         <div className="settings-preference-row">
           <span className="settings-row-icon"><img src={languageIcon} alt="" /></span>
-          <div className="settings-row-copy"><h3 id="settings-language-label">Language</h3><p>Select your preferred language</p></div>
-          <button className="settings-language" type="button" aria-label={`Language: ${language === 'en' ? 'English (US). Switch to Polish' : 'Polski. Switch to English'}`} onClick={() => setLanguage(value => value === 'en' ? 'pl' : 'en')}>{language === 'en' ? 'English (US)' : 'Polski'}</button>
+          <div className="settings-row-copy"><h3 id="settings-language-label">{t("Language")}</h3><p>{t("Select your preferred language")}</p></div>
+          <select className="settings-language" aria-labelledby="settings-language-label" value={language} onChange={event => setLanguage(event.target.value === 'pl' ? 'pl' : 'en')}>
+            <option value="en" lang="en">English</option><option value="pl" lang="pl">Polski</option>
+          </select>
         </div>
         <div className="settings-preference-row">
           <span className="settings-row-icon"><img src={reminderIcon} alt="" /></span>
-          <div className="settings-row-copy"><h3 id="settings-reminders-label">Daily Reminders</h3><p id="settings-reminders-description">Get notified for daily practice</p></div>
+          <div className="settings-row-copy"><h3 id="settings-reminders-label">{t("Daily Reminders")}</h3><p id="settings-reminders-description">{t("Get notified for daily practice")}</p></div>
           <label className="settings-toggle">
             <input type="checkbox" role="switch" checked={reminders} onChange={event => setReminders(event.target.checked)} aria-labelledby="settings-reminders-label" aria-describedby="settings-reminders-description" />
             <span aria-hidden="true" />

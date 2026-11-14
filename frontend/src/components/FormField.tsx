@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useState, type InputHTMLAttributes } from 'react'
 import eye from '../assets/icons/eye.svg'
 import eyeOff from '../assets/icons/eye-off.svg'
@@ -10,13 +11,14 @@ type FormFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 }
 
 export default function FormField({ id, label, error, hint, type = 'text', ...inputProps }: FormFieldProps) {
+  const { t } = useLanguage()
   const [visible, setVisible] = useState(false)
   const isPassword = type === 'password'
   const descriptionIds = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ')
 
   return (
     <div className="form-field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       <div className={`input-wrapper${error ? ' input-invalid' : ''}`}>
         <input
           {...inputProps}
@@ -30,7 +32,7 @@ export default function FormField({ id, label, error, hint, type = 'text', ...in
             className="password-toggle"
             type="button"
             disabled={inputProps.disabled}
-            aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
+            aria-label={t(visible ? 'Hide {0}' : 'Show {0}', [t(label).toLowerCase()])}
             aria-pressed={visible}
             aria-controls={id}
             onClick={() => setVisible((value) => !value)}
@@ -39,8 +41,8 @@ export default function FormField({ id, label, error, hint, type = 'text', ...in
           </button>
         )}
       </div>
-      {hint && <p className="field-hint" id={`${id}-hint`}>{hint}</p>}
-      {error && <p className="field-error" id={`${id}-error`}>{error}</p>}
+      {hint && <p className="field-hint" id={`${id}-hint`}>{t(hint)}</p>}
+      {error && <p className="field-error" id={`${id}-error`}>{t(error)}</p>}
     </div>
   )
 }

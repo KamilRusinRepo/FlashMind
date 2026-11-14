@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -8,6 +9,7 @@ type ApiStatus = {
 }
 
 function StatusPage() {
+  const { t, locale } = useLanguage()
   const [status, setStatus] = useState<ApiStatus | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -23,16 +25,16 @@ function StatusPage() {
           cache: 'no-store',
         })
         if (!response.ok) {
-          throw new Error(`Serwer zwrócił błąd ${response.status}.`)
+          throw new Error(`The server returned error ${response.status}.`)
         }
         const result: ApiStatus = await response.json()
         if (result.status !== 'UP' || result.database !== 'UP') {
-          throw new Error('Połączenie z bazą danych jest niedostępne.')
+          throw new Error('The database connection is unavailable.')
         }
         setStatus(result)
       } catch (cause) {
         if (controller.signal.aborted) return
-        setError(cause instanceof Error ? cause.message : 'Nie udało się połączyć z serwerem.')
+        setError(cause instanceof Error ? cause.message : 'Unable to reach the server.')
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
@@ -51,28 +53,25 @@ function StatusPage() {
 
   return (
     <section className="status-page">
-      <p className="eyebrow">Witaj w</p>
+      <p className="eyebrow">{t("Welcome to")}</p>
       <h1>FlashMind</h1>
-      <p>Aplikacja do nauki z fiszkami.</p>
+      <p>{t("A flashcard learning application.")}</p>
       <section className="connection-card" aria-labelledby="connection-heading">
-        <h2 id="connection-heading">Status połączenia</h2>
+        <h2 id="connection-heading">{t("Connection status")}</h2>
         <div role="status" aria-live="polite">
-          {loading && <p>Sprawdzanie połączenia…</p>}
-          {!loading && error && <p className="connection-error">{error}</p>}
+          {loading && <p>{t("Checking connection…")}</p>}
+          {!loading && error && <p className="connection-error">{t(error)}</p>}
           {!loading && status && (
             <>
-              <p className="connection-success">Backend i baza danych działają.</p>
-              <p className="checked-at">
-                Ostatnie sprawdzenie: {new Date(status.timestamp).toLocaleString('pl-PL')}
+              <p className="connection-success">{t("The backend and database are running.")}</p>
+              <p className="checked-at">{t("Last checked:")} {new Date(status.timestamp).toLocaleString(locale)}
               </p>
             </>
           )}
         </div>
-        <button type="button" onClick={retry} disabled={loading}>
-          Sprawdź ponownie
-        </button>
+        <button type="button" onClick={retry} disabled={loading}>{t("Check again")}</button>
       </section>
-    <Link className="text-link" to="/">Back to home</Link></section>
+    <Link className="text-link" to="/">{t("Back to home")}</Link></section>
   )
 }
 

@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { DeckApiError, getMyDecks, type DeckPage } from '../api/decks'
@@ -7,6 +8,7 @@ import OwnedDeckCard from '../components/decks/OwnedDeckCard'
 import './MyDecks.css'
 
 export default function MyDecksPage() {
+  const { t } = useLanguage()
   const [params, setParams] = useSearchParams()
   const { user } = useAuth()
   const { state } = useLocation()
@@ -32,15 +34,15 @@ export default function MyDecksPage() {
   }
 
   return <div className="db-page">
-    {successNotice && <p className="form-notice form-success" role="status">{successNotice}</p>}
-    <header className="db-section-heading decks-heading"><div><p className="db-eyebrow">YOUR PERSONAL LIBRARY</p><h1>My Decks</h1>
-      <p>Your ideas, organized for your next learning session.</p></div>
-      <Link className="db-create-action" to="/decks/create">＋ Create Deck</Link>
+    {successNotice && <p className="form-notice form-success" role="status">{t(successNotice)}</p>}
+    <header className="db-section-heading decks-heading"><div><p className="db-eyebrow">{t("YOUR PERSONAL LIBRARY")}</p><h1>{t("My Decks")}</h1>
+      <p>{t("Your ideas, organized for your next learning session.")}</p></div>
+      <Link className="db-create-action" to="/decks/create">{t("＋ Create Deck")}</Link>
     </header>
     <form key={search} className="decks-search" role="search" onSubmit={handleSearch}>
-      <FormField id="deck-search" name="search" label="Search your decks" type="search" defaultValue={search} maxLength={120} placeholder="Search by deck name…" />
-      <button className="button button-primary" type="submit">Search</button>
-      {search && <button className="button button-outline" type="button" onClick={() => setParams({})}>Clear</button>}
+      <FormField id="deck-search" name="search" label={t("Search your decks")} type="search" defaultValue={search} maxLength={120} placeholder={t("Search by deck name…")} />
+      <button className="button button-primary" type="submit">{t("Search")}</button>
+      {search && <button className="button button-outline" type="button" onClick={() => setParams({})}>{t("Clear")}</button>}
     </form>
     <DeckResults key={JSON.stringify([user?.id, page, search, revision])} page={page} search={search} goToPage={goToPage}
       onChanged={deleted => { setNotice(deleted ? 'Your deck has been deleted.' : ''); setRevision(value => value + 1) }} />
@@ -50,6 +52,7 @@ export default function MyDecksPage() {
 type ResultsState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'success'; data: DeckPage }
 
 function DeckResults({ page, search, goToPage, onChanged }: { page: number; search: string; goToPage: (page: number) => void; onChanged: (deleted: boolean) => void }) {
+  const { t, count } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<ResultsState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -71,25 +74,25 @@ function DeckResults({ page, search, goToPage, onChanged }: { page: number; sear
     return () => controller.abort()
   }, [page, search, attempt, refresh, goToPage])
 
-  if (state.status === 'loading') return <p className="decks-message" role="status">Loading your decks…</p>
-  if (state.status === 'error') return <div className="decks-message"><p className="form-notice form-error" role="alert">{state.message}</p>
-    <button className="button button-outline" type="button" onClick={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }}>Try again</button></div>
+  if (state.status === 'loading') return <p className="decks-message" role="status">{t("Loading your decks…")}</p>
+  if (state.status === 'error') return <div className="decks-message"><p className="form-notice form-error" role="alert">{t(state.message)}</p>
+    <button className="button button-outline" type="button" onClick={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }}>{t("Try again")}</button></div>
 
   const { data } = state
   if (data.content.length === 0) return <section className="decks-empty" aria-labelledby="empty-decks-title">
     <span className="decks-empty-icon" aria-hidden="true">▤</span>
-    <h2 id="empty-decks-title">{page > 0 ? 'This page has no decks' : search ? 'No matching decks' : 'No decks yet'}</h2>
-    <p>{page > 0 ? 'Return to the first page to see the current results.' : search ? 'Try another name or clear your search.' : 'Your decks will appear here once you create them.'}</p>
-    {page > 0 && <button className="button button-outline" type="button" onClick={() => goToPage(0)}>Go to first page</button>}
+    <h2 id="empty-decks-title">{page > 0 ? t("This page has no decks") : search ? t("No matching decks") : t("No decks yet")}</h2>
+    <p>{page > 0 ? t("Return to the first page to see the current results.") : search ? t("Try another name or clear your search.") : t("Your decks will appear here once you create them.")}</p>
+    {page > 0 && <button className="button button-outline" type="button" onClick={() => goToPage(0)}>{t("Go to first page")}</button>}
   </section>
 
-  return <section aria-label="Your decks">
-    <p className="decks-result-count" role="status">{data.totalElements} {data.totalElements === 1 ? 'deck' : 'decks'}{search && ` matching “${search}”`}</p>
+  return <section aria-label={t("Your decks")}>
+    <p className="decks-result-count" role="status">{count(data.totalElements, 'deck')}{search && t(" matching “{0}”", [search])}</p>
     <div className="db-deck-grid">{data.content.map(deck => <OwnedDeckCard key={deck.id} deck={deck} showActions onChanged={onChanged} />)}</div>
-    <nav className="decks-pagination" aria-label="Deck pagination">
-      <button className="button button-outline" type="button" disabled={page === 0} onClick={() => goToPage(page - 1)}>← Previous</button>
-      <span>Page {page + 1} of {data.totalPages}</span>
-      <button className="button button-outline" type="button" disabled={page + 1 >= data.totalPages} onClick={() => goToPage(page + 1)}>Next →</button>
+    <nav className="decks-pagination" aria-label={t("Deck pagination")}>
+      <button className="button button-outline" type="button" disabled={page === 0} onClick={() => goToPage(page - 1)}>{t("← Previous")}</button>
+      <span>{t("Page")} {page + 1} {t("of")} {data.totalPages}</span>
+      <button className="button button-outline" type="button" disabled={page + 1 >= data.totalPages} onClick={() => goToPage(page + 1)}>{t("Next →")}</button>
     </nav>
   </section>
 }

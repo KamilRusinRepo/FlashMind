@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageContext'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { FlashcardApiError } from '../../api/flashcards'
 import { useAuth } from '../../auth/AuthContext'
@@ -18,6 +19,7 @@ const fields: { name: Field; label: string; required?: boolean; limit: number }[
 export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
   initialValues?: FlashcardValues; onSubmit: (values: FlashcardValues) => void | Promise<void>; onCancel: () => void
 }) {
+  const { t } = useLanguage()
   const id = useId()
   const formRef = useRef<HTMLFormElement>(null)
   const [values, setValues] = useState<FlashcardValues>(initialValues ?? { question: '', answer: '', exampleSentence: '', translatedExample: '', imageUrl: '' })
@@ -65,29 +67,29 @@ export default function FlashcardForm({ initialValues, onSubmit, onCancel }: {
   }
 
   return <form ref={formRef} className="flashcard-form" noValidate aria-busy={sending} onSubmit={handleSubmit}>
-    {error && <p className="form-notice form-error" role="alert">{error}</p>}
+    {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
     <div className="flashcard-form-fields">{fields.map(field => {
       const fieldId = `${id}-${field.name}`
       if (field.name === 'imageUrl') return <div className="flashcard-image-field" key={field.name}>
         <FormField id={fieldId} name="imageUrl" type="url" label={field.label} maxLength={field.limit}
-          placeholder="https://example.com/image.jpg" hint="Paste a direct link to an image (HTTP or HTTPS). Clear this field to remove it."
-          value={values.imageUrl ?? ''} error={errors.imageUrl} disabled={sending}
+          placeholder={t("https://example.com/image.jpg")} hint={t("Paste a direct link to an image (HTTP or HTTPS). Clear this field to remove it.")}
+          value={values.imageUrl ?? ''} error={t(errors.imageUrl)} disabled={sending}
           onChange={event => { setValues(current => ({ ...current, imageUrl: event.target.value })); setErrors(current => ({ ...current, imageUrl: undefined })) }} />
         <FlashcardImage url={values.imageUrl?.trim()} />
       </div>
       return <div className="form-field" key={field.name}>
-        <label htmlFor={fieldId}>{field.label}{field.required && ' *'}</label>
+        <label htmlFor={fieldId}>{t(field.label)}{field.required && ' *'}</label>
         <textarea id={fieldId} name={field.name} rows={field.required ? 4 : 3} required={field.required} maxLength={field.limit} disabled={sending}
           value={values[field.name] ?? ''} aria-invalid={errors[field.name] ? true : undefined}
           aria-describedby={`${fieldId}-hint${errors[field.name] ? ` ${fieldId}-error` : ''}`}
           onChange={event => { setValues(current => ({ ...current, [field.name]: event.target.value })); setErrors(current => ({ ...current, [field.name]: undefined })) }} />
         <p id={`${fieldId}-hint`} className="field-hint">{(values[field.name] ?? '').length} / {field.limit}</p>
-        {errors[field.name] && <p id={`${fieldId}-error`} className="field-error" role="alert">{errors[field.name]}</p>}
+        {errors[field.name] && <p id={`${fieldId}-error`} className="field-error" role="alert">{t(errors[field.name])}</p>}
       </div>
     })}</div>
     <div className="flashcard-dialog-actions">
-      <button className="button button-outline" type="button" disabled={sending} onClick={() => { if (!submitting.current) onCancel() }}>Cancel</button>
-      <button className="button button-primary" type="submit" disabled={sending}>{sending ? 'Saving…' : initialValues ? 'Save changes' : 'Add Flashcard'}</button>
+      <button className="button button-outline" type="button" disabled={sending} onClick={() => { if (!submitting.current) onCancel() }}>{t("Cancel")}</button>
+      <button className="button button-primary" type="submit" disabled={sending}>{sending ? t("Saving…") : initialValues ? t("Save changes") : t("Add Flashcard")}</button>
     </div>
   </form>
 }
