@@ -9,6 +9,7 @@ import com.example.backend.auth.EmailNotVerifiedException;
 import com.example.backend.auth.dto.response.EmailVerificationRequiredResponse;
 import org.springframework.security.core.AuthenticationException;
 import com.example.backend.auth.token.InvalidTokenException;
+import com.example.backend.study.StudyStartException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(StudyStartException.class)
+    public ResponseEntity<ApiError> handleStudyStart(StudyStartException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
 
     @ExceptionHandler(EmailNotVerifiedException.class)
     public ResponseEntity<EmailVerificationRequiredResponse> handleUnverifiedEmail(

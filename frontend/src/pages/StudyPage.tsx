@@ -1,38 +1,39 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
+import { getStudySession, StudyApiError, type StudySessionData } from '../api/study'
 import { useAuth } from '../auth/AuthContext'
 import StudySidebar from '../components/study/StudySidebar'
-import StudySummary from '../components/study/StudySummary'
-import StudyCard, { type StudyAttempt } from '../components/study/StudyCard'
-import { generalStudyCards, languageStudyCards, matchesStudyAnswer, studyAnswerOptions } from '../data/studyPreview'
+import StudyCard from '../components/study/StudyCard'
+import StudyStartButton from '../components/study/StudyStartButton'
 import hintIcon from '../assets/icons/study/hint.svg'
 import skipIcon from '../assets/icons/study/skip.svg'
 import submitIcon from '../assets/icons/study/submit.svg'
 import './Study.css'
 
-type LoadState = { status: 'loading' } | { status: 'ready'; deck: OwnedDeck } | { status: 'error'; message: string; code: number }
+type LoadState<T> = { status: 'loading' } | { status: 'ready'; data: T } | { status: 'error'; message: string; code: number }
+const validId = (value: string | undefined) => /^\d+$/.test(value ?? '') && Number.isSafeInteger(Number(value)) && Number(value) > 0
 
 export default function StudyPage() {
-  const { deckId } = useParams()
+  const { deckId, sessionId } = useParams()
   const { user } = useAuth()
-  const id = Number(deckId)
-  const valid = /^\d+$/.test(deckId ?? '') && Number.isSafeInteger(id) && id > 0
   return <main className="study-shell">
-    {valid ? <StudyLoader key={`${user?.id}:${id}`} deckId={id} /> : <StudyUnavailable />}
+    {!validId(deckId) || (sessionId !== undefined && !validId(sessionId)) ? <StudyUnavailable />
+      : sessionId === undefined ? <StudyLanding key={`${user?.id}:${deckId}`} deckId={Number(deckId)} />
+        : <StudyLoader key={`${user?.id}:${deckId}:${sessionId}`} deckId={Number(deckId)} sessionId={Number(sessionId)} />}
   </main>
 }
 
-function StudyLoader({ deckId }: { deckId: number }) {
+function StudyLanding({ deckId }: { deckId: number }) {
   const { refresh } = useAuth()
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [state, setState] = useState<LoadState<OwnedDeck>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    document.title = 'Study preview | FlashMind'
+    document.title = 'Start study | FlashMind'
     window.scrollTo(0, 0)
     const controller = new AbortController()
     getOwnedDeck(deckId, controller.signal).then(deck => {
-      if (!controller.signal.aborted) setState({ status: 'ready', deck })
+      if (!controller.signal.aborted) setState({ status: 'ready', data: deck })
     }).catch(cause => {
       if (controller.signal.aborted) return
       if (cause instanceof DeckApiError && cause.status === 401) { refresh(); return }
@@ -41,88 +42,72 @@ function StudyLoader({ deckId }: { deckId: number }) {
     return () => controller.abort()
   }, [deckId, attempt, refresh])
   if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your deck…</p>
-  if (state.status === 'error') return state.code === 404 ? <StudyUnavailable /> : <div className="study-load-message">
-    <p className="form-notice form-error" role="alert">{state.message}</p>
-    <button className="button button-outline" type="button" onClick={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }}>Try again</button>
-    <Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link>
-  </div>
-  return <StudySession deck={state.deck} />
+  if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
+  return <section className="study-load-message study-entry"><h1>{state.data.name}</h1>
+    <p>Start a session with up to 10 flashcards. Due reviews are selected first, followed by new cards.</p>
+    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link>
+  </section>
 }
 
-function StudySession({ deck }: { deck: OwnedDeck }) {
-  const cards = deck.deckType === 'LANGUAGE' ? languageStudyCards : generalStudyCards
-  const [index, setIndex] = useState(0)
-  const [guess, setGuess] = useState('')
-  const [usedHint, setUsedHint] = useState(false)
-  const [answers, setAnswers] = useState<StudyAttempt[]>([])
-  const [finished, setFinished] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const submitRef = useRef<HTMLButtonElement>(null)
-  const answeredRef = useRef(false)
-  const card = cards[index]
-  const result = answers[index]
-  const correct = answers.filter(answer => answer.correct).length
-
+function StudyLoader({ deckId, sessionId }: { deckId: number; sessionId: number }) {
+  const { refresh } = useAuth()
+  const [state, setState] = useState<LoadState<StudySessionData>>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    if (finished) return
-    if (result) submitRef.current?.focus()
-    else inputRef.current?.focus()
-  }, [index, result, finished])
+    document.title = 'Study session | FlashMind'
+    window.scrollTo(0, 0)
+    const controller = new AbortController()
+    getStudySession(sessionId, controller.signal).then(session => {
+      if (controller.signal.aborted) return
+      if (session.deck.id !== deckId) { setState({ status: 'error', code: 404, message: 'Study session not found.' }); return }
+      setState({ status: 'ready', data: session })
+    }).catch(cause => {
+      if (controller.signal.aborted) return
+      if (cause instanceof StudyApiError && cause.status === 401) { refresh(); return }
+      setState({ status: 'error', message: cause instanceof StudyApiError ? cause.message : 'Unable to load this study session.', code: cause instanceof StudyApiError ? cause.status : 0 })
+    })
+    return () => controller.abort()
+  }, [deckId, sessionId, attempt, refresh])
+  if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your study session…</p>
+  if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
+  if (state.data.status !== 'ACTIVE') return <section className="study-load-message study-entry"><h1>This session has ended</h1>
+    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link></section>
+  return <StudySession session={state.data} />
+}
 
-  function checkAnswer(skipped = false) {
-    if (answeredRef.current || finished) return
-    answeredRef.current = true
-    setAnswers(current => [...current, { cardId: card.id, userAnswer: skipped ? '' : guess,
-      correct: !skipped && matchesStudyAnswer(guess, card.answer), usedHint, skipped }])
-  }
+function StudySession({ session }: { session: StudySessionData }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { deck } = session
+  const card = session.cards[0]
+  useEffect(() => { document.title = `Study: ${deck.name} | FlashMind`; inputRef.current?.focus() }, [deck.name])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (finished || (result && !answeredRef.current)) return
-    if (!result) { checkAnswer(); return }
-    if (index === cards.length - 1) { setFinished(true); return }
-    setIndex(value => value + 1)
-    setGuess('')
-    setUsedHint(false)
-    answeredRef.current = false
-  }
+  return <div className="study-layout">
+    <StudySidebar deck={deck} correct={0} wrong={0} />
+    <section className="study-content" aria-label="Study practice">
+      <div className="study-progress-label"><span>Session Progress</span><strong>1 of {session.totalCards} cards</strong></div>
+      <progress className="study-progress study-session-progress" max={session.totalCards} value={0} aria-label="Answered flashcards" />
+      <StudyCard key={card.id} card={{ id: String(card.id), question: card.question, exampleSentence: card.exampleSentence ?? undefined, imageUrl: card.imageUrl ?? undefined }} />
+      <form className="study-answer-form" onSubmit={event => event.preventDefault()}>
+        <div className="study-answer-field"><label className="study-input-label" htmlFor="study-answer">{deck.deckType === 'LANGUAGE' ? 'Your translation' : 'Your answer'}</label>
+          <input ref={inputRef} id="study-answer" type="text" maxLength={2000} autoComplete="off" spellCheck={false}
+            placeholder={deck.deckType === 'LANGUAGE' ? 'Type translation…' : 'Type your answer…'} aria-describedby="study-answer-help" /></div>
+        <button className="button button-primary study-submit" type="submit" disabled title="Answer checking is coming next"><span>Submit</span><img src={submitIcon} alt="" /></button>
+      </form>
+      <div className="study-actions"><button className="study-text-action" type="button" disabled title="Hints are coming next"><img src={hintIcon} alt="" />Hint</button>
+        <button className="study-text-action" type="button" disabled title="Saving answers is coming next"><img src={skipIcon} alt="" />Skip</button>
+        <span id="study-answer-help">Session started. Answer checking will be connected in the next step.</span></div>
+    </section>
+  </div>
+}
 
-  function hint() {
-    if (answeredRef.current) return
-    const letters = Array.from(studyAnswerOptions(card.answer)[0] ?? '')
-    setGuess(letters.slice(0, Math.max(1, Math.ceil(letters.length / 3))).join(''))
-    setUsedHint(true)
-    inputRef.current?.focus()
-  }
-
-  function restart() {
-    setIndex(0); setGuess(''); setUsedHint(false); setAnswers([]); setFinished(false); answeredRef.current = false
-  }
-
-  if (finished) return <StudySummary deckName={deck.name} answers={answers} onStudyAgain={restart} />
-
-  return <>
-    <div className="study-layout">
-      <StudySidebar deck={deck} correct={correct} wrong={answers.length - correct} />
-      <section className="study-content" aria-label="Study practice">
-          <div className="study-progress-label"><span>Session Progress</span><strong>{index + 1} of {cards.length} cards</strong></div>
-          <progress className="study-progress study-session-progress" max={cards.length} value={answers.length} aria-label="Answered flashcards" />
-          <StudyCard key={card.id} card={card} result={result} />
-          <form className="study-answer-form" onSubmit={handleSubmit}>
-            <div className="study-answer-field"><label className="study-input-label" htmlFor="study-answer">{deck.deckType === 'LANGUAGE' ? 'Your translation' : 'Your answer'}</label>
-              <input ref={inputRef} id="study-answer" type="text" value={guess} maxLength={2000} disabled={!!result} autoComplete="off" spellCheck={false}
-                placeholder={deck.deckType === 'LANGUAGE' ? 'Type translation…' : 'Type your answer…'}
-                aria-describedby="study-answer-help" onChange={event => setGuess(event.target.value)} /></div>
-            <button ref={submitRef} className="button button-primary study-submit" type="submit"><span>{result ? index === cards.length - 1 ? 'Finish session' : 'Next' : 'Submit'}</span><img src={submitIcon} alt="" /></button>
-          </form>
-          <div className="study-actions"><button className="study-text-action" type="button" disabled={!!result} onClick={hint}><img src={hintIcon} alt="" />Hint</button>
-            <button className="study-text-action" type="button" disabled={!!result} onClick={() => checkAnswer(true)}><img src={skipIcon} alt="" />Skip</button>
-            <span id="study-answer-help">{result ? 'Press Enter to continue' : 'Press Enter to submit'}{usedHint && !result && ' · Hint used'}</span></div>
-      </section>
-    </div>
-  </>
+function StudyLoadError({ state, deckId, retry }: { state: { message: string; code: number }; deckId: number; retry: () => void }) {
+  if (state.code === 404) return <StudyUnavailable />
+  return <div className="study-load-message"><p className="form-notice form-error" role="alert">{state.message}</p>
+    <button className="button button-outline" type="button" onClick={retry}>Try again</button>
+    <Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link></div>
 }
 
 function StudyUnavailable() {
-  return <div className="study-load-message"><h1>Deck not found</h1><p>This deck is unavailable or does not belong to your account.</p><Link className="button button-primary" to="/decks">Go to My Decks</Link></div>
+  return <div className="study-load-message"><h1>Study session not found</h1><p>This deck or session is unavailable or does not belong to your account.</p>
+    <Link className="button button-primary" to="/decks">Go to My Decks</Link></div>
 }

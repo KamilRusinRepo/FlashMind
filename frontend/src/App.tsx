@@ -22,6 +22,7 @@ function App() {
     <Routes>
       <Route element={<ProtectedRoute />}>
         <Route path="decks/:deckId/study" element={<StudyPage />} />
+        <Route path="decks/:deckId/study/:sessionId" element={<StudyPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="decks" element={<MyDecksPage />} />

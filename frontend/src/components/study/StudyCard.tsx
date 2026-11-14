@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { StudyCardData } from '../../data/studyPreview'
+import type { StudyCardData } from '../../types/study'
 
 export type StudyAttempt = { cardId: string; userAnswer: string; correct: boolean; usedHint: boolean; skipped: boolean }
 
