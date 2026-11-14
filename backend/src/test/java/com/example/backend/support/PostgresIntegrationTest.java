@@ -34,6 +34,7 @@ public abstract class PostgresIntegrationTest {
         properties.add("spring.sql.init.mode", () -> "never");
         properties.add("spring.rabbitmq.listener.simple.auto-startup", () -> false);
         properties.add("spring.rabbitmq.dynamic", () -> false);
+        properties.add("app.reminders.enabled", () -> false); // Tests invoke scheduling explicitly; no background jobs.
         // Never bootstrap a real administrator from the developer's environment in tests.
         properties.add("app.admin.username", () -> "");
         properties.add("app.admin.email", () -> "");

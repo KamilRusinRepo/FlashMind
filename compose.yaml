@@ -78,6 +78,10 @@ services:
       APP_MAIL_FROM: ${MAIL_FROM:-no-reply@flashmind.local}
       APP_MAIL_VERIFICATION_URL: ${MAIL_VERIFICATION_URL:-http://localhost:3000/verify-email}
       APP_MAIL_PASSWORD_RESET_URL: ${MAIL_PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
+      APP_REMINDERS_ENABLED: ${REMINDERS_ENABLED:-true}
+      APP_REMINDERS_SEND_HOUR: ${REMINDERS_SEND_HOUR:-18}
+      APP_REMINDERS_ZONE: ${REMINDERS_ZONE:-Europe/Warsaw}
+      APP_REMINDERS_POLL_DELAY_MS: ${REMINDERS_POLL_DELAY_MS:-300000}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

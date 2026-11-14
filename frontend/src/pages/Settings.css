@@ -33,6 +33,9 @@
 .settings-toggle input:checked + span { background: var(--primary); }
 .settings-toggle input:checked + span::after { transform: translateX(22px); }
 .settings-toggle input:focus-visible + span { outline: 2px solid var(--primary-dark); outline-offset: 4px; }
+.settings-toggle input:disabled { cursor: not-allowed; }
+.settings-toggle input:disabled + span { opacity: .5; }
+.settings-reminder-error { display: grid; justify-items: start; gap: 12px; margin-top: 14px; }
 .settings-password-dialog { width: min(600px, calc(100% - 32px)); max-height: calc(100svh - 40px); margin: auto; padding: clamp(22px, 3vw, 36px); border: 1px solid var(--border); border-radius: 22px; background: white; color: var(--text); box-shadow: var(--shadow); overflow-y: auto; }
 .settings-password-dialog::backdrop { background: #14233880; }
 .settings-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }

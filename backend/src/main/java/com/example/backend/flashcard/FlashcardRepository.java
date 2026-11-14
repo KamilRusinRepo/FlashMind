@@ -16,6 +16,13 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
     List<Flashcard> findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(Long deckId, Long ownerId);
 
     @Query("""
+        select (count(card) > 0) from Flashcard card
+        left join FlashcardProgress progress on progress.flashcard.id = card.id and progress.user.id = :userId
+        where card.deck.owner.id = :userId and (progress.id is null or progress.nextReviewAt is null or progress.nextReviewAt <= :now)
+        """)
+    boolean hasCardsForReview(@Param("userId") Long userId, @Param("now") Instant now);
+
+    @Query("""
             select card from Flashcard card
             left join FlashcardProgress progress on progress.flashcard.id = card.id and progress.user.id = :userId
             where card.deck.id = :deckId and card.deck.owner.id = :userId

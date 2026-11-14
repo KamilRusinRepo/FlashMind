@@ -6,10 +6,10 @@ import { ProfileApiError } from '../api/profile'
 import FormField from '../components/FormField'
 import SettingsPasswordDialog from '../components/settings/SettingsPasswordDialog'
 import SettingsEmailDialog from '../components/settings/SettingsEmailDialog'
+import DailyRemindersControl from '../components/settings/DailyRemindersControl'
 import passwordIcon from '../assets/icons/settings/password.svg'
 import themeIcon from '../assets/icons/settings/theme.svg'
 import languageIcon from '../assets/icons/settings/language.svg'
-import reminderIcon from '../assets/icons/settings/reminder.svg'
 import './Settings.css'
 
 export default function SettingsPage() {
@@ -17,7 +17,6 @@ export default function SettingsPage() {
   const { user, changeUsername, refresh, isLoggingOut } = useAuth()
   const [username, setUsername] = useState(user?.username ?? '')
   const { theme, setTheme } = useTheme()
-  const [reminders, setReminders] = useState(true)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [emailOpen, setEmailOpen] = useState(false)
   const [notice, setNotice] = useState('')
@@ -58,7 +57,7 @@ export default function SettingsPage() {
 
   return <div className="settings-page">
     <header className="settings-header"><h1>{t("Profile Settings")}</h1></header>
-    <p className="settings-preview-note">{t("You can update your account, theme and language. Appearance and language are remembered in this browser. Daily reminders are still a preview.")}</p>
+    <p className="settings-preview-note">{t('Manage your account, appearance, language and daily study reminders.')}</p>
     <section className="settings-card" aria-label={t("Profile details")}>
       <div className="settings-profile">
         <span className="settings-avatar" aria-hidden="true">{user?.username.slice(0, 2).toUpperCase()}</span>
@@ -101,14 +100,7 @@ export default function SettingsPage() {
             <option value="en" lang="en">English</option><option value="pl" lang="pl">Polski</option>
           </select>
         </div>
-        <div className="settings-preference-row">
-          <span className="settings-row-icon"><img src={reminderIcon} alt="" /></span>
-          <div className="settings-row-copy"><h3 id="settings-reminders-label">{t("Daily Reminders")}</h3><p id="settings-reminders-description">{t("Get notified for daily practice")}</p></div>
-          <label className="settings-toggle">
-            <input type="checkbox" role="switch" checked={reminders} onChange={event => setReminders(event.target.checked)} aria-labelledby="settings-reminders-label" aria-describedby="settings-reminders-description" />
-            <span aria-hidden="true" />
-          </label>
-        </div>
+        <DailyRemindersControl />
       </div>
     </section>
     {passwordOpen && <SettingsPasswordDialog onClose={() => setPasswordOpen(false)} />}
