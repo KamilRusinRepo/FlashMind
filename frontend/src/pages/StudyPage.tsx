@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
 import { useAuth } from '../auth/AuthContext'
 import StudySidebar from '../components/study/StudySidebar'
+import StudySummary from '../components/study/StudySummary'
 import StudyCard, { type StudyAttempt } from '../components/study/StudyCard'
 import { generalStudyCards, languageStudyCards, matchesStudyAnswer, studyAnswerOptions } from '../data/studyPreview'
 import hintIcon from '../assets/icons/study/hint.svg'
@@ -57,15 +58,14 @@ function StudySession({ deck }: { deck: OwnedDeck }) {
   const [finished, setFinished] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const submitRef = useRef<HTMLButtonElement>(null)
-  const completeRef = useRef<HTMLHeadingElement>(null)
   const answeredRef = useRef(false)
   const card = cards[index]
   const result = answers[index]
   const correct = answers.filter(answer => answer.correct).length
 
   useEffect(() => {
-    if (finished) completeRef.current?.focus()
-    else if (result) submitRef.current?.focus()
+    if (finished) return
+    if (result) submitRef.current?.focus()
     else inputRef.current?.focus()
   }, [index, result, finished])
 
@@ -99,15 +99,12 @@ function StudySession({ deck }: { deck: OwnedDeck }) {
     setIndex(0); setGuess(''); setUsedHint(false); setAnswers([]); setFinished(false); answeredRef.current = false
   }
 
+  if (finished) return <StudySummary deckName={deck.name} answers={answers} onStudyAgain={restart} />
+
   return <>
     <div className="study-layout">
       <StudySidebar deck={deck} correct={correct} wrong={answers.length - correct} />
       <section className="study-content" aria-label="Study practice">
-        {finished ? <div className="study-complete"><p className="study-eyebrow">PREVIEW COMPLETE</p>
-          <h2 ref={completeRef} tabIndex={-1}>You’ve reached the end!</h2><p>Your practice results have not been saved. You can try the preview again or return to your deck.</p>
-          <div className="study-complete-actions"><button className="button button-primary" type="button" onClick={restart}>Try preview again</button>
-            <Link className="button button-outline" to={`/decks/${deck.id}`}>Back to deck</Link></div>
-        </div> : <>
           <div className="study-progress-label"><span>Session Progress</span><strong>{index + 1} of {cards.length} cards</strong></div>
           <progress className="study-progress study-session-progress" max={cards.length} value={answers.length} aria-label="Answered flashcards" />
           <StudyCard key={card.id} card={card} result={result} />
@@ -121,7 +118,6 @@ function StudySession({ deck }: { deck: OwnedDeck }) {
           <div className="study-actions"><button className="study-text-action" type="button" disabled={!!result} onClick={hint}><img src={hintIcon} alt="" />Hint</button>
             <button className="study-text-action" type="button" disabled={!!result} onClick={() => checkAnswer(true)}><img src={skipIcon} alt="" />Skip</button>
             <span id="study-answer-help">{result ? 'Press Enter to continue' : 'Press Enter to submit'}{usedHint && !result && ' · Hint used'}</span></div>
-        </>}
       </section>
     </div>
   </>
