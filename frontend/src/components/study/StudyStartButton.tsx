@@ -4,7 +4,7 @@ import { startStudySession, StudyApiError } from '../../api/study'
 import { useAuth } from '../../auth/AuthContext'
 import './StudyStartButton.css'
 
-export default function StudyStartButton({ deckId }: { deckId: number }) {
+export default function StudyStartButton({ deckId, label = 'Start Study', icon }: { deckId: number; label?: string; icon?: string }) {
   const navigate = useNavigate()
   const { refresh } = useAuth()
   const [sending, setSending] = useState(false)
@@ -32,7 +32,7 @@ export default function StudyStartButton({ deckId }: { deckId: number }) {
   }
 
   return <>
-    <button className="button button-primary" type="button" disabled={sending} aria-busy={sending} onClick={() => void start()}>{sending ? 'Starting…' : 'Start Study'}</button>
+    <button className="button button-primary" type="button" disabled={sending} aria-busy={sending} onClick={() => void start()}>{icon && <img src={icon} alt="" />}{sending ? 'Starting…' : label}</button>
     {error && <p className="form-notice form-error study-start-error" role="alert">{error}</p>}
   </>
 }

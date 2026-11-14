@@ -24,6 +24,10 @@ public final class StudyRules {
 
     public record ReviewPlan(int masteryLevel, int wrongStreak, int intervalDays) {}
 
+    public static int sessionXp(boolean correct, boolean usedHint) {
+        return correct ? usedHint ? 5 : 10 : 0;
+    }
+
     public static ReviewPlan schedule(boolean correct, int mastery, int wrongStreak) {
         if (correct) {
             int level = mastery == 0 ? 2 : Math.min(4, mastery + 1);

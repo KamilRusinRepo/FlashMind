@@ -1,14 +1,17 @@
 package com.example.backend.study;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
 import java.util.ArrayList;
+import java.util.List;
 import com.example.backend.deck.DeckRepository;
 import com.example.backend.deck.dto.response.DeckListItemResponse;
 import com.example.backend.flashcard.FlashcardRepository;
+import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
 import com.example.backend.study.dto.response.StudyQuestionResponse;
 import com.example.backend.study.dto.response.StudySessionResponse;
+import com.example.backend.study.dto.response.StudySummaryResponse;
 import com.example.backend.user.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,50 @@ public class StudyService {
         this.users = users;
         this.clock = clock;
         this.progress = progress;
+    }
+
+    @Transactional
+    public StudySummaryResponse complete(Long userId, Long sessionId) {
+        var session = lockOwnedSession(userId, sessionId);
+        if (session.getStatus() == StudySessionStatus.ABANDONED) throw new StudyActionException("An abandoned session cannot be completed.");
+        var savedAnswers = answers.findBySession_IdOrderByPositionAsc(sessionId);
+        requireAllAnswered(session, savedAnswers);
+        if (session.isActive()) {
+            // PostgreSQL stores microseconds; keep retries identical to the first response.
+            session.complete(clock.instant().truncatedTo(ChronoUnit.MICROS));
+            sessions.saveAndFlush(session);
+        }
+        return summaryOf(session, savedAnswers);
+    }
+
+    @Transactional(readOnly = true)
+    public StudySummaryResponse getSummary(Long userId, Long sessionId) {
+        var session = findOwnedSession(userId, sessionId);
+        if (session.getStatus() != StudySessionStatus.COMPLETED) throw new StudyActionException("Complete this study session before viewing its summary.");
+        var savedAnswers = answers.findBySession_IdOrderByPositionAsc(sessionId);
+        requireAllAnswered(session, savedAnswers);
+        return summaryOf(session, savedAnswers);
+    }
+
+    private void requireAllAnswered(StudySession session, List<StudyAnswer> savedAnswers) {
+        if (savedAnswers.size() != session.getTotalCards() || savedAnswers.stream().anyMatch(answer -> !answer.isAnswered())) {
+            throw new StudyActionException("Save an answer for every flashcard before completing the session.");
+        }
+    }
+
+    private StudySummaryResponse summaryOf(StudySession session, List<StudyAnswer> savedAnswers) {
+        int total = session.getTotalCards();
+        int correct = (int) savedAnswers.stream().filter(answer -> Boolean.TRUE.equals(answer.getCorrect())).count();
+        int xp = savedAnswers.stream().mapToInt(answer -> StudyRules.sessionXp(Boolean.TRUE.equals(answer.getCorrect()), answer.isUsedHint())).sum();
+        return new StudySummaryResponse(session.getId(), session.getDeck().getId(), session.getDeck().getName(), total,
+                correct, total - correct, (int) Math.round(100.0 * correct / total), xp,
+                Duration.between(session.getStartedAt(), session.getEndedAt()).getSeconds(), session.getStartedAt(), session.getEndedAt());
+    }
+
+    private StudySession findOwnedSession(Long userId, Long sessionId) {
+        var session = sessions.findByIdAndUser_Id(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        decks.findByIdAndOwner_Id(session.getDeck().getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return session;
     }
 
     @Transactional
@@ -114,13 +161,9 @@ public class StudyService {
 
     @Transactional(readOnly = true)
     public StudySessionResponse getOwned(Long userId, Long sessionId) {
-        var session = sessions.findByIdAndUser_Id(sessionId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        // An owner-only study route is not a way to read another person's public deck.
-        var deck = decks.findByIdAndOwner_Id(session.getDeck().getId(), userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var session = findOwnedSession(userId, sessionId);
         var cards = answers.findBySession_IdOrderByPositionAsc(sessionId).stream().map(StudyQuestionResponse::from).toList();
-        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(deck), session.getTotalCards(),
+        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(session.getDeck()), session.getTotalCards(),
                 session.getStatus(), session.getStartedAt(), cards);
     }
 }

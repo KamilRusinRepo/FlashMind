@@ -5,6 +5,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StudyRulesTests {
     @Test
+    void sessionPointsDependOnCorrectnessAndSavedHintFlag() {
+        assertEquals(10, StudyRules.sessionXp(true, false));
+        assertEquals(5, StudyRules.sessionXp(true, true));
+        assertEquals(0, StudyRules.sessionXp(false, false));
+        assertEquals(0, StudyRules.sessionXp(false, true));
+    }
+    @Test
     void acceptsTrimmedCaseInsensitiveAlternativeAnswers() {
         assertTrue(StudyRules.matches("  PRZYZWYCZAJENIE  ", " nawyk, przyzwyczajenie "));
         assertTrue(StudyRules.matches("CIEKAWOŚĆ", "ciekawość"));

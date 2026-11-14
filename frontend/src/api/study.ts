@@ -4,6 +4,39 @@ import { postWithCsrf } from './csrf'
 export type StudyResult = { userAnswer: string; correct: boolean; usedHint: boolean; skipped: boolean; answeredAt: string; answer: string; translatedExample: string | null }
 export type StudyQuestion = { id: number; flashcardId: number | null; position: number; question: string; exampleSentence: string | null; imageUrl: string | null; usedHint: boolean; hint: string | null; result: StudyResult | null }
 export type StudySessionData = { id: number; deck: OwnedDeck; totalCards: number; status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'; startedAt: string; cards: StudyQuestion[] }
+export type StudySummaryData = { sessionId: number; deckId: number; deckName: string; totalCards: number; correctCards: number; wrongCards: number; accuracy: number; xpEarned: number; durationSeconds: number; startedAt: string; endedAt: string }
+
+function readSummary(value: unknown, sessionId: number): StudySummaryData {
+  if (!value || typeof value !== 'object') throw new StudyApiError('Unable to confirm the session summary. Refresh the session.')
+  const data = value as StudySummaryData
+  if (data.sessionId !== sessionId || !positiveId(data.deckId) || typeof data.deckName !== 'string'
+    || ![data.totalCards, data.correctCards, data.wrongCards, data.accuracy, data.xpEarned, data.durationSeconds].every(value => Number.isSafeInteger(value) && value >= 0)
+    || data.totalCards < 1 || data.totalCards > 10 || data.correctCards + data.wrongCards !== data.totalCards
+    || data.accuracy !== Math.round(100 * data.correctCards / data.totalCards) || data.xpEarned > data.correctCards * 10
+    || typeof data.startedAt !== 'string' || typeof data.endedAt !== 'string'
+    || !Number.isFinite(Date.parse(data.startedAt)) || !Number.isFinite(Date.parse(data.endedAt)) || Date.parse(data.endedAt) < Date.parse(data.startedAt)) {
+    throw new StudyApiError('Unable to confirm the session summary. Refresh the session.')
+  }
+  return data
+}
+
+export async function completeStudySession(sessionId: number): Promise<StudySummaryData> {
+  let response: Response
+  try { response = await postWithCsrf(`/api/study-sessions/${sessionId}/complete`, { signal: AbortSignal.timeout(15000) }) }
+  catch { throw new StudyApiError('Completion could not be confirmed. Refresh the session to see its saved state.') }
+  if (!response.ok) throw await responseError(response, 'Unable to complete the session. Please try again or refresh the session.')
+  return readSummary(await response.json().catch(() => null), sessionId)
+}
+
+export async function getStudySummary(sessionId: number, signal: AbortSignal): Promise<StudySummaryData> {
+  let response: Response
+  try {
+    response = await fetch(`/api/study-sessions/${sessionId}/summary`, { credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) })
+  } catch { throw new StudyApiError('Unable to load the summary. Check your connection and try again.') }
+  if (!response.ok) throw await responseError(response, 'Unable to load the summary. Please try again.')
+  return readSummary(await response.json().catch(() => null), sessionId)
+}
 
 export class StudyApiError extends Error {
   readonly status: number

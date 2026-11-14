@@ -144,6 +144,89 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test
+    void completesOnlyAfterAllAnswersAndReturnsPersistedSummaryOnReloadAndRetry() throws Exception {
+        var fixture = fixture(3);
+        String base = "/api/study-sessions/" + fixture.session().getId();
+        try (var client = new Client()) {
+            client.login(fixture.user());
+            assertEquals(409, client.post(base + "/complete", Map.of(), true).statusCode());
+            assertEquals(409, client.getPath(base + "/summary").statusCode());
+            var first = fixture.answers().get(0);
+            assertEquals(200, client.post(path(fixture, first) + "/hint", Map.of(), true).statusCode());
+            assertEquals(200, client.post(path(fixture, first), Map.of("userAnswer", "ciekawość"), true).statusCode());
+            assertEquals(409, client.post(base + "/complete", Map.of(), true).statusCode());
+            assertEquals(StudySessionStatus.ACTIVE, sessions.findById(fixture.session().getId()).orElseThrow().getStatus());
+            assertEquals(200, client.post(path(fixture, fixture.answers().get(1)), Map.of("userAnswer", "", "skipped", true), true).statusCode());
+            assertEquals(200, client.post(path(fixture, fixture.answers().get(2)), Map.of("userAnswer", "ciekawosc"), true).statusCode());
+            // Scores supplied by a client are ignored: results come from saved answers.
+            var completed = client.post(base + "/complete", Map.of("correctCards", 999, "xpEarned", 999), true);
+            assertEquals(200, completed.statusCode(), completed.body());
+            assertTrue(completed.headers().firstValue("Cache-Control").orElse("").contains("no-store"));
+            var result = json.readTree(completed.body());
+            assertEquals(fixture.session().getId().longValue(), result.get("sessionId").asLong());
+            assertEquals(fixture.deck().getId().longValue(), result.get("deckId").asLong());
+            assertEquals(3, result.get("totalCards").asInt());
+            assertEquals(2, result.get("correctCards").asInt());
+            assertEquals(1, result.get("wrongCards").asInt());
+            assertEquals(67, result.get("accuracy").asInt());
+            assertEquals(15, result.get("xpEarned").asInt());
+            var saved = sessions.findById(fixture.session().getId()).orElseThrow();
+            assertEquals(StudySessionStatus.COMPLETED, saved.getStatus());
+            assertEquals(saved.getEndedAt(), Instant.parse(result.get("endedAt").asText()));
+            assertEquals(java.time.Duration.between(saved.getStartedAt(), saved.getEndedAt()).getSeconds(), result.get("durationSeconds").asLong());
+            var reloaded = client.getPath(base + "/summary");
+            assertEquals(200, reloaded.statusCode(), reloaded.body());
+            assertEquals(result, json.readTree(reloaded.body()));
+            assertEquals(result, json.readTree(client.post(base + "/complete", Map.of(), true).body()));
+            assertEquals("COMPLETED", json.readTree(client.get(fixture.session().getId()).body()).get("status").asText());
+            assertEquals(3, progress.count());
+            assertTrue(progress.findAll().stream().allMatch(state -> state.getAttempts() == 1));
+        }
+    }
+
+    @Test
+    void protectsCompletionAndSummaryAndRejectsAbandonedSessions() throws Exception {
+        var own = fixture(1);
+        var foreign = fixture(1);
+        String base = "/api/study-sessions/" + own.session().getId();
+        String other = "/api/study-sessions/" + foreign.session().getId();
+        try (var client = new Client()) {
+            assertEquals(401, client.getPath(base + "/summary").statusCode());
+            assertEquals(401, client.post(base + "/complete", Map.of(), true).statusCode());
+            client.login(own.user());
+            assertEquals(403, client.post(base + "/complete", Map.of(), false).statusCode());
+            assertEquals(404, client.post(other + "/complete", Map.of(), true).statusCode());
+            assertEquals(404, client.getPath(other + "/summary").statusCode());
+            assertEquals(404, client.getPath("/api/study-sessions/9223372036854775807/summary").statusCode());
+            var abandoned = sessions.findById(own.session().getId()).orElseThrow();
+            abandoned.abandon(Instant.now());
+            sessions.saveAndFlush(abandoned);
+            assertEquals(409, client.post(base + "/complete", Map.of(), true).statusCode());
+            assertEquals(409, client.getPath(base + "/summary").statusCode());
+            assertEquals(StudySessionStatus.ABANDONED, sessions.findById(own.session().getId()).orElseThrow().getStatus());
+        }
+    }
+
+    @Test
+    void concurrentCompletionReturnsTheSameSummaryWithoutUpdatingProgressAgain() throws Exception {
+        var fixture = fixture(1);
+        String base = "/api/study-sessions/" + fixture.session().getId();
+        try (var client = new Client()) {
+            client.login(fixture.user());
+            assertEquals(200, client.post(path(fixture, fixture.answers().getFirst()), Map.of("userAnswer", "ciekawość"), true).statusCode());
+            client.csrf();
+            var first = CompletableFuture.supplyAsync(() -> client.completeUnchecked(base));
+            var second = CompletableFuture.supplyAsync(() -> client.completeUnchecked(base));
+            var firstResponse = first.get(20, TimeUnit.SECONDS);
+            var secondResponse = second.get(20, TimeUnit.SECONDS);
+            assertEquals(200, firstResponse.statusCode(), firstResponse.body());
+            assertEquals(200, secondResponse.statusCode(), secondResponse.body());
+            assertEquals(json.readTree(firstResponse.body()), json.readTree(secondResponse.body()));
+            assertEquals(1, progress.findAll().getFirst().getAttempts());
+        }
+    }
+
     private record Fixture(User user, Deck deck, StudySession session, List<StudyAnswer> answers) {}
     private Fixture fixture(int count) {
         String name = "Answer" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
@@ -185,7 +268,14 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
             catch (Exception exception) { throw new RuntimeException(exception); }
         }
         HttpResponse<String> get(Long id) throws Exception {
-            return http.send(HttpRequest.newBuilder(endpoint("/api/study-sessions/" + id)).GET().build(), HttpResponse.BodyHandlers.ofString());
+            return getPath("/api/study-sessions/" + id);
+        }
+        HttpResponse<String> getPath(String path) throws Exception {
+            return http.send(HttpRequest.newBuilder(endpoint(path)).GET().build(), HttpResponse.BodyHandlers.ofString());
+        }
+        HttpResponse<String> completeUnchecked(String base) {
+            try { return post(base + "/complete", Map.of(), true); }
+            catch (Exception exception) { throw new RuntimeException(exception); }
         }
         @Override public void close() { http.close(); }
     }

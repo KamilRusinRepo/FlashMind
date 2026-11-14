@@ -3,6 +3,7 @@ package com.example.backend.study;
 import java.net.URI;
 import com.example.backend.auth.SessionUser;
 import com.example.backend.study.dto.response.StudySessionResponse;
+import com.example.backend.study.dto.response.StudySummaryResponse;
 import com.example.backend.study.dto.response.StudyQuestionResponse;
 import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
 import jakarta.validation.Valid;
@@ -21,6 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class StudyController {
     private final StudyService study;
     public StudyController(StudyService study) { this.study = study; }
+
+    @PostMapping("/study-sessions/{sessionId}/complete")
+    public ResponseEntity<StudySummaryResponse> complete(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "sessionId") Long sessionId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(study.complete(user.id(), sessionId));
+    }
+
+    @GetMapping("/study-sessions/{sessionId}/summary")
+    public ResponseEntity<StudySummaryResponse> summary(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "sessionId") Long sessionId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(study.getSummary(user.id(), sessionId));
+    }
 
     @PostMapping("/study-sessions/{sessionId}/answers/{answerId}")
     public ResponseEntity<StudyQuestionResponse> submit(@AuthenticationPrincipal SessionUser user,
