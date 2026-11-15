@@ -8,6 +8,7 @@ import EditDeckPage from './pages/EditDeckPage'
 import DeckDetailsPage from './pages/DeckDetailsPage'
 import StudyPage from './pages/StudyPage'
 import SettingsPage from './pages/SettingsPage'
+import StatisticsPage from './pages/StatisticsPage'
 import ConfirmEmailChangePage from './pages/ConfirmEmailChangePage'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthPage from './pages/AuthPage'
@@ -28,6 +29,7 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="statistics" element={<StatisticsPage />} />
           <Route path="decks" element={<MyDecksPage />} />
           <Route path="decks/create" element={<CreateDeckPage />} />
           <Route path="decks/:deckId/edit" element={<EditDeckPage />} />
