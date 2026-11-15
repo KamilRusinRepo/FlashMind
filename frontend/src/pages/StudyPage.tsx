@@ -46,7 +46,7 @@ function StudyLanding({ deckId }: { deckId: number }) {
   if (state.status === 'loading') return <p className="study-load-message" role="status">{t("Loading your deck…")}</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   return <section className="study-load-message study-entry"><h1>{state.data.name}</h1>
-    <p>{t("Choose Scheduled Review for due and new cards, or Free Practice to practise the whole deck.")}</p>
+    <p>{t("Choose Scheduled Review for due and new cards, or Free Practice for up to 10 random cards.")}</p>
     <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>{t("Back to deck")}</Link>
   </section>
 }

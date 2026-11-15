@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class StudyService {
+    private static final int SESSION_CARD_LIMIT = 10;
     private final StudySessionRepository sessions;
     private final StudyAnswerRepository answers;
     private final FlashcardRepository flashcards;
@@ -146,8 +147,8 @@ public class StudyService {
         var deck = decks.findOwnedForUpdate(deckId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         var now = clock.instant();
         var cards = mode == StudyMode.FREE_PRACTICE
-                ? flashcards.findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(deckId, userId)
-                : flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, 10));
+                ? flashcards.findForFreePractice(deckId, userId, PageRequest.of(0, SESSION_CARD_LIMIT))
+                : flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, SESSION_CARD_LIMIT));
         if (cards.isEmpty()) {
             throw new StudyStartException(flashcards.existsByDeck_IdAndDeck_Owner_Id(deckId, userId)
                     ? "No flashcards are due for review yet."

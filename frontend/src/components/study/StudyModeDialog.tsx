@@ -42,7 +42,7 @@ export default function StudyModeDialog({ onClose, onStart, sending, error }: {
         <input type="radio" name={groupName} value="FREE_PRACTICE" checked={mode === 'FREE_PRACTICE'} onChange={() => setMode('FREE_PRACTICE')} />
         <span className="study-mode-icon"><img src={practiceIcon} alt="" /></span>
         <span className="study-mode-copy"><strong>{t("Free Practice")}</strong>
-          <span>{t("Practise the whole deck whenever you like, regardless of review dates.")}</span>
+          <span>{t("Practise up to 10 random cards from this deck, regardless of review dates.")}</span>
           <small>{t("Keeps your review schedule unchanged")}</small></span>
       </label>
     </fieldset>

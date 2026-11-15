@@ -69,7 +69,7 @@ function StatisticsView({ data }: { data: StatisticsOverview }) {
       </section>)}
     </div>
     {data.periods.all.studied === 0 && <p className="statistics-preview">{t('No learning activity yet. Start a study session to see your progress.')}</p>}
-    <p className="statistics-preview">{t('Study streak requires {0} answers per day. Dates use {1}.', [data.profile.dailyGoal, data.zone])}</p>
+    <p className="statistics-preview">{t('Study streak requires {0} answers per day.', [data.profile.dailyGoal])}</p>
     <StatisticsCharts days={days} streak={streak} decks={data.decks} />
   </div>
 }
