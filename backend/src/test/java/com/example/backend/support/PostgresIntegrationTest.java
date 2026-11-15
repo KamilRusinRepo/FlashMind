@@ -26,6 +26,10 @@ public abstract class PostgresIntegrationTest {
         properties.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         properties.add("spring.datasource.username", POSTGRES::getUsername);
         properties.add("spring.datasource.password", POSTGRES::getPassword);
+        // Cached Spring contexts each own a pool but share this PostgreSQL instance.
+        // Two connections also allow the existing concurrent-request tests to run.
+        properties.add("spring.datasource.hikari.maximum-pool-size", () -> 2);
+        properties.add("spring.datasource.hikari.minimum-idle", () -> 0);
         properties.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         properties.add("spring.flyway.user", POSTGRES::getUsername);
         properties.add("spring.flyway.password", POSTGRES::getPassword);

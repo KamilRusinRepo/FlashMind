@@ -34,6 +34,7 @@
 .mastery-report-table-head > :nth-child(2) { text-align: center; }
 .mastery-report-table-head > :last-child { text-align: right; }
 .mastery-report-list { display: grid; gap: 14px; }
+.mastery-report-pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
 .mastery-report-row { padding-block: 18px; border: 1px solid var(--border); border-radius: 17px; background: var(--mastery-surface); }
 .mastery-report-front { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 20px; }
 .mastery-report-front h3 { font-size: 1em; overflow-wrap: anywhere; }
