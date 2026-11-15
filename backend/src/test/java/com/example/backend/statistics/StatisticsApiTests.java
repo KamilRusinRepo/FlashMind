@@ -55,6 +55,8 @@ class StatisticsApiTests extends PostgresIntegrationTest {
             assertEquals(365, data.get("activity").size());
             assertEquals(0, data.get("profile").get("totalXp").asLong());
             assertEquals(1, data.get("profile").get("level").asInt());
+            assertEquals(0, data.get("profile").get("currentLevelXp").asLong());
+            assertEquals(100, data.get("profile").get("nextLevelXp").asLong());
             assertEquals(0, data.get("periods").get("all").get("accuracy").asInt());
             assertEquals(0, data.get("decks").size());
         }
@@ -103,6 +105,8 @@ class StatisticsApiTests extends PostgresIntegrationTest {
             assertEquals(540, day.get("studySeconds").asLong());
             assertEquals(0, day.get("mastered").asLong());
             assertEquals(25, data.get("profile").get("totalXp").asLong());
+            assertEquals(25, data.get("profile").get("currentLevelXp").asLong());
+            assertEquals(100, data.get("profile").get("nextLevelXp").asLong());
             assertEquals(2, data.get("profile").get("globalRank").asLong());
             assertEquals(1, data.get("periods").get("all").get("mastered").asLong());
             assertEquals(50, data.get("decks").get(0).get("masteryPercent").asInt());

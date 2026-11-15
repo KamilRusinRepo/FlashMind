@@ -4,7 +4,7 @@ export type DeckMastery = { id: number; name: string; total: number; mastered: n
 export type StatisticsPeriod = { start: string; end: string; mastered: number; studySeconds: number; studied: number; correct: number; accuracy: number; xp: number }
 export type StatisticsOverview = {
   today: string; zone: string
-  profile: { totalXp: number; level: number; globalRank: number; streak: number; dailyGoal: number }
+  profile: { totalXp: number; level: number; globalRank: number; streak: number; dailyGoal: number; currentLevelXp: number; nextLevelXp: number }
   periods: Record<StatisticsRange, StatisticsPeriod>
   activity: { date: string; studied: number; correct: number; xp: number }[]
   decks: DeckMastery[]
@@ -36,7 +36,8 @@ export function isDeckMasteryList(value: unknown): value is DeckMastery[] { retu
 export function isStatisticsOverview(value: unknown): value is StatisticsOverview {
   if (!object(value) || !date(value.today) || !zone(value.zone) || !object(value.profile) || !object(value.periods)) return false
   const profile = value.profile, periods = value.periods
-  return ['totalXp', 'level', 'globalRank', 'streak', 'dailyGoal'].every(key => integer(profile[key]))
+  return ['totalXp', 'level', 'globalRank', 'streak', 'dailyGoal', 'currentLevelXp', 'nextLevelXp'].every(key => integer(profile[key]))
+    && Number(profile.nextLevelXp) > 0 && Number(profile.currentLevelXp) <= Number(profile.nextLevelXp)
     && ['day', 'week', 'month', 'all'].every(key => {
       const period = periods[key]
       return object(period) && date(period.start) && date(period.end) && period.start <= period.end

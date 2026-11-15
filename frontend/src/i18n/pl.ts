@@ -1,5 +1,6 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Learning statistics': 'Statystyki nauki',
   '{0} s': '{0} s',
   'Previous': 'Poprzednia',
   'Page {0} of {1}': 'Strona {0} z {1}',

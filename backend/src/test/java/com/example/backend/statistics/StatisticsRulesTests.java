@@ -13,6 +13,11 @@ class StatisticsRulesTests {
         assertEquals(2, StatisticsRules.level(232));
         assertEquals(3, StatisticsRules.level(233));
         assertEquals(4, StatisticsRules.level(410));
+        assertEquals(new StatisticsRules.LevelProgress(1, 0, 100), StatisticsRules.levelProgress(0));
+        assertEquals(new StatisticsRules.LevelProgress(1, 99, 100), StatisticsRules.levelProgress(99));
+        assertEquals(new StatisticsRules.LevelProgress(2, 0, 133), StatisticsRules.levelProgress(100));
+        assertEquals(new StatisticsRules.LevelProgress(2, 132, 133), StatisticsRules.levelProgress(232));
+        assertEquals(new StatisticsRules.LevelProgress(3, 0, 177), StatisticsRules.levelProgress(233));
     }
     @Test void unfinishedTodayKeepsYesterdaysStreakButMissingYesterdayBreaksIt() {
         var today = LocalDate.of(2026, 11, 16);

@@ -57,12 +57,14 @@ public class StatisticsService {
                     studied, correct, StatisticsRules.accuracy(studied, correct), selected.stream().mapToLong(DailyActivity::xp).sum()));
         });
         long totalXp = periods.get("all").xp();
+        var level = StatisticsRules.levelProgress(totalXp);
         var byDate = activity.stream().collect(Collectors.toMap(DailyActivity::date, Function.identity()));
         var heatmap = today.minusDays(364).datesUntil(today.plusDays(1))
                 .map(day -> byDate.getOrDefault(day, new DailyActivity(day, 0, 0, 0))).toList();
         var counts = activity.stream().collect(Collectors.toMap(DailyActivity::date, DailyActivity::studied));
-        return new StatisticsOverviewResponse(today, zone.getId(), new Profile(totalXp, StatisticsRules.level(totalXp),
-                statistics.rank(userId, totalXp, now), StatisticsRules.streak(today, counts), StatisticsRules.DAILY_GOAL),
+        return new StatisticsOverviewResponse(today, zone.getId(), new Profile(totalXp, level.level(),
+                statistics.rank(userId, totalXp, now), StatisticsRules.streak(today, counts), StatisticsRules.DAILY_GOAL,
+                level.currentXp(), level.requiredXp()),
                 periods, heatmap, statistics.decks(userId).stream().limit(4).toList());
     }
 

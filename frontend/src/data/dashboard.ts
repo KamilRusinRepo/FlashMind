@@ -1,4 +1,4 @@
-// Only learning statistics and the Explore preview remain sample data.
+// Explore remains a preview until the public deck API is connected.
 export type ExploreDeck = {
   id: string
   name: string
@@ -10,8 +10,6 @@ export type ExploreDeck = {
   learners: number
   rating: string
 }
-
-export const dashboardStats = { streak: 7, studiedToday: 12, dailyGoal: 20, level: 6, xp: 180, nextLevelXp: 420 }
 
 export const exploreDecks: ExploreDeck[] = [
   { id: 'everyday-spanish', name: 'Everyday Spanish', initial: 'S', category: 'Language', tone: 'orange', cardCount: 80,

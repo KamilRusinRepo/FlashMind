@@ -47,6 +47,8 @@
 .db-welcome h1 { font-size: clamp(26px, 2vw, 48px); line-height: 1.2; letter-spacing: -.045em; overflow-wrap: anywhere; }
 .db-welcome > p:last-child { margin-top: 10px; color: var(--muted); font-size: 1em; }
 .db-metrics { display: flex; flex-wrap: wrap; gap: 12px; }
+.db-metrics-status { flex-wrap: wrap; max-width: 440px; color: var(--muted); font-size: .85em; overflow-wrap: anywhere; }
+.db-total-xp { color: var(--muted); font-size: .7em; }
 .db-metric { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 13px 18px; border: 1px solid #e2e9f0; border-radius: 17px; background: #fff; min-height: 78px; }
 .db-metric > div:not(.db-progress-label) { display: grid; }
 .db-metric strong { font-size: 1em; white-space: nowrap; }
