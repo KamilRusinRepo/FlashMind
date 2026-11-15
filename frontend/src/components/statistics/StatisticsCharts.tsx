@@ -54,12 +54,12 @@ export default function StatisticsCharts({ days, streak }: { days: DailyStatisti
       </section>
       <section className="statistics-panel statistics-mastery" aria-labelledby={`${chartId}-mastery`}>
         <div className="statistics-panel-heading"><h2 id={`${chartId}-mastery`}>{t('Deck Mastery')}</h2></div>
-        <div className="statistics-mastery-list">{sampleDeckMastery.map(deck => <div className="statistics-mastery-deck" key={deck.name}>
+        <div className="statistics-mastery-list">{sampleDeckMastery.map(deck => <Link className="statistics-mastery-deck" to={`/statistics/decks/${deck.slug}`} key={deck.slug}>
           <div><h3>{deck.name}</h3><strong>{percent.format(deck.mastered / deck.total)}</strong></div>
           <p>{t('Cards mastered: {0}', [number.format(deck.mastered)])}</p>
           <progress max={deck.total} value={deck.mastered} aria-label={t('Mastery of {0}', [deck.name])} />
-        </div>)}</div>
-        <Link to="/decks" className="statistics-view-decks">{t('View All Decks')} <span aria-hidden="true">→</span></Link>
+        </Link>)}</div>
+        <Link to="/statistics/decks" className="statistics-view-decks">{t('View All Decks')} <span aria-hidden="true">→</span></Link>
       </section>
     </div>
     <details className="statistics-panel statistics-data">

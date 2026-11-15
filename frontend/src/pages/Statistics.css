@@ -65,6 +65,8 @@
 .statistics-week-day strong { font-size: .7em; color: var(--muted); text-transform: uppercase; }
 .statistics-week-day.is-today strong { color: var(--primary-dark); }
 .statistics-mastery-list { display: grid; gap: 24px; }
+.statistics-mastery-deck { display: block; border-radius: 8px; }
+.statistics-mastery-deck:hover h3 { color: var(--primary-dark); }
 .statistics-mastery-deck > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .statistics-mastery-deck h3 { font-size: .95em; overflow-wrap: anywhere; }
 .statistics-mastery-deck strong { color: var(--primary-dark); font-size: .95em; }

@@ -47,7 +47,7 @@ export function currentSampleStreak(days: DailyStatistics[]) {
 export const sampleStatisticsProfile = { level: 6, globalRank: 12 }
 
 export const sampleDeckMastery = [
-  { name: 'English A1', mastered: 42, total: 60 },
-  { name: 'English B1', mastered: 23, total: 50 },
-  { name: 'Spanish Basics', mastered: 8, total: 40 },
+  { slug: 'sample-english-a1', name: 'English A1', mastered: 42, total: 60 },
+  { slug: 'sample-english-b1', name: 'English B1', mastered: 23, total: 50 },
+  { slug: 'sample-spanish-basics', name: 'Spanish Basics', mastered: 8, total: 40 },
 ]
