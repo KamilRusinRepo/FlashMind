@@ -1,0 +1,40 @@
+export type PublicExploreDeck = {
+  id: number; name: string; description: string | null; deckType: 'GENERAL' | 'LANGUAGE'
+  category: string | null; sourceLanguage: string; targetLanguage: string | null; backgroundUrl: string | null
+  createdAt: string; cardCount: number; author: { id: number | null; displayName: string }; ownDeck: boolean
+}
+export type PublicDeckPage = { content: PublicExploreDeck[]; page: number; size: number; totalElements: number; totalPages: number }
+export class ExploreApiError extends Error {
+  readonly status: number
+  constructor(message: string, status = 0) { super(message); this.name = 'ExploreApiError'; this.status = status }
+}
+function isPublicDeck(value: unknown): value is PublicExploreDeck {
+  if (!value || typeof value !== 'object') return false
+  const deck = value as Record<string, unknown>
+  const author = deck.author as Record<string, unknown> | null
+  const optionalText = (text: unknown) => text === null || typeof text === 'string'
+  return Number.isSafeInteger(deck.id) && Number(deck.id) > 0 && typeof deck.name === 'string' && optionalText(deck.description)
+    && (deck.deckType === 'GENERAL' || deck.deckType === 'LANGUAGE') && optionalText(deck.category)
+    && typeof deck.sourceLanguage === 'string' && optionalText(deck.targetLanguage) && optionalText(deck.backgroundUrl)
+    && typeof deck.createdAt === 'string' && !Number.isNaN(Date.parse(deck.createdAt))
+    && Number.isSafeInteger(deck.cardCount) && Number(deck.cardCount) >= 0 && typeof deck.ownDeck === 'boolean'
+    && !!author && typeof author === 'object' && (author.id === null || Number.isSafeInteger(author.id) && Number(author.id) > 0) && typeof author.displayName === 'string'
+}
+export async function getPublicDecks(query: string, page: number, signal: AbortSignal): Promise<PublicDeckPage> {
+  const params = new URLSearchParams(query)
+  params.set('size', '12')
+  let response: Response
+  try {
+    response = await fetch(`/api/explore/decks?${params}`, { credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) })
+  } catch { throw new ExploreApiError('Unable to load public decks. Please check your connection and try again.') }
+  if (!response.ok) throw new ExploreApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
+    : response.status === 400 ? 'These search filters are invalid. Clear the filters and try again.' : 'Unable to load public decks. Please try again.', response.status)
+  const data = await response.json().catch(() => null)
+  if (response.status !== 200 || !data || !Array.isArray(data.content) || !data.content.every(isPublicDeck) || data.content.length > 12
+    || data.page !== page || data.size !== 12 || !Number.isSafeInteger(data.totalElements) || data.totalElements < data.content.length
+    || !Number.isSafeInteger(data.totalPages) || data.totalPages !== Math.ceil(data.totalElements / 12)) {
+    throw new ExploreApiError('The server returned an unexpected public deck list. Please try again.')
+  }
+  return data as PublicDeckPage
+}

@@ -1,5 +1,17 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Public deck details, following and ratings are coming soon.': 'Podgląd publicznych talii, obserwowanie i oceny będą dostępne w kolejnych etapach.',
+  'Loading public decks…': 'Wczytywanie publicznych talii…',
+  'Public Decks': 'Publiczne talie',
+  'No decks on this page.': 'Na tej stronie nie ma talii.',
+  'Public deck pages': 'Strony publicznych talii',
+  'This is your deck.': 'To Twoja talia.',
+  'Following decks is coming soon.': 'Obserwowanie talii będzie dostępne wkrótce.',
+  'Your Deck': 'Twoja talia',
+  'Unable to load public decks. Please check your connection and try again.': 'Nie udało się wczytać publicznych talii. Sprawdź połączenie i spróbuj ponownie.',
+  'Unable to load public decks. Please try again.': 'Nie udało się wczytać publicznych talii. Spróbuj ponownie.',
+  'These search filters are invalid. Clear the filters and try again.': 'Filtry wyszukiwania są nieprawidłowe. Wyczyść je i spróbuj ponownie.',
+  'The server returned an unexpected public deck list. Please try again.': 'Serwer zwrócił nieprawidłową listę publicznych talii. Spróbuj ponownie.',
   'Most Followed': 'Najczęściej obserwowane',
   'Most Cards': 'Najwięcej fiszek',
   'Highest Rated': 'Najwyżej oceniane',
