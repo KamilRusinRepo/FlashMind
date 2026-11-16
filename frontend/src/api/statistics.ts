@@ -1,6 +1,6 @@
 export type StatisticsRange = 'day' | 'week' | 'month' | 'all'
 export type DailyStatistics = { date: Date; studied: number; correct: number; xp: number }
-export type DeckMastery = { id: number; name: string; total: number; mastered: number; masteryPercent: number; correct: number; wrong: number }
+export type DeckMastery = { id: number; name: string; total: number; mastered: number; masteryPercent: number; correct: number; wrong: number; deckType: 'GENERAL' | 'LANGUAGE'; dueCards: number }
 export type StatisticsPeriod = { start: string; end: string; mastered: number; studySeconds: number; studied: number; correct: number; accuracy: number; xp: number }
 export type StatisticsOverview = {
   today: string; zone: string
@@ -29,7 +29,8 @@ const zone = (value: unknown): value is string => {
 }
 export function isDeckMastery(value: unknown): value is DeckMastery {
   return object(value) && integer(value.id) && value.id > 0 && typeof value.name === 'string'
-    && ['total', 'mastered', 'masteryPercent', 'correct', 'wrong'].every(key => integer(value[key]))
+    && ['total', 'mastered', 'masteryPercent', 'correct', 'wrong', 'dueCards'].every(key => integer(value[key]))
+    && (value.deckType === 'GENERAL' || value.deckType === 'LANGUAGE') && Number(value.dueCards) <= Number(value.total)
     && Number(value.mastered) <= Number(value.total) && Number(value.masteryPercent) <= 100
 }
 export function isDeckMasteryList(value: unknown): value is DeckMastery[] { return Array.isArray(value) && value.every(isDeckMastery) }

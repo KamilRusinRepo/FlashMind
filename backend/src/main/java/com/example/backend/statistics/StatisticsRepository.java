@@ -9,6 +9,7 @@ import com.example.backend.statistics.dto.response.DeckMasteryResponse;
 import com.example.backend.statistics.dto.response.MasteryReportResponse;
 import com.example.backend.statistics.dto.response.StatisticsOverviewResponse.DailyActivity;
 import com.example.backend.study.StudyRules;
+import com.example.backend.deck.DeckType;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -69,23 +70,25 @@ public class StatisticsRepository {
             """.formatted(XP), parameters(userId, "Europe/Warsaw", now).addValue("xp", xp), Long.class);
     }
 
-    public List<DeckMasteryResponse> decks(Long userId) {
-        return decks(userId, 0L);
+    public List<DeckMasteryResponse> decks(Long userId, Instant now) {
+        return decks(userId, 0L, now);
     }
 
-    public List<DeckMasteryResponse> decks(Long userId, Long deckId) {
+    public List<DeckMasteryResponse> decks(Long userId, Long deckId, Instant now) {
         return jdbc.query("""
-            SELECT d.id, d.name, COUNT(f.id) AS total,
+            SELECT d.id, d.name, d.deck_type, COUNT(f.id) AS total,
                    COUNT(p.id) FILTER (WHERE p.mastery_level = 4) AS mastered,
                    COALESCE(ROUND(AVG(COALESCE(p.mastery_level, 0)) / 4.0 * 100), 0)::int AS mastery,
-                   COALESCE(SUM(p.correct_count), 0) AS correct, COALESCE(SUM(p.wrong_count), 0) AS wrong
+                   COALESCE(SUM(p.correct_count), 0) AS correct, COALESCE(SUM(p.wrong_count), 0) AS wrong,
+                   COUNT(f.id) FILTER (WHERE p.id IS NULL OR p.next_review_at IS NULL OR p.next_review_at <= :now) AS due
             FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.id
             LEFT JOIN flashcard_progress p ON p.flashcard_id = f.id AND p.user_id = :userId
             WHERE d.owner_id = :userId AND (:deckId = 0 OR d.id = :deckId) GROUP BY d.id
             ORDER BY (SELECT MAX(s.started_at) FROM study_sessions s WHERE s.deck_id = d.id AND s.user_id = :userId) DESC NULLS LAST,
                      d.created_at DESC, d.id DESC
-            """, Map.of("userId", userId, "deckId", deckId), (rs, row) -> new DeckMasteryResponse(rs.getLong("id"), rs.getString("name"),
-                rs.getLong("total"), rs.getLong("mastered"), rs.getInt("mastery"), rs.getLong("correct"), rs.getLong("wrong")));
+            """, new MapSqlParameterSource("userId", userId).addValue("deckId", deckId).addValue("now", Timestamp.from(now)),
+                (rs, row) -> new DeckMasteryResponse(rs.getLong("id"), rs.getString("name"), rs.getLong("total"), rs.getLong("mastered"),
+                    rs.getInt("mastery"), rs.getLong("correct"), rs.getLong("wrong"), DeckType.valueOf(rs.getString("deck_type")), rs.getLong("due")));
     }
 
     public List<MasteryReportResponse.Bucket> buckets(Long userId, Long deckId) {

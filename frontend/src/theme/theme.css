@@ -91,7 +91,8 @@ html[data-theme='dark'] :is(.form-notice:not(.form-error):not(.form-success), .d
 }
 html[data-theme='dark'] .db-preview-badge { color: var(--info-text); }
 html[data-theme='dark'] .connection-card button { background: var(--success-background); border-color: var(--success-border); color: var(--success-text); }
-html[data-theme='dark'] .db-streak { background: #31291c; border-color: #665132; }
+html[data-theme='dark'] .db-streak.is-completed { background: #3b2c1b; border-color: #855e2b; }
+html[data-theme='dark'] .db-goal.is-completed { background: var(--success-background); border-color: var(--success-border); }
 html[data-theme='dark'] .study-summary-stat.is-xp .study-summary-value strong { color: #f0ca66; }
 html[data-theme='dark'] :is(.button-primary:hover, .study-exit:hover) { background: var(--primary-hover); }
 

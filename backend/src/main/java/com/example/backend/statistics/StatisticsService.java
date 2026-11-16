@@ -65,10 +65,10 @@ public class StatisticsService {
         return new StatisticsOverviewResponse(today, zone.getId(), new Profile(totalXp, level.level(),
                 statistics.rank(userId, totalXp, now), StatisticsRules.streak(today, counts), StatisticsRules.DAILY_GOAL,
                 level.currentXp(), level.requiredXp()),
-                periods, heatmap, statistics.decks(userId).stream().limit(4).toList());
+                periods, heatmap, statistics.decks(userId, now).stream().limit(4).toList());
     }
 
-    public List<DeckMasteryResponse> decks(Long userId) { return statistics.decks(userId); }
+    public List<DeckMasteryResponse> decks(Long userId) { return statistics.decks(userId, clock.instant()); }
 
     public MasteryReportResponse report(Long userId, Long deckId, int stars, String sort, int page, int size) {
         if (deckId < 1 || stars < 0 || stars > 4 || !(sort.equals("strongest") || sort.equals("weakest")) || page < 0 || size < 1 || size > 100) {
@@ -79,8 +79,9 @@ public class StatisticsService {
         var buckets = java.util.stream.IntStream.rangeClosed(1, 4).mapToObj(level -> new MasteryReportResponse.Bucket(level, found.getOrDefault(level, 0L))).toList();
         long total = buckets.stream().mapToLong(MasteryReportResponse.Bucket::count).sum();
         long filtered = stars == 0 ? total : found.getOrDefault(stars, 0L);
-        var overview = statistics.decks(userId, deckId).getFirst();
-        return new MasteryReportResponse(deckId, deck.getName(), total, overview.masteryPercent(), clock.instant().atZone(zone).toLocalDate(), zone.getId(), buckets,
+        var now = clock.instant();
+        var overview = statistics.decks(userId, deckId, now).getFirst();
+        return new MasteryReportResponse(deckId, deck.getName(), total, overview.masteryPercent(), now.atZone(zone).toLocalDate(), zone.getId(), buckets,
                 statistics.cards(userId, deckId, stars, sort.equals("strongest"), page, size), page, size, filtered, (int) ((filtered + size - 1) / size));
     }
 }

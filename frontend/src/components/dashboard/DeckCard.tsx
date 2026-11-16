@@ -1,19 +1,21 @@
 import { useLanguage } from '../../i18n/LanguageContext'
-import { categoryName, languageName } from '../../i18n/labels'
-import { Link } from 'react-router'
-import type { OwnedDeck } from '../../api/decks'
+import { categoryName } from '../../i18n/labels'
+import type { DeckMastery } from '../../api/statistics'
 import type { ExploreDeck } from '../../data/dashboard'
+import StudyStartButton from '../study/StudyStartButton'
 
-export function LearningCard({ deck }: { deck: OwnedDeck }) {
-  const { t } = useLanguage()
+export function LearningCard({ deck }: { deck: DeckMastery }) {
+  const { t, locale, count } = useLanguage()
   const tone = deck.deckType === 'LANGUAGE' ? 'purple' : 'blue'
   return <article className="db-learning-card">
     <div className={`db-learning-icon db-tone-${tone}`} aria-hidden="true">{deck.name.slice(0, 1).toUpperCase()}</div>
     <div className="db-learning-copy">
-      <h3>{deck.name}</h3><p>{deck.deckType === 'LANGUAGE' ? t("Language deck") : t("General deck")}</p>
-      <p>{languageName(deck.sourceLanguage, t)}{deck.targetLanguage && <> → {languageName(deck.targetLanguage, t)}</>}</p>
+      <h3>{deck.name}</h3><p>{t('{0} ready to study today', [count(deck.dueCards, 'card')])}</p>
+      <div className="db-progress-label"><span>{t('Mastery')}</span><strong>{new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(deck.masteryPercent / 100)}</strong></div>
+      <progress className="db-progress" max={100} value={deck.masteryPercent} aria-label={t('Mastery of {0}', [deck.name])} />
     </div>
-    <Link className="db-action" to={`/decks/${deck.id}/edit`} aria-label={t("Manage {0}", [deck.name])}>{t("Manage Deck")}</Link>
+    <div className="db-learning-start">{deck.total > 0 ? <StudyStartButton deckId={deck.id} label={t('Start Session')} />
+      : <button className="button button-primary" type="button" disabled title={t('Add at least one flashcard before starting a study session.')}>{t('Start Session')}</button>}</div>
   </article>
 }
 

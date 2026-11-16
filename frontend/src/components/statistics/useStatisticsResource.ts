@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { getStatistics, StatisticsApiError } from '../../api/statistics'
 
-type Resource<T> = { status: 'ready'; data: T } | { status: 'error'; message: string } | { status: 'loading' }
+export type StatisticsResource<T> = { status: 'ready'; data: T } | { status: 'error'; message: string } | { status: 'loading' }
 export function useStatisticsResource<T>(path: string, validate: (value: unknown) => value is T) {
   const { user, refresh } = useAuth()
   const [attempt, setAttempt] = useState(0)
-  const [saved, setSaved] = useState<{ key: string; state: Resource<T> } | null>(null)
+  const [saved, setSaved] = useState<{ key: string; state: StatisticsResource<T> } | null>(null)
   const key = `${user?.id}:${path}:${attempt}`
   useEffect(() => {
     const controller = new AbortController()
@@ -19,6 +19,6 @@ export function useStatisticsResource<T>(path: string, validate: (value: unknown
     })
     return () => controller.abort()
   }, [path, validate, key, refresh])
-  const state: Resource<T> = saved?.key === key ? saved.state : { status: 'loading' }
+  const state: StatisticsResource<T> = saved?.key === key ? saved.state : { status: 'loading' }
   return { state, retry: () => setAttempt(value => value + 1) }
 }

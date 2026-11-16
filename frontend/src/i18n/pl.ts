@@ -1,5 +1,10 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Daily goal completed': 'Cel dzienny osiągnięty',
+  'Loading mastery…': 'Wczytywanie poziomu opanowania…',
+  'Mastery is temporarily unavailable.': 'Poziom opanowania jest chwilowo niedostępny.',
+  'Start Session': 'Rozpocznij sesję',
+  '{0} ready to study today': 'Do nauki dzisiaj: {0}',
   'Learning statistics': 'Statystyki nauki',
   '{0} s': '{0} s',
   'Previous': 'Poprzednia',

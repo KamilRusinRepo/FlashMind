@@ -110,6 +110,8 @@ class StatisticsApiTests extends PostgresIntegrationTest {
             assertEquals(2, data.get("profile").get("globalRank").asLong());
             assertEquals(1, data.get("periods").get("all").get("mastered").asLong());
             assertEquals(50, data.get("decks").get(0).get("masteryPercent").asInt());
+            assertEquals(1, data.get("decks").get(0).get("dueCards").asLong()); // Only the unstudied card; the others are not due yet.
+            assertEquals("GENERAL", data.get("decks").get(0).get("deckType").asText());
             assertEquals(1, data.get("decks").size());
             var firstPage = json.readTree(client.get("/decks/" + deck.getId() + "?size=1").body());
             assertEquals(first.getId().longValue(), firstPage.get("content").get(0).get("id").asLong());
@@ -139,6 +141,7 @@ class StatisticsApiTests extends PostgresIntegrationTest {
             var list = json.readTree(client.get("/decks").body());
             assertEquals(1, list.size());
             assertEquals(own.getId().longValue(), list.get(0).get("id").asLong());
+            assertEquals(0, list.get(0).get("dueCards").asLong());
             var empty = json.readTree(client.get("/decks/" + own.getId()).body());
             assertEquals(0, empty.get("total").asLong());
             assertEquals(0, empty.get("content").size());
