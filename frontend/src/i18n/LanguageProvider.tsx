@@ -17,7 +17,7 @@ function pageTitle(path: string): string {
     '/dashboard': 'Dashboard', '/decks': 'My Decks', '/decks/create': 'Create Deck', '/settings': 'Settings', '/statistics': 'Statistics', '/statistics/decks': 'Deck statistics',
   }
   return titles[path] ?? (/^\/statistics\/decks\/[^/]+$/.test(path) ? 'Mastery Report' : /^\/decks\/\d+\/study(?:\/\d+)?$/.test(path) ? 'Study session'
-    : /^\/decks\/\d+\/edit$/.test(path) ? 'Edit Deck' : /^\/decks\/\d+$/.test(path) ? 'Deck details' : 'Page not found')
+    : /^\/decks\/\d+\/edit$/.test(path) ? 'Edit Deck' : /^\/(?:decks|explore)\/\d+$/.test(path) ? 'Deck details' : 'Page not found')
 }
 
 export default function LanguageProvider({ children }: { children: ReactNode }) {

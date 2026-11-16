@@ -4,6 +4,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout'
 import DashboardPage from './pages/DashboardPage'
 import MyDecksPage from './pages/MyDecksPage'
 import ExploreDecksPage from './pages/ExploreDecksPage'
+import PublicDeckDetailsPage from './pages/PublicDeckDetailsPage'
 import CreateDeckPage from './pages/CreateDeckPage'
 import EditDeckPage from './pages/EditDeckPage'
 import DeckDetailsPage from './pages/DeckDetailsPage'
@@ -32,6 +33,7 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="explore" element={<ExploreDecksPage />} />
+          <Route path="explore/:deckId" element={<PublicDeckDetailsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="statistics/decks" element={<DeckStatisticsPage />} />

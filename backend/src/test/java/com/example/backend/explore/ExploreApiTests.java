@@ -122,6 +122,76 @@ class ExploreApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void publicDetailsAndCardsRejectPrivateMissingAndAnonymousAccess() throws Exception {
+        var viewer = account();
+        var author = account();
+        var publicDeck = deck(author, "Public details", true, DeckType.LANGUAGE, "English", "Polish", "Language");
+        var privateDeck = deck(author, "Private details", false, DeckType.GENERAL, "English", null, null);
+        var ownPrivate = deck(viewer, "Own private", false, DeckType.GENERAL, "English", null, null);
+        var card = new Flashcard(publicDeck, "Question", "Answer");
+        card.setExampleSentence("Example"); card.setTranslatedExample("Translation");
+        card.setImageUrl("https://example.com/card.jpg"); cards.saveAndFlush(card);
+        addCards(privateDeck, 1);
+        try (var client = new Client()) {
+            assertEquals(401, client.get("/" + publicDeck.getId()).statusCode());
+            assertEquals(401, client.get("/" + publicDeck.getId() + "/flashcards").statusCode());
+            client.login(viewer);
+            var response = client.get("/" + publicDeck.getId());
+            assertEquals(200, response.statusCode());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+            var detail = json.readTree(response.body());
+            assertEquals(author.getUsername(), detail.get("author").get("displayName").asText());
+            assertEquals(1, detail.get("cardCount").asInt());
+            assertFalse(detail.get("ownDeck").asBoolean());
+            assertFalse(response.body().contains(author.getEmail()));
+            var list = client.page("/" + publicDeck.getId() + "/flashcards");
+            assertEquals(1, list.get("totalElements").asInt());
+            var saved = list.get("content").get(0);
+            assertEquals("Question", saved.get("question").asText());
+            assertEquals("Answer", saved.get("answer").asText());
+            assertEquals("Example", saved.get("exampleSentence").asText());
+            assertEquals("Translation", saved.get("translatedExample").asText());
+            assertEquals("https://example.com/card.jpg", saved.get("imageUrl").asText());
+            for (Long id : new Long[]{privateDeck.getId(), ownPrivate.getId(), Long.MAX_VALUE}) {
+                assertEquals(404, client.get("/" + id).statusCode());
+                assertEquals(404, client.get("/" + id + "/flashcards").statusCode());
+            }
+            publicDeck.setPublic(false); decks.saveAndFlush(publicDeck);
+            assertEquals(404, client.get("/" + publicDeck.getId()).statusCode());
+            assertEquals(404, client.get("/" + publicDeck.getId() + "/flashcards").statusCode());
+        }
+    }
+
+    @Test void publicCardPagesPreserveDeletedAuthorAndReturnStableOrderAndEmptyDecks() throws Exception {
+        var viewer = account();
+        var author = account();
+        var publicDeck = deck(author, "Preserved", true, DeckType.GENERAL, "English", null, null);
+        addCards(publicDeck, 13);
+        deletion.deleteAccount(author.getId());
+        var empty = deck(viewer, "Empty", true, DeckType.GENERAL, "Polish", null, null);
+        try (var client = new Client()) {
+            client.login(viewer);
+            var detail = client.page("/" + publicDeck.getId());
+            assertTrue(detail.get("author").get("id").isNull());
+            assertEquals("Deleted user", detail.get("author").get("displayName").asText());
+            var first = client.page("/" + publicDeck.getId() + "/flashcards");
+            assertEquals(12, first.get("content").size());
+            assertEquals(13, first.get("totalElements").asInt());
+            assertEquals(2, first.get("totalPages").asInt());
+            assertEquals("Question 0", first.get("content").get(0).get("question").asText());
+            var last = client.page("/" + publicDeck.getId() + "/flashcards?page=1");
+            assertEquals(1, last.get("content").size());
+            assertEquals("Question 12", last.get("content").get(0).get("question").asText());
+            assertEquals(0, client.page("/" + publicDeck.getId() + "/flashcards?page=2").get("content").size());
+            var emptyCards = client.page("/" + empty.getId() + "/flashcards");
+            assertEquals(0, emptyCards.get("totalPages").asInt());
+            assertTrue(client.page("/" + empty.getId()).get("ownDeck").asBoolean());
+            for (String query : new String[]{"?page=-1", "?page=1000001", "?size=0", "?size=49", "?page=abc"}) {
+                assertEquals(400, client.get("/" + publicDeck.getId() + "/flashcards" + query).statusCode());
+            }
+        }
+    }
+
     private User account() {
         String name = "Explore" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));

@@ -18,7 +18,12 @@
 .explore-results-heading h2 { font-size: 1.35em; }
 .explore-results-heading p { color: var(--muted); font-size: .8em; }
 .explore-cards-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(18px, 1.6vw, 30px); }
-.explore-deck-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 24px; background: var(--explore-surface); }
+.explore-deck-card { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 24px; background: var(--explore-surface); }
+.explore-deck-link { color: inherit; text-decoration: none; }
+.explore-deck-link::after { content: ''; position: absolute; inset: 0; border-radius: 24px; }
+.explore-deck-card:has(.explore-deck-link:focus-visible) { outline: 3px solid var(--primary-dark); outline-offset: 3px; }
+.explore-deck-card:hover { border-color: var(--primary-dark); }
+.explore-deck-actions { position: relative; z-index: 1; }
 .explore-deck-cover { position: relative; overflow: hidden; display: grid; place-items: center; aspect-ratio: 2.6 / 1; min-height: 125px; }
 .explore-deck-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .explore-deck-cover > span { font-size: clamp(44px, 3vw, 74px); font-weight: 750; opacity: .75; }

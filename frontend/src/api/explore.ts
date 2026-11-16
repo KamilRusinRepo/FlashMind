@@ -1,3 +1,5 @@
+import { isFlashcard, type FlashcardPage } from './flashcards'
+
 export type PublicExploreDeck = {
   id: number; name: string; description: string | null; deckType: 'GENERAL' | 'LANGUAGE'
   category: string | null; sourceLanguage: string; targetLanguage: string | null; backgroundUrl: string | null
@@ -37,4 +39,33 @@ export async function getPublicDecks(query: string, page: number, signal: AbortS
     throw new ExploreApiError('The server returned an unexpected public deck list. Please try again.')
   }
   return data as PublicDeckPage
+}
+
+async function getPublicResource(path: string, signal: AbortSignal): Promise<unknown> {
+  let response: Response
+  try {
+    response = await fetch(`/api/explore/decks/${path}`, { credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) })
+  } catch { throw new ExploreApiError('Unable to load this public deck. Check your connection and try again.') }
+  if (!response.ok) throw new ExploreApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
+    : response.status === 404 ? 'This public deck is no longer available.' : 'Unable to load this public deck. Please try again.', response.status)
+  if (response.status !== 200) throw new ExploreApiError('The server returned unexpected public deck data. Please try again.')
+  return response.json().catch(() => null)
+}
+
+export async function getPublicDeck(deckId: number, signal: AbortSignal): Promise<PublicExploreDeck> {
+  const data = await getPublicResource(String(deckId), signal)
+  if (!isPublicDeck(data) || data.id !== deckId) throw new ExploreApiError('The server returned unexpected public deck data. Please try again.')
+  return data
+}
+
+export async function getPublicFlashcards(deckId: number, page: number, signal: AbortSignal): Promise<FlashcardPage> {
+  const value = await getPublicResource(`${deckId}/flashcards?${new URLSearchParams({ page: String(page), size: '12' })}`, signal)
+  const data = value as FlashcardPage | null
+  if (!data || !Array.isArray(data.content) || !data.content.every(isFlashcard) || data.content.length > 12
+    || data.page !== page || data.size !== 12 || !Number.isSafeInteger(data.totalElements) || data.totalElements < data.content.length
+    || !Number.isSafeInteger(data.totalPages) || data.totalPages !== Math.ceil(data.totalElements / 12)) {
+    throw new ExploreApiError('The server returned an unexpected flashcard list. Please try again.')
+  }
+  return data
 }

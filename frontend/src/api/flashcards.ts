@@ -63,7 +63,7 @@ export async function deleteFlashcard(deckId: number, cardId: number): Promise<v
       : 'Unable to delete the flashcard. Please try again.', response.status)
 }
 
-function isFlashcard(value: unknown): value is Flashcard {
+export function isFlashcard(value: unknown): value is Flashcard {
   if (!value || typeof value !== 'object') return false
   const card = value as Record<string, unknown>
   return typeof card.id === 'number' && Number.isSafeInteger(card.id) && card.id > 0
