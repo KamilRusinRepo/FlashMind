@@ -1,11 +1,17 @@
-import { useId } from 'react'
+import { useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { DailyStatistics, DeckMastery } from '../../api/statistics'
+import StatisticsTooltip from './StatisticsTooltip'
+import { useStatisticsTooltip } from './useStatisticsTooltip'
 
 export default function StatisticsCharts({ days, streak, decks }: { days: DailyStatistics[]; streak: number; decks: DeckMastery[] }) {
   const { t, locale, count } = useLanguage()
   const chartId = useId()
+  const tooltipId = `${chartId}-tooltip`
+  const tooltip = useStatisticsTooltip()
+  const [focusedDay, setFocusedDay] = useState(days.length - 1)
+  const heatCells = useRef<(HTMLButtonElement | null)[]>([])
   const number = new Intl.NumberFormat(locale)
   const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 })
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -17,7 +23,16 @@ export default function StatisticsCharts({ days, streak, decks }: { days: DailyS
   const week = days.slice(-7)
   const maxXp = Math.max(1, ...week.map(day => day.xp))
   const heatLevel = (day: DailyStatistics) => day.studied === 0 ? 0 : Math.min(5, Math.ceil(day.studied / 12))
-  const tooltip = (day: DailyStatistics) => `${date.format(day.date)}: ${count(day.studied, 'card')}`
+  const dayLabel = (day: DailyStatistics) => `${date.format(day.date)}: ${count(day.studied, 'card')}, ${number.format(day.xp)} XP`
+  function moveDay(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const steps: Record<string, number> = { ArrowLeft: -7, ArrowRight: 7, ArrowUp: -1, ArrowDown: 1 }
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? days.length - 1 : event.key in steps ? index + steps[event.key] : null
+    if (next === null) return
+    event.preventDefault()
+    const bounded = Math.max(0, Math.min(days.length - 1, next))
+    setFocusedDay(bounded)
+    heatCells.current[bounded]?.focus()
+  }
 
   return <>
     <section className="statistics-panel statistics-consistency" aria-labelledby={`${chartId}-consistency`}>
@@ -32,24 +47,37 @@ export default function StatisticsCharts({ days, streak, decks }: { days: DailyS
           </div>
           <div className="statistics-heat-body">
             <div className="statistics-heat-weekdays" aria-hidden="true">{Array.from({ length: 7 }, (_, index) => <span key={index}>{index % 2 === 0 && index < 5 ? weekday.format(new Date(2026, 0, 5 + index)) : ''}</span>)}</div>
-            <div className="statistics-heatmap" style={grid} role="img" aria-label={t('Daily study activity')}>
-              {days.map((day, index) => <span key={day.date.getTime()} className={`statistics-heat-day statistics-heat-${heatLevel(day)}`}
-                style={{ gridColumn: Math.floor((offset + index) / 7) + 1, gridRow: (offset + index) % 7 + 1 }} title={tooltip(day)} />)}
+            <div className="statistics-heatmap" style={grid} role="group" aria-label={t('Daily study activity')} aria-describedby={`${chartId}-heat-help`}>
+              {days.map((day, index) => <button type="button" key={day.date.getTime()} className={`statistics-heat-day statistics-heat-${heatLevel(day)}`}
+                ref={node => { heatCells.current[index] = node }} tabIndex={index === focusedDay ? 0 : -1}
+                style={{ gridColumn: Math.floor((offset + index) / 7) + 1, gridRow: (offset + index) % 7 + 1 }}
+                aria-label={dayLabel(day)} aria-describedby={tooltip.active?.key === `heat-${index}` ? tooltipId : undefined}
+                onPointerEnter={event => { if (event.pointerType !== 'touch') tooltip.open(day, event.currentTarget, `heat-${index}`) }}
+                onPointerLeave={event => { if (document.activeElement !== event.currentTarget) tooltip.closeLater() }}
+                onFocus={event => { setFocusedDay(index); tooltip.open(day, event.currentTarget, `heat-${index}`) }}
+                onBlur={tooltip.closeLater} onKeyDown={event => moveDay(event, index)}
+                onClick={event => tooltip.open(day, event.currentTarget, `heat-${index}`)} />)}
             </div>
           </div>
         </div>
       </div>
+      <p className="db-sr-only" id={`${chartId}-heat-help`}>{t('Use arrow keys to move between days.')}</p>
       <div className="statistics-streak-note"><strong>{t('Study streak: {0}', [count(streak, 'day')])}</strong><span>{t('You are building a steady learning rhythm. Keep it up!')}</span></div>
     </section>
     <div className="statistics-lower-grid">
       <section className="statistics-panel" aria-labelledby={`${chartId}-performance`}>
         <div className="statistics-panel-heading"><div><h2 id={`${chartId}-performance`}>{t('Weekly Performance')}</h2><p>{t('XP earned each day over the last 7 days.')}</p></div></div>
-        <div className="statistics-week-bars" role="img" aria-label={t('Weekly XP chart. Daily values are available in the chart data table below.')}>
-          {week.map((day, index) => <div className={`statistics-week-day${index === week.length - 1 ? ' is-today' : ''}`} key={day.date.getTime()} title={`${date.format(day.date)}: ${number.format(day.xp)} XP`}>
+        <div className="statistics-week-bars" role="group" aria-label={t('Weekly XP chart. Daily values are available in the chart data table below.')}>
+          {week.map((day, index) => <button type="button" className={`statistics-week-day${index === week.length - 1 ? ' is-today' : ''}`} key={day.date.getTime()}
+            aria-label={dayLabel(day)} aria-describedby={tooltip.active?.key === `week-${index}` ? tooltipId : undefined}
+            onPointerEnter={event => { if (event.pointerType !== 'touch') tooltip.open(day, event.currentTarget, `week-${index}`) }}
+            onPointerLeave={event => { if (document.activeElement !== event.currentTarget) tooltip.closeLater() }}
+            onFocus={event => tooltip.open(day, event.currentTarget, `week-${index}`)} onBlur={tooltip.closeLater}
+            onClick={event => tooltip.open(day, event.currentTarget, `week-${index}`)}>
             <span className="statistics-week-xp" aria-hidden="true">{number.format(day.xp)}</span>
-            <div className="statistics-week-track" aria-hidden="true"><div className="statistics-week-bar" style={{ height: `${day.xp / maxXp * 100}%` }} /></div>
+            <span className="statistics-week-track" aria-hidden="true"><span className="statistics-week-bar" style={{ height: `${day.xp / maxXp * 100}%` }} /></span>
             <strong aria-hidden="true">{weekday.format(day.date)}</strong>
-          </div>)}
+          </button>)}
         </div>
       </section>
       <section className="statistics-panel statistics-mastery" aria-labelledby={`${chartId}-mastery`}>
@@ -72,5 +100,6 @@ export default function StatisticsCharts({ days, streak, decks }: { days: DailyS
         </table>
       </div>
     </details>
+    <StatisticsTooltip id={tooltipId} active={tooltip.active} onEnter={tooltip.keepOpen} onLeave={tooltip.closeLater} />
   </>
 }

@@ -1,5 +1,6 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Use arrow keys to move between days.': 'Użyj klawiszy strzałek, aby przechodzić między dniami.',
   'Daily goal completed': 'Cel dzienny osiągnięty',
   'Loading mastery…': 'Wczytywanie poziomu opanowania…',
   'Mastery is temporarily unavailable.': 'Poziom opanowania jest chwilowo niedostępny.',
