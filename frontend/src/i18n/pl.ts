@@ -2,6 +2,11 @@
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
   'Admin Panel': 'Panel administratora',
+  'Roles': 'Role',
+  'This form is a preview. Changes are not sent or saved.': 'To podgląd formularza. Zmiany nie są wysyłane ani zapisywane.',
+  'Choose at least one role for this account.': 'Wybierz co najmniej jedną rolę dla tego konta.',
+  'Saving user edits is coming soon.': 'Zapisywanie zmian użytkownika będzie dostępne wkrótce.',
+  'Saving user edits and account deletion are coming soon.': 'Zapisywanie zmian i usuwanie kont będą dostępne wkrótce.',
   'Deck editing is coming soon.': 'Edycja talii będzie dostępna wkrótce.',
   'Delete public deck?': 'Usunąć publiczną talię?',
   'Delete public deck {0}? Its flashcards, follows and study data will be removed for all learners. This action is permanent.': 'Usunąć publiczną talię {0}? Jej fiszki, obserwowania i dane nauki zostaną usunięte dla wszystkich uczących się. Ta operacja jest nieodwracalna.',

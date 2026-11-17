@@ -6,6 +6,7 @@ import FormField from '../FormField'
 import SelectField from '../SelectField'
 import AdminPreviewAction from './AdminPreviewAction'
 import AdminUserStatusDialog from './AdminUserStatusDialog'
+import AdminEditUserDialog from './AdminEditUserDialog'
 import editIcon from '../../assets/icons/admin/edit.svg'
 import deleteIcon from '../../assets/icons/admin/delete.svg'
 import blockIcon from '../../assets/icons/admin/block.svg'
@@ -50,7 +51,7 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved }: {
   const { user: currentUser, refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [selected, setSelected] = useState<AdminUser | null>(null)
+  const [selected, setSelected] = useState<{ mode: 'edit' | 'status'; user: AdminUser } | null>(null)
   const { search, role, status } = filters
   useEffect(() => {
     const controller = new AbortController()
@@ -81,8 +82,12 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved }: {
           <td><div className="admin-role-list">{user.roles.length ? user.roles.map(role => <span key={role} className={`admin-badge${role === 'ADMIN' ? ' is-admin' : ''}`}>{role}</span>) : t('No roles')}</div></td>
           <td><span className={`admin-badge ${user.enabled ? 'is-active' : 'is-blocked'}`}>{user.enabled ? t('Active') : t('Blocked')}</span></td>
           <td>{user.emailVerified ? t('Verified') : t('Not verified')}</td><td><time dateTime={user.createdAt}>{new Date(user.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}</time></td>
-          <td><div className="admin-row-actions"><AdminPreviewAction icon={editIcon} label={t('Edit user {0}', [user.username])} />
-            <button className="admin-action-button" type="button" disabled={user.id === currentUser?.id} onClick={() => setSelected(user)}
+          <td><div className="admin-row-actions">
+            <button className="admin-action-button" type="button" onClick={() => setSelected({ mode: 'edit', user })} aria-haspopup="dialog"
+              aria-label={t('Edit user {0}', [user.username])} title={t('Edit user {0}', [user.username])}>
+              <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${editIcon}")` }} />
+            </button>
+            <button className="admin-action-button" type="button" disabled={user.id === currentUser?.id} onClick={() => setSelected({ mode: 'status', user })}
               aria-label={t(user.enabled ? 'Block {0}' : 'Unblock {0}', [user.username])} title={user.id === currentUser?.id ? t('You cannot block your own account.') : t(user.enabled ? 'Block {0}' : 'Unblock {0}', [user.username])}>
               <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${user.enabled ? blockIcon : unblockIcon}")` }} />
             </button><AdminPreviewAction icon={deleteIcon} label={t('Delete user {0}', [user.username])} danger /></div></td>
@@ -93,6 +98,7 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved }: {
       <span>{t('Page {0} of {1}', [(page + 1).toLocaleString(locale), data.totalPages.toLocaleString(locale)])}</span>
       <button className="button button-outline" type="button" disabled={page + 1 >= data.totalPages} onClick={() => onPageChange(page + 1)}>{t('Next →')}</button>
     </nav>}
-    {selected && <AdminUserStatusDialog user={selected} onCancel={() => setSelected(null)} onSaved={() => onSaved(selected.enabled)} />}
+    {selected?.mode === 'status' && <AdminUserStatusDialog user={selected.user} onCancel={() => setSelected(null)} onSaved={() => onSaved(selected.user.enabled)} />}
+    {selected?.mode === 'edit' && <AdminEditUserDialog user={selected.user} onCancel={() => setSelected(null)} />}
   </>
 }
