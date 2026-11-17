@@ -1,6 +1,8 @@
 package com.example.backend.admin;
 
 import com.example.backend.admin.dto.request.SetUserEnabledRequest;
+import com.example.backend.admin.dto.request.UpdateAdminUserRequest;
+import com.example.backend.admin.dto.response.AdminUserEditResponse;
 import com.example.backend.admin.dto.response.AdminUserPageResponse;
 import com.example.backend.admin.dto.response.AdminUserResponse;
 import com.example.backend.auth.SessionUser;
@@ -17,7 +19,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
     private final AdminUserService users;
-    public AdminUserController(AdminUserService users) { this.users = users; }
+    private final AdminUserEditService edits;
+    public AdminUserController(AdminUserService users, AdminUserEditService edits) { this.users = users; this.edits = edits; }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<AdminUserEditResponse> update(@AuthenticationPrincipal SessionUser principal,
+            @PathVariable(name = "userId") @Min(1) Long userId, @Valid @RequestBody UpdateAdminUserRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(edits.update(principal, userId, request));
+    }
 
     @GetMapping
     public ResponseEntity<AdminUserPageResponse> list(

@@ -33,6 +33,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsernameIgnoreCaseAndIdNot(String username, Long id);
 
     boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 
     boolean existsByRoles_Name(RoleName name);
     long countByEnabledTrueAndEmailVerifiedAtIsNotNullAndRoles_Name(RoleName name);

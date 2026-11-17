@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import com.example.backend.admin.AdminUserActionException;
+import com.example.backend.admin.AdminUserEditException;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
@@ -34,6 +35,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(AdminUserEditException.class)
+    public ResponseEntity<ApiError> handleAdminUserEdit(AdminUserEditException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.CONFLICT, "Please check the highlighted fields.", request.getRequestURI(),
+                        Map.of(exception.getField(), exception.getMessage())));
+    }
 
     @ExceptionHandler(AdminUserActionException.class)
     public ResponseEntity<ApiError> handleAdminUserAction(AdminUserActionException exception, HttpServletRequest request) {

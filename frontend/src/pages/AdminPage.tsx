@@ -19,7 +19,7 @@ export default function AdminPage() {
   ]
   return <div className="db-page admin-page">
     <header className="admin-heading"><p className="db-eyebrow">{t('ADMINISTRATION')}</p><h1>{t('Admin Panel')}</h1><p>{t('Manage the FlashMind community and public decks.')}</p></header>
-    <p className="admin-info-note" role="note">{section === 'decks' ? t('Deck editing is coming soon.') : t('Saving user edits and account deletion are coming soon.')}</p>
+    <p className="admin-info-note" role="note">{section === 'decks' ? t('Deck editing is coming soon.') : t('Account deletion is coming soon.')}</p>
     <div className="admin-metrics">{metrics.map(metric => <div className="admin-metric" key={metric.label}><span>{t(metric.label)}</span><strong>{metric.value === undefined ? '—' : number.format(metric.value)}</strong></div>)}</div>
     <nav className="admin-sections" aria-label={t('Administration sections')}>
       <button type="button" aria-pressed={section === 'users'} onClick={() => setSection('users')}>{t('Users')}<span>{summary ? number.format(summary.users) : '—'}</span></button>

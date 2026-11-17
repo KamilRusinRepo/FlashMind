@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { AdminUsersApiError, getAdminUsers, type AdminUser, type AdminUserFilters, type AdminUserPage, type AdminUserSummary } from '../../api/adminUsers'
+import { AdminUsersApiError, getAdminUsers, type AdminUser, type AdminUserFilters, type AdminUserPage, type AdminUserSummary, type AdminUserEditResponse } from '../../api/adminUsers'
 import { useAuth } from '../../auth/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import FormField from '../FormField'
@@ -40,12 +40,13 @@ export default function AdminUsersPanel({ onSummary }: { onSummary: (summary: Ad
         <button className="button button-outline" type="button" onClick={() => { setDraft(emptyFilters); setFilters(emptyFilters); setPage(0); setNotice(''); setRevision(value => value + 1) }}>{t('Clear filters')}</button></div>
     </form>
     <UsersResults key={JSON.stringify([filters, page, revision])} filters={filters} page={page} onPageChange={setPage} onSummary={onSummary}
+      onEdited={result => { setNotice(result.pendingEmail ? 'The user has been updated. Email confirmation has been requested; the current address remains active.' : 'The user has been updated.'); setRevision(value => value + 1) }}
       onSaved={blocked => { setNotice(blocked ? 'The account has been blocked.' : 'The account has been unblocked.'); setRevision(value => value + 1) }} />
   </section>
 }
 
-function UsersResults({ filters, page, onPageChange, onSummary, onSaved }: {
-  filters: AdminUserFilters; page: number; onPageChange: (page: number) => void; onSummary: (summary: AdminUserSummary) => void; onSaved: (blocked: boolean) => void
+function UsersResults({ filters, page, onPageChange, onSummary, onSaved, onEdited }: {
+  filters: AdminUserFilters; page: number; onPageChange: (page: number) => void; onSummary: (summary: AdminUserSummary) => void; onSaved: (blocked: boolean) => void; onEdited: (result: AdminUserEditResponse) => void
 }) {
   const { t, locale } = useLanguage()
   const { user: currentUser, refresh } = useAuth()
@@ -99,6 +100,6 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved }: {
       <button className="button button-outline" type="button" disabled={page + 1 >= data.totalPages} onClick={() => onPageChange(page + 1)}>{t('Next →')}</button>
     </nav>}
     {selected?.mode === 'status' && <AdminUserStatusDialog user={selected.user} onCancel={() => setSelected(null)} onSaved={() => onSaved(selected.user.enabled)} />}
-    {selected?.mode === 'edit' && <AdminEditUserDialog user={selected.user} onCancel={() => setSelected(null)} />}
+    {selected?.mode === 'edit' && <AdminEditUserDialog user={selected.user} onCancel={() => setSelected(null)} onSaved={onEdited} />}
   </>
 }

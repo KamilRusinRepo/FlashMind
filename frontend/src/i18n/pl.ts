@@ -2,6 +2,12 @@
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
   'Admin Panel': 'Panel administratora',
+  'Account deletion is coming soon.': 'Usuwanie kont będzie dostępne wkrótce.',
+  'Username and role changes sign the user out. A new email address requires confirmation; the current address stays active until then.': 'Zmiana nazwy użytkownika lub ról wyloguje użytkownika. Nowy adres e-mail wymaga potwierdzenia; do tego czasu działa obecny adres.',
+  'Unable to save user changes. Please try again.': 'Nie udało się zapisać zmian użytkownika. Spróbuj ponownie.',
+  'You cannot remove the last active administrator role.': 'Nie możesz odebrać uprawnień ostatniemu aktywnemu administratorowi.',
+  'The user has been updated.': 'Dane użytkownika zostały zaktualizowane.',
+  'The user has been updated. Email confirmation has been requested; the current address remains active.': 'Dane użytkownika zostały zaktualizowane. Zlecono potwierdzenie nowego adresu e-mail; obecny adres nadal działa.',
   'Roles': 'Role',
   'This form is a preview. Changes are not sent or saved.': 'To podgląd formularza. Zmiany nie są wysyłane ani zapisywane.',
   'Choose at least one role for this account.': 'Wybierz co najmniej jedną rolę dla tego konta.',

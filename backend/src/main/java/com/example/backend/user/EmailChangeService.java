@@ -65,7 +65,8 @@ public class EmailChangeService {
     public void confirm(String value) {
         var token = tokens.consumeEmailChange(value);
         var user = token.getUser();
-        if (!user.isEnabled() || user.getEmailVerifiedAt() == null) throw new InvalidTokenException();
+        // Admin-issued changes may also confirm a previously unverified account's new address.
+        if (!user.isEnabled()) throw new InvalidTokenException();
         requireAvailable(token.getTargetEmail());
         user.setEmail(token.getTargetEmail());
         user.setEmailVerifiedAt(clock.instant());
@@ -81,6 +82,22 @@ public class EmailChangeService {
         }
         // Links delivered to the former address must no longer reset or verify this account.
         for (var type : TokenType.values()) storedTokens.deleteUnusedByUserIdAndType(user.getId(), type);
+    }
+
+    /** Called only after the administrative service has authorized the actor and locked the target. */
+    @Transactional
+    public PendingEmailChangeResponse requestByAdmin(Long userId, String email) {
+        var user = users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (email.equalsIgnoreCase(user.getEmail())) throw new EmailChangeException(HttpStatus.BAD_REQUEST, "email", "Enter a different email address.");
+        requireAvailable(email);
+        var latest = storedTokens.findFirstByUser_IdAndTypeOrderByCreatedAtDesc(userId, TokenType.EMAIL_CHANGE).orElse(null);
+        if (latest != null && latest.getUsedAt() == null && latest.getExpiresAt().isAfter(clock.instant()) && email.equals(latest.getTargetEmail()) && cooldown(latest) > 0) {
+            return new PendingEmailChangeResponse(email, latest.getExpiresAt(), cooldown(latest));
+        }
+        storedTokens.deleteUnusedByUserIdAndType(userId, TokenType.EMAIL_CHANGE);
+        var issued = tokens.issueEmailChange(userId, email);
+        events.publishEvent(new EmailChangeRequested(userId, email, issued.value(), issued.expiresAt()));
+        return new PendingEmailChangeResponse(email, issued.expiresAt(), 60);
     }
 
     private void requireAvailable(String email) {

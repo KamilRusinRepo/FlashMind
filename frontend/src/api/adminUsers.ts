@@ -4,6 +4,9 @@ export type AdminUser = { id: number; username: string; email: string; roles: st
 export type AdminUserSummary = { users: number; activeUsers: number; blockedUsers: number; publicDecks: number }
 export type AdminUserPage = { content: AdminUser[]; page: number; size: number; totalElements: number; totalPages: number; summary: AdminUserSummary }
 export type AdminUserFilters = { search: string; role: string; status: string }
+export type AdminUserEditRequest = { username: string; email: string; roles: string[] }
+export type AdminUserEditResponse = { user: AdminUser; pendingEmail: string | null; sessionsInvalidated: boolean }
+export type AdminUserEditErrors = Partial<Record<'username' | 'email' | 'roles', string>>
 
 export function isAdminSummary(value: unknown): value is AdminUserSummary {
   if (!value || typeof value !== 'object') return false
@@ -14,7 +17,10 @@ export function isAdminSummary(value: unknown): value is AdminUserSummary {
 
 export class AdminUsersApiError extends Error {
   readonly status: number
-  constructor(message: string, status = 0) { super(message); this.name = 'AdminUsersApiError'; this.status = status }
+  readonly fieldErrors: AdminUserEditErrors
+  constructor(message: string, status = 0, fieldErrors: AdminUserEditErrors = {}) {
+    super(message); this.name = 'AdminUsersApiError'; this.status = status; this.fieldErrors = fieldErrors
+  }
 }
 
 function isAdminUser(value: unknown): value is AdminUser {
@@ -64,4 +70,32 @@ export async function setAdminUserEnabled(userId: number, enabled: boolean): Pro
     throw new AdminUsersApiError('Unable to confirm account changes. Refresh the user list before trying again.')
   }
   return data
+}
+
+export async function updateAdminUser(userId: number, request: AdminUserEditRequest): Promise<AdminUserEditResponse> {
+  const normalized = { username: request.username.trim(), email: request.email.trim().toLowerCase(), roles: [...new Set(request.roles)].sort() }
+  let response: Response
+  try {
+    response = await requestWithCsrf(`/api/admin/users/${userId}`, 'PUT', {
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(normalized), signal: AbortSignal.timeout(15000),
+    })
+  } catch { throw new AdminUsersApiError('Unable to confirm account changes. Refresh the user list before trying again.') }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    const fields: AdminUserEditErrors = {}
+    for (const field of ['username', 'email', 'roles'] as const) {
+      if (typeof data?.fieldErrors?.[field] === 'string') fields[field] = data.fieldErrors[field]
+    }
+    throw new AdminUsersApiError(Object.keys(fields).length ? 'Please check the highlighted fields.'
+      : response.status === 401 ? 'Your session has expired. Please sign in again.'
+        : response.status === 403 ? 'You do not have permission to access this resource.'
+          : response.status === 404 ? 'This user is no longer available. Refresh the user list.' : 'Unable to save user changes. Please try again.', response.status, fields)
+  }
+  if (response.status !== 200 || !data || !isAdminUser(data.user) || data.user.id !== userId || data.user.username !== normalized.username
+    || [...data.user.roles].sort().join(',') !== normalized.roles.join(',') || typeof data.sessionsInvalidated !== 'boolean'
+    || (data.pendingEmail !== null && (typeof data.pendingEmail !== 'string' || data.pendingEmail !== normalized.email))
+    || (data.pendingEmail === null && data.user.email.toLowerCase() !== normalized.email)) {
+    throw new AdminUsersApiError('Unable to confirm account changes. Refresh the user list before trying again.')
+  }
+  return data as AdminUserEditResponse
 }
