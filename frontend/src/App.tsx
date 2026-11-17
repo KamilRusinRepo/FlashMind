@@ -16,6 +16,7 @@ import DeckStatisticsPage from './pages/DeckStatisticsPage'
 import MasteryReportPage from './pages/MasteryReportPage'
 import ConfirmEmailChangePage from './pages/ConfirmEmailChangePage'
 import ProtectedRoute from './auth/ProtectedRoute'
+import AdminRoute from './auth/AdminRoute'
 import AuthPage from './pages/AuthPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
 import HomePage from './pages/HomePage'
@@ -33,7 +34,9 @@ function App() {
         <Route path="decks/:deckId/study/:sessionId" element={<StudyPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="admin" element={<AdminPage />} />
+          <Route element={<AdminRoute />}>
+            <Route path="admin" element={<AdminPage />} />
+          </Route>
           <Route path="explore" element={<ExploreDecksPage />} />
           <Route path="explore/:deckId" element={<PublicDeckDetailsPage />} />
           <Route path="settings" element={<SettingsPage />} />

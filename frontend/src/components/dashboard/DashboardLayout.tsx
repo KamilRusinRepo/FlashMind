@@ -22,8 +22,11 @@ const navigation = [
 
 function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   const { t } = useLanguage()
-  return <nav className={mobile ? 'db-mobile-nav' : 'db-nav'} aria-label={mobile ? t("Mobile dashboard navigation") : t("Dashboard navigation")}>
-    {navigation.map(item => item.path
+  const { user } = useAuth()
+  const items = navigation.filter(item => item.path !== '/admin' || user?.roles.includes('ADMIN'))
+  return <nav className={mobile ? 'db-mobile-nav' : 'db-nav'} aria-label={mobile ? t("Mobile dashboard navigation") : t("Dashboard navigation")}
+    style={mobile ? { gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` } : undefined}>
+    {items.map(item => item.path
       ? <NavLink key={item.label} to={item.path} end={item.path === '/dashboard'} aria-label={t(item.label)} className={({ isActive }) => `db-nav-item${isActive ? ' is-active' : ''}`}>
           <img src={item.icon} alt="" /><span>{t(item.label)}</span>
         </NavLink>

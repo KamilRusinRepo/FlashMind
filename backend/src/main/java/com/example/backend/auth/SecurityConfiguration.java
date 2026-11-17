@@ -52,6 +52,7 @@ public class SecurityConfiguration {
                 .securityContext(context -> context.securityContextRepository(contexts).requireExplicitSave(true))
                 .authorizeHttpRequests(requests -> requests
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/api/admin", "/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/status", "/api/auth/csrf", "/api/auth/login", "/api/auth/register",
                                 "/api/auth/verify-email", "/api/auth/resend-verification", "/api/auth/forgot-password",
                                 "/api/auth/reset-password", "/api/auth/confirm-email-change").permitAll()

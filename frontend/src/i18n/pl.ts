@@ -2,6 +2,10 @@
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
   'Admin Panel': 'Panel administratora',
+  'Checking administrator access': 'Sprawdzanie dostępu administratora',
+  'Please wait while we check your permissions…': 'Poczekaj, aż sprawdzimy Twoje uprawnienia…',
+  'Unable to check administrator access. Please check your connection and try again.': 'Nie udało się sprawdzić dostępu administratora. Sprawdź połączenie i spróbuj ponownie.',
+  'Unable to check administrator access. Please try again.': 'Nie udało się sprawdzić dostępu administratora. Spróbuj ponownie.',
   'Edit user {0}': 'Edytuj użytkownika {0}',
   'Delete user {0}': 'Usuń użytkownika {0}',
   'Manage the FlashMind community and public decks.': 'Zarządzaj społecznością FlashMind i publicznymi taliami.',
