@@ -18,8 +18,9 @@ public class AdminUserService {
     private final AdminUserRepository listing;
     private final UserRepository users;
     private final RoleRepository roles;
-    public AdminUserService(AdminUserRepository listing, UserRepository users, RoleRepository roles) {
-        this.listing = listing; this.users = users; this.roles = roles;
+    private final AdminActorService actor;
+    public AdminUserService(AdminUserRepository listing, UserRepository users, RoleRepository roles, AdminActorService actor) {
+        this.listing = listing; this.users = users; this.roles = roles; this.actor = actor;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -37,11 +38,7 @@ public class AdminUserService {
     public AdminUserResponse setEnabled(SessionUser principal, Long targetId, boolean enabled) {
         // Serialize administrative status changes, including competing attempts to block administrators.
         roles.findByNameForUpdate(RoleName.ADMIN).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
-        var actor = users.findByIdForUpdate(principal.id()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (actor.getSessionVersion() != principal.sessionVersion()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        if (!actor.isEnabled() || actor.getEmailVerifiedAt() == null || actor.getRoles().stream().noneMatch(role -> role.getName() == RoleName.ADMIN)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
+        actor.requireActiveForUpdate(principal);
         if (!enabled && principal.id().equals(targetId)) throw new AdminUserActionException("You cannot block your own account.");
         var target = users.findByIdForUpdate(targetId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (target.isEnabled() != enabled) {

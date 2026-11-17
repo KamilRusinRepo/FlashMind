@@ -5,6 +5,13 @@ export type AdminUserSummary = { users: number; activeUsers: number; blockedUser
 export type AdminUserPage = { content: AdminUser[]; page: number; size: number; totalElements: number; totalPages: number; summary: AdminUserSummary }
 export type AdminUserFilters = { search: string; role: string; status: string }
 
+export function isAdminSummary(value: unknown): value is AdminUserSummary {
+  if (!value || typeof value !== 'object') return false
+  const summary = value as Record<string, unknown>
+  return ['users', 'activeUsers', 'blockedUsers', 'publicDecks'].every(key => Number.isSafeInteger(summary[key]) && Number(summary[key]) >= 0)
+    && Number(summary.activeUsers) + Number(summary.blockedUsers) === Number(summary.users)
+}
+
 export class AdminUsersApiError extends Error {
   readonly status: number
   constructor(message: string, status = 0) { super(message); this.name = 'AdminUsersApiError'; this.status = status }
@@ -32,9 +39,8 @@ export async function getAdminUsers(filters: AdminUserFilters, page: number, sig
   const summary = data?.summary
   if (response.status !== 200 || !data || !Array.isArray(data.content) || !data.content.every(isAdminUser)
     || data.page !== page || data.size !== 5 || data.content.length > 5 || !Number.isSafeInteger(data.totalElements) || data.totalElements < data.content.length
-    || !Number.isSafeInteger(data.totalPages) || data.totalPages !== Math.ceil(data.totalElements / 5) || !summary
-    || !['users', 'activeUsers', 'blockedUsers', 'publicDecks'].every(key => Number.isSafeInteger(summary[key]) && summary[key] >= 0)
-    || summary.activeUsers + summary.blockedUsers !== summary.users || data.totalElements > summary.users) {
+    || !Number.isSafeInteger(data.totalPages) || data.totalPages !== Math.ceil(data.totalElements / 5)
+    || !isAdminSummary(summary) || data.totalElements > summary.users) {
     throw new AdminUsersApiError('The server returned an unexpected user list. Please try again.')
   }
   return data as AdminUserPage

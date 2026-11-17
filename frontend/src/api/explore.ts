@@ -12,7 +12,7 @@ export class ExploreApiError extends Error {
   readonly status: number
   constructor(message: string, status = 0) { super(message); this.name = 'ExploreApiError'; this.status = status }
 }
-function isPublicDeck(value: unknown): value is PublicExploreDeck {
+export function isPublicDeck(value: unknown): value is PublicExploreDeck {
   if (!value || typeof value !== 'object') return false
   const deck = value as Record<string, unknown>
   const author = deck.author as Record<string, unknown> | null

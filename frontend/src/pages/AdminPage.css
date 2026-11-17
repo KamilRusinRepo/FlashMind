@@ -1,8 +1,7 @@
 .admin-page { --admin-surface: var(--surface, #fff); --admin-soft: var(--surface-soft, #f7f9fc); display: grid; gap: 24px; padding-block: 10px 40px; }
 .admin-heading h1 { font-size: clamp(30px, 2.4vw, 48px); line-height: 1.2; letter-spacing: -.04em; }
 .admin-heading > p:last-child { color: var(--muted); margin-top: 10px; }
-.admin-preview-note { padding: 15px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--admin-soft); color: var(--muted); font-size: .85em; }
-.admin-preview-note strong { color: var(--primary-dark); }
+.admin-info-note { padding: 15px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--admin-soft); color: var(--muted); font-size: .85em; }
 .admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .admin-metric { display: grid; gap: 8px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--admin-surface); }
 .admin-metric span { color: var(--muted); font-size: .85em; }
