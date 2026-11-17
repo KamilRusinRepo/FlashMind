@@ -8,6 +8,7 @@ import decksIcon from '../../assets/icons/sidebar/create_deck.svg'
 import exploreIcon from '../../assets/icons/sidebar/explore.svg'
 import statsIcon from '../../assets/icons/sidebar/statistics.svg'
 import settingsIcon from '../../assets/icons/sidebar/settings.svg'
+import adminIcon from '../../assets/icons/sidebar/admin.svg'
 import './Dashboard.css'
 
 const navigation = [
@@ -16,12 +17,16 @@ const navigation = [
   { label: 'Explore Decks', icon: exploreIcon, path: '/explore' },
   { label: 'Statistics', icon: statsIcon, path: '/statistics' },
   { label: 'Settings', icon: settingsIcon, path: '/settings' },
+  { label: 'Admin Panel', icon: adminIcon, path: '/admin' },
 ]
 
 function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
   const { t } = useLanguage()
-  return <nav className={mobile ? 'db-mobile-nav' : 'db-nav'} aria-label={mobile ? t("Mobile dashboard navigation") : t("Dashboard navigation")}>
-    {navigation.map(item => item.path
+  const { user } = useAuth()
+  const items = navigation.filter(item => item.path !== '/admin' || user?.roles.includes('ADMIN'))
+  return <nav className={mobile ? 'db-mobile-nav' : 'db-nav'} aria-label={mobile ? t("Mobile dashboard navigation") : t("Dashboard navigation")}
+    style={mobile ? { gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` } : undefined}>
+    {items.map(item => item.path
       ? <NavLink key={item.label} to={item.path} end={item.path === '/dashboard'} aria-label={t(item.label)} className={({ isActive }) => `db-nav-item${isActive ? ' is-active' : ''}`}>
           <img src={item.icon} alt="" /><span>{t(item.label)}</span>
         </NavLink>

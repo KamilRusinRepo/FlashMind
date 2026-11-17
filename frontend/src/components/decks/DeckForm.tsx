@@ -22,9 +22,12 @@ type Props = {
   submitLabel?: string
   pendingLabel?: string
   cancelTo?: string
+  onCancel?: () => void
+  onSendingChange?: (sending: boolean) => void
+  publicOnly?: boolean
 }
 
-export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…', cancelTo = '/decks' }: Props) {
+export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…', cancelTo = '/decks', onCancel, onSendingChange, publicOnly = false }: Props) {
   const { t } = useLanguage()
   const { refresh } = useAuth()
   const [deckType, setDeckType] = useState<SaveDeckRequest['deckType']>(initialValues?.deckType ?? 'GENERAL')
@@ -44,7 +47,7 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
     const request: SaveDeckRequest = {
       name: value('name'), description: value('description') || null, deckType,
       sourceLanguage: value('sourceLanguage'), targetLanguage: deckType === 'LANGUAGE' ? value('targetLanguage') || null : null,
-      category: value('category') || null, backgroundUrl: value('backgroundUrl') || null, publicDeck: data.get('publicDeck') === 'on',
+      category: value('category') || null, backgroundUrl: value('backgroundUrl') || null, publicDeck: publicOnly || data.get('publicDeck') === 'on',
     }
     const nextErrors: DeckFieldErrors = {}
     if (!request.name) nextErrors.name = 'Deck name is required.'
@@ -65,12 +68,13 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
 
     submitting.current = true
     setSending(true)
+    onSendingChange?.(true)
     try {
       const saved = await save(request)
       if (mounted.current) onSaved?.(saved)
     } catch (cause) {
       if (!mounted.current) return
-      if (cause instanceof DeckApiError && cause.status === 401) { refresh(); return }
+      if (cause instanceof DeckApiError && (cause.status === 401 || publicOnly && cause.status === 403)) { refresh(); return }
       setError(cause instanceof DeckApiError ? cause.message : 'Unable to save your deck. Please try again.')
       if (cause instanceof DeckApiError) {
         setErrors(cause.fieldErrors)
@@ -79,7 +83,7 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
       }
     } finally {
       submitting.current = false
-      if (mounted.current) setSending(false)
+      if (mounted.current) { setSending(false); onSendingChange?.(false) }
     }
   }
 
@@ -108,12 +112,12 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
         <div className="deck-form-wide"><FormField id="deck-background" name="backgroundUrl" label={t("Background image URL (optional)")} type="url" placeholder={t("https://example.com/image.jpg")}
           defaultValue={initialValues?.backgroundUrl ?? ''} maxLength={2048} disabled={sending} error={t(errors.backgroundUrl)} hint={t("Use an http or https link to an image.")} /></div>
       </div>
-      <label className="deck-public-choice"><input type="checkbox" name="publicDeck" defaultChecked={initialValues?.publicDeck ?? false} disabled={sending} />
+      {publicOnly ? <p className="field-hint">{t('This deck will remain public. Its author and flashcards will stay unchanged.')}</p> : <label className="deck-public-choice"><input type="checkbox" name="publicDeck" defaultChecked={initialValues?.publicDeck ?? false} disabled={sending} />
         <span><strong>{t("Make this deck public")}</strong><span>{t("Allow other learners to discover it. Public decks stay available after account deletion.")}</span></span>
-      </label>
+      </label>}
       {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
       {Object.keys(errors).some(field => errors[field as keyof DeckFieldErrors]) && <p className="field-error" role="alert">{t("Please check the highlighted fields.")}</p>}
-      <div className="deck-form-actions"><Link className="button button-outline" to={cancelTo}>{t("Cancel")}</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? t(pendingLabel) : t(submitLabel)}</button></div>
+      <div className="deck-form-actions">{onCancel ? <button className="button button-outline" type="button" disabled={sending} onClick={onCancel}>{t('Cancel')}</button> : <Link className="button button-outline" to={cancelTo}>{t("Cancel")}</Link>}<button className="button button-primary" type="submit" disabled={sending}>{sending ? t(pendingLabel) : t(submitLabel)}</button></div>
     </form>
   )
 }

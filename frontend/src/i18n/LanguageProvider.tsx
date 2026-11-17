@@ -14,6 +14,7 @@ function pageTitle(path: string): string {
     '/forgot-password': 'Forgot password', '/reset-password': 'Reset password', '/status': 'Connection status',
     '/verify-email': 'Confirm email', '/confirm-email-change': 'Confirm email change',
     '/explore': 'Explore Decks',
+    '/admin': 'Admin Panel',
     '/dashboard': 'Dashboard', '/decks': 'My Decks', '/decks/create': 'Create Deck', '/settings': 'Settings', '/statistics': 'Statistics', '/statistics/decks': 'Deck statistics',
   }
   return titles[path] ?? (/^\/statistics\/decks\/[^/]+$/.test(path) ? 'Mastery Report' : /^\/decks\/\d+\/study(?:\/\d+)?$/.test(path) ? 'Study session'
