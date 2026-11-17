@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import PublicLayout from './components/PublicLayout'
 import DashboardLayout from './components/dashboard/DashboardLayout'
 import DashboardPage from './pages/DashboardPage'
+import AdminPage from './pages/AdminPage'
 import MyDecksPage from './pages/MyDecksPage'
 import ExploreDecksPage from './pages/ExploreDecksPage'
 import PublicDeckDetailsPage from './pages/PublicDeckDetailsPage'
@@ -32,6 +33,7 @@ function App() {
         <Route path="decks/:deckId/study/:sessionId" element={<StudyPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="admin" element={<AdminPage />} />
           <Route path="explore" element={<ExploreDecksPage />} />
           <Route path="explore/:deckId" element={<PublicDeckDetailsPage />} />
           <Route path="settings" element={<SettingsPage />} />

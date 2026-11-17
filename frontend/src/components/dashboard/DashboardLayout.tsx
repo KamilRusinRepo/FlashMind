@@ -8,6 +8,7 @@ import decksIcon from '../../assets/icons/sidebar/create_deck.svg'
 import exploreIcon from '../../assets/icons/sidebar/explore.svg'
 import statsIcon from '../../assets/icons/sidebar/statistics.svg'
 import settingsIcon from '../../assets/icons/sidebar/settings.svg'
+import adminIcon from '../../assets/icons/sidebar/admin.svg'
 import './Dashboard.css'
 
 const navigation = [
@@ -16,6 +17,7 @@ const navigation = [
   { label: 'Explore Decks', icon: exploreIcon, path: '/explore' },
   { label: 'Statistics', icon: statsIcon, path: '/statistics' },
   { label: 'Settings', icon: settingsIcon, path: '/settings' },
+  { label: 'Admin Panel', icon: adminIcon, path: '/admin' },
 ]
 
 function DashboardNavigation({ mobile = false }: { mobile?: boolean }) {
