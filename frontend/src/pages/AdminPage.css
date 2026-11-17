@@ -22,6 +22,15 @@
 .admin-filters :is(input, select) { width: 100%; min-height: 48px; padding: 12px 14px; color: var(--text); font: inherit; font-size: .85em; background: transparent; }
 .admin-filters select option { background: var(--admin-surface); color: var(--text); }
 .admin-filters .button { min-height: 48px; font-size: .85em; }
+.admin-filter-actions, .admin-role-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-result-count { margin-bottom: 16px; color: var(--muted); font-size: .85em; }
+.admin-status-dialog { width: min(540px, calc(100% - 32px)); max-height: calc(100svh - 40px); overflow-y: auto; margin: auto; padding: 28px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface, #fff); color: var(--text); box-shadow: var(--shadow); }
+.admin-status-dialog::backdrop { background: #14233880; }
+.admin-status-dialog h2 { font-size: 1.4em; margin-bottom: 16px; }
+.admin-status-dialog p { line-height: 1.7; overflow-wrap: anywhere; }
+.admin-status-dialog .form-notice { margin-top: 18px; }
+.admin-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.admin-dialog-actions .button { font-size: .9em; }
 .admin-table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; }
 .admin-table-scroll:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 3px; }
 .admin-table { width: 100%; min-width: 820px; border-collapse: collapse; text-align: left; font-size: .8em; }
@@ -42,6 +51,8 @@
 .admin-row-actions { display: flex; align-items: center; gap: 8px; }
 .admin-action-button { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--admin-soft); color: var(--text); }
 .admin-action-button.is-danger { color: var(--danger, #c32242); }
+.admin-action-button:not(:disabled) { cursor: pointer; }
+.admin-action-button:hover:not(:disabled) { border-color: var(--primary-dark); }
 .admin-action-icon { width: 18px; height: 18px; background: currentColor; mask-size: contain; mask-repeat: no-repeat; mask-position: center; }
 .admin-page button:disabled { cursor: not-allowed; opacity: .6; }
 .admin-page button:disabled:hover { transform: none; }

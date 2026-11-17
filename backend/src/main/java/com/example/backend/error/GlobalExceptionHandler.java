@@ -3,6 +3,7 @@ package com.example.backend.error;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import com.example.backend.admin.AdminUserActionException;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
@@ -33,6 +34,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(AdminUserActionException.class)
+    public ResponseEntity<ApiError> handleAdminUserAction(AdminUserActionException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
 
     @ExceptionHandler(PasswordChangeException.class)
     public ResponseEntity<ApiError> handlePasswordChange(PasswordChangeException exception, HttpServletRequest request) {
