@@ -4,10 +4,13 @@ import { ExploreApiError, getPublicDeck, getPublicFlashcards, type PublicExplore
 import type { FlashcardPage } from '../api/flashcards'
 import { useAuth } from '../auth/AuthContext'
 import FlashcardPreview from '../components/flashcards/FlashcardPreview'
+import FollowDeckButton, { type FollowState } from '../components/explore/FollowDeckButton'
+import StudyStartButton from '../components/study/StudyStartButton'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
 import './DeckDetails.css'
+import './ExploreDecks.css'
 
 type LoadState = { status: 'loading' } | { status: 'ready'; deck: PublicExploreDeck; cards: FlashcardPage }
   | { status: 'error'; message: string; code: number }
@@ -60,7 +63,7 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   const { deck, cards } = state
   const number = new Intl.NumberFormat(locale)
   return <>
-    <PublicDeckHeader deck={deck} />
+    <PublicDeckHeader deck={deck} onChanged={next => setState({ status: 'ready', deck: { ...deck, ...next }, cards })} />
     <section className="deck-details-flashcards" aria-labelledby="public-flashcards-title">
       <div className="db-section-heading"><h2 id="public-flashcards-title">{t('Flashcards')}</h2><p role="status">{count(cards.totalElements, 'card')}</p></div>
       {cards.totalElements === 0 ? <div className="decks-empty"><h3>{t('No flashcards yet')}</h3><p>{t('This public deck has no flashcards yet.')}</p></div>
@@ -76,7 +79,7 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   </>
 }
 
-function PublicDeckHeader({ deck }: { deck: PublicExploreDeck }) {
+function PublicDeckHeader({ deck, onChanged }: { deck: PublicExploreDeck; onChanged: (next: FollowState) => void }) {
   const { t, count, locale } = useLanguage()
   const [failedImage, setFailedImage] = useState(false)
   const languageDeck = deck.deckType === 'LANGUAGE'
@@ -101,9 +104,11 @@ function PublicDeckHeader({ deck }: { deck: PublicExploreDeck }) {
         <div><dt>{t('Created')}</dt><dd><time dateTime={deck.createdAt}>{new Date(deck.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></dd></div>
       </dl>
       <p className="decks-result-count">{count(deck.cardCount, 'card')}</p>
+      <p className="decks-result-count">{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</p>
       <div className="deck-details-actions">
         {deck.ownDeck ? <Link className="button button-primary" to={`/decks/${deck.id}`}>{t('Manage Deck')}</Link>
-          : <button className="button button-outline" type="button" disabled title={t('Following decks is coming soon.')}>{t('Follow Deck')}</button>}
+          : <FollowDeckButton deckId={deck.id} following={deck.following} followerCount={deck.followerCount} onChanged={onChanged} />}
+        {(deck.ownDeck || deck.following) && <StudyStartButton deckId={deck.id} disabled={deck.cardCount === 0} />}
       </div>
     </div>
   </div>

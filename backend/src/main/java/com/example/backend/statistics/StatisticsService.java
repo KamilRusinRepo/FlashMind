@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.example.backend.deck.DeckRepository;
+import com.example.backend.deck.DeckAccessService;
 import com.example.backend.statistics.dto.response.DeckMasteryResponse;
 import com.example.backend.statistics.dto.response.MasteryReportResponse;
 import com.example.backend.statistics.dto.response.StatisticsOverviewResponse;
@@ -25,12 +25,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class StatisticsService {
     private final StatisticsRepository statistics;
-    private final DeckRepository decks;
+    private final DeckAccessService access;
     private final Clock clock;
     private final ZoneId zone;
-    public StatisticsService(StatisticsRepository statistics, DeckRepository decks, Clock clock,
+    public StatisticsService(StatisticsRepository statistics, Clock clock, DeckAccessService access,
                              @Value("${app.statistics.zone:Europe/Warsaw}") String zone) {
-        this.statistics = statistics; this.decks = decks; this.clock = clock; this.zone = ZoneId.of(zone);
+        this.statistics = statistics; this.clock = clock; this.access = access; this.zone = ZoneId.of(zone);
     }
 
     public StatisticsOverviewResponse overview(Long userId) {
@@ -74,7 +74,7 @@ public class StatisticsService {
         if (deckId < 1 || stars < 0 || stars > 4 || !(sort.equals("strongest") || sort.equals("weakest")) || page < 0 || size < 1 || size > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        var deck = decks.findByIdAndOwner_Id(deckId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var deck = access.requireAccessible(userId, deckId);
         var found = statistics.buckets(userId, deckId).stream().collect(Collectors.toMap(MasteryReportResponse.Bucket::level, MasteryReportResponse.Bucket::count));
         var buckets = java.util.stream.IntStream.rangeClosed(1, 4).mapToObj(level -> new MasteryReportResponse.Bucket(level, found.getOrDefault(level, 0L))).toList();
         long total = buckets.stream().mapToLong(MasteryReportResponse.Bucket::count).sum();

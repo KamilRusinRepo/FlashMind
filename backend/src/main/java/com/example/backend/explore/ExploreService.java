@@ -35,7 +35,7 @@ public class ExploreService {
     public PublicDeckPageResponse list(Long viewerId, ExploreFilters input, int page, int size) {
         String type = input.deckType().strip();
         String sort = input.sort().strip();
-        if (!Set.of("", "GENERAL", "LANGUAGE").contains(type) || !Set.of("newest", "cards").contains(sort)) {
+        if (!Set.of("", "GENERAL", "LANGUAGE").contains(type) || !Set.of("newest", "cards", "followers").contains(sort)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         var filters = new ExploreFilters(input.query().strip(), type, input.category().strip(), input.sourceLanguage().strip(),

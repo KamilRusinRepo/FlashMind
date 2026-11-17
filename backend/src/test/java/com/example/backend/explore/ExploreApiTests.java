@@ -15,6 +15,10 @@ import com.example.backend.deck.*;
 import com.example.backend.flashcard.*;
 import com.example.backend.support.PostgresIntegrationTest;
 import com.example.backend.user.*;
+import com.example.backend.deck.follow.DeckFollowService;
+import com.example.backend.study.*;
+import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
+import org.springframework.web.server.ResponseStatusException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +38,9 @@ class ExploreApiTests extends PostgresIntegrationTest {
     @Autowired PasswordEncoder encoder;
     @Autowired ObjectMapper json;
     @Autowired Environment environment;
+    @Autowired DeckFollowService follows;
+    @Autowired StudyService study;
+    @Autowired FlashcardProgressRepository progress;
 
     @Test void listsOnlyPublicDecksWithRealCountsAndPreservesDeletedAuthors() throws Exception {
         var viewer = account();
@@ -115,7 +122,7 @@ class ExploreApiTests extends PostgresIntegrationTest {
             assertEquals(0, beyond.get("content").size());
             assertEquals(2, beyond.get("totalElements").asLong());
             for (String query : new String[]{"?page=-1", "?page=1000001", "?page=abc", "?size=0", "?size=49", "?deck_type=INVALID",
-                    "?sort=followers", "?sort=invalid", "?q=" + "x".repeat(121), "?category=" + "x".repeat(61),
+                    "?sort=rating", "?sort=invalid", "?q=" + "x".repeat(121), "?category=" + "x".repeat(61),
                     "?source_language=" + "x".repeat(61), "?target_language=" + "x".repeat(61)}) {
                 assertEquals(400, client.get(query).statusCode(), query);
             }
@@ -192,6 +199,125 @@ class ExploreApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void followsIdempotentlyCountsFollowersAndListsLibraryWithoutGrantingEditAccess() throws Exception {
+        var viewer = account();
+        var other = account();
+        var author = account();
+        var shared = deck(author, "Shared library", true, DeckType.GENERAL, "English", null, "Tech");
+        var own = deck(viewer, "Own library", false, DeckType.GENERAL, "English", null, null);
+        var hidden = deck(author, "Hidden library", false, DeckType.GENERAL, "English", null, null);
+        String path = "/api/explore/decks/" + shared.getId() + "/follow";
+        try (var client = new Client()) {
+            client.login(viewer);
+            assertEquals(403, client.send("PUT", path, "", false).statusCode());
+            assertEquals(403, client.send("DELETE", path, "", false).statusCode());
+            for (int retry = 0; retry < 2; retry++) {
+                var response = client.send("PUT", path, "", true);
+                assertEquals(200, response.statusCode(), response.body());
+                var data = json.readTree(response.body());
+                assertTrue(data.get("following").asBoolean());
+                assertEquals(1, data.get("followerCount").asInt());
+            }
+            follows.follow(other.getId(), shared.getId());
+            assertEquals(2, client.page("/" + shared.getId()).get("followerCount").asInt());
+            var library = json.readTree(client.getPath("/api/decks/library?size=1&search=library").body());
+            assertEquals(2, library.get("totalElements").asInt());
+            assertEquals(2, library.get("totalPages").asInt());
+            var second = json.readTree(client.getPath("/api/decks/library?size=1&page=1").body());
+            assertNotEquals(library.get("content").get(0).get("id").asLong(), second.get("content").get(0).get("id").asLong());
+            var followed = json.readTree(client.getPath("/api/decks/library?search=Shared").body()).get("content").get(0);
+            assertFalse(followed.get("ownDeck").asBoolean());
+            assertEquals(author.getUsername(), followed.get("author").get("displayName").asText());
+            assertEquals(404, client.send("DELETE", "/api/decks/" + shared.getId(), "", true).statusCode());
+            assertEquals(404, client.send("PUT", "/api/decks/" + shared.getId(), json.writeValueAsString(Map.of(
+                    "name", "Forged", "deckType", "GENERAL", "sourceLanguage", "English", "publicDeck", true)), true).statusCode());
+            assertEquals(409, client.send("PUT", "/api/explore/decks/" + own.getId() + "/follow", "", true).statusCode());
+            assertEquals(404, client.send("PUT", "/api/explore/decks/" + hidden.getId() + "/follow", "", true).statusCode());
+            for (int retry = 0; retry < 2; retry++) assertEquals(204, client.send("DELETE", path, "", true).statusCode());
+            assertEquals(1, client.page("/" + shared.getId()).get("followerCount").asInt());
+            assertFalse(client.page("/" + shared.getId()).get("following").asBoolean());
+            assertEquals(1, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
+            assertEquals(shared.getId().longValue(), client.page("?sort=followers").get("content").get(0).get("id").asLong());
+        }
+    }
+
+    @Test void studiesFollowedDeckWithSeparateProgressAndRevokesAllSessionActionsOnUnfollow() throws Exception {
+        var viewer = account();
+        var author = account();
+        var shared = deck(author, "Study shared", true, DeckType.GENERAL, "English", null, null);
+        var card = cards.saveAndFlush(new Flashcard(shared, "Question", "Answer"));
+        var ownerProgress = new FlashcardProgress(author, card);
+        ownerProgress.recordReview(true, 4, 0, Instant.now(), Instant.now().plusSeconds(864000));
+        progress.saveAndFlush(ownerProgress);
+        assertNotFound(() -> study.start(viewer.getId(), shared.getId(), StudyMode.SCHEDULED_REVIEW));
+        follows.follow(viewer.getId(), shared.getId());
+        var session = study.start(viewer.getId(), shared.getId(), StudyMode.SCHEDULED_REVIEW);
+        assertFalse(session.deck().ownDeck());
+        var answer = session.cards().getFirst();
+        study.hint(viewer.getId(), session.id(), answer.id());
+        study.submit(viewer.getId(), session.id(), answer.id(), new SubmitStudyAnswerRequest("Answer", false));
+        study.complete(viewer.getId(), session.id());
+        var personal = progress.findByUser_IdAndFlashcard_Id(viewer.getId(), card.getId()).orElseThrow();
+        assertEquals(1, personal.getAttempts());
+        assertEquals(4, progress.findByUser_IdAndFlashcard_Id(author.getId(), card.getId()).orElseThrow().getMasteryLevel());
+        var practice = study.start(viewer.getId(), shared.getId(), StudyMode.FREE_PRACTICE);
+        study.submit(viewer.getId(), practice.id(), practice.cards().getFirst().id(), new SubmitStudyAnswerRequest("Answer", false));
+        assertEquals(personal.getNextReviewAt(), progress.findByUser_IdAndFlashcard_Id(viewer.getId(), card.getId()).orElseThrow().getNextReviewAt());
+        assertEquals(1, progress.findByUser_IdAndFlashcard_Id(viewer.getId(), card.getId()).orElseThrow().getAttempts());
+        try (var client = new Client()) {
+            client.login(viewer);
+            assertEquals(200, client.getPath("/api/decks/" + shared.getId() + "/study-access").statusCode());
+            var report = client.getPath("/api/statistics/me/decks/" + shared.getId());
+            assertEquals(200, report.statusCode(), report.body());
+            assertEquals(personal.getMasteryLevel() * 25, json.readTree(report.body()).get("masteryPercent").asInt());
+            follows.unfollow(viewer.getId(), shared.getId());
+            assertEquals(404, client.getPath("/api/decks/" + shared.getId() + "/study-access").statusCode());
+            assertEquals(404, client.getPath("/api/statistics/me/decks/" + shared.getId()).statusCode());
+        }
+        assertNotFound(() -> study.getOwned(viewer.getId(), practice.id()));
+        assertNotFound(() -> study.hint(viewer.getId(), practice.id(), practice.cards().getFirst().id()));
+        assertNotFound(() -> study.submit(viewer.getId(), practice.id(), practice.cards().getFirst().id(), new SubmitStudyAnswerRequest("Answer", false)));
+        assertNotFound(() -> study.complete(viewer.getId(), practice.id()));
+        assertNotFound(() -> study.getSummary(viewer.getId(), session.id()));
+        follows.follow(viewer.getId(), shared.getId());
+        assertEquals(personal.getNextReviewAt(), progress.findByUser_IdAndFlashcard_Id(viewer.getId(), card.getId()).orElseThrow().getNextReviewAt());
+        assertEquals(practice.id(), study.getOwned(viewer.getId(), practice.id()).id());
+    }
+
+    @Test void privateDecksHideFollowsAndBlockStudyWhileDeletedAuthorsRemainStudyable() throws Exception {
+        var viewer = account();
+        var author = account();
+        var shared = deck(author, "Shared", true, DeckType.GENERAL, "English", null, null);
+        addCards(shared, 1);
+        follows.follow(viewer.getId(), shared.getId());
+        var session = study.start(viewer.getId(), shared.getId(), StudyMode.FREE_PRACTICE);
+        shared.setPublic(false); decks.saveAndFlush(shared);
+        assertNotFound(() -> study.start(viewer.getId(), shared.getId(), StudyMode.FREE_PRACTICE));
+        assertNotFound(() -> study.getOwned(viewer.getId(), session.id()));
+        try (var client = new Client()) {
+            client.login(viewer);
+            assertEquals(0, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
+            assertEquals(204, client.send("DELETE", "/api/explore/decks/" + shared.getId() + "/follow", "", true).statusCode());
+            shared.setPublic(true); decks.saveAndFlush(shared);
+            follows.follow(viewer.getId(), shared.getId());
+            deletion.deleteAccount(author.getId());
+            assertEquals("Deleted user", client.page("/" + shared.getId()).get("author").get("displayName").asText());
+            assertEquals(1, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
+            assertEquals(1, study.start(viewer.getId(), shared.getId(), StudyMode.FREE_PRACTICE).totalCards());
+            assertEquals(1, study.start(viewer.getId(), shared.getId(), StudyMode.SCHEDULED_REVIEW).totalCards());
+            assertEquals(200, client.getPath("/api/statistics/me/decks/" + shared.getId()).statusCode());
+        }
+        deletion.deleteAccount(viewer.getId());
+        try (var client = new Client()) {
+            client.login(account());
+            assertEquals(0, client.page("/" + shared.getId()).get("followerCount").asInt());
+        }
+    }
+
+    private void assertNotFound(Runnable action) {
+        assertEquals(404, assertThrows(ResponseStatusException.class, action::run).getStatusCode().value());
+    }
+
     private User account() {
         String name = "Explore" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));
@@ -218,7 +344,18 @@ class ExploreApiTests extends PostgresIntegrationTest {
             assertEquals(200, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
         }
         HttpResponse<String> get(String query) throws Exception {
-            return http.send(HttpRequest.newBuilder(endpoint("/api/explore/decks" + query)).GET().build(), HttpResponse.BodyHandlers.ofString());
+            return getPath("/api/explore/decks" + query);
+        }
+        HttpResponse<String> getPath(String path) throws Exception {
+            return http.send(HttpRequest.newBuilder(endpoint(path)).GET().build(), HttpResponse.BodyHandlers.ofString());
+        }
+        HttpResponse<String> send(String method, String path, String body, boolean protectedRequest) throws Exception {
+            var request = HttpRequest.newBuilder(endpoint(path)).header("Content-Type", "application/json");
+            if (protectedRequest) {
+                var token = json.readTree(getPath("/api/auth/csrf").body());
+                request.header(token.get("headerName").asText(), token.get("token").asText());
+            }
+            return http.send(request.method(method, HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         }
         JsonNode page(String query) throws Exception {
             var response = get(query); assertEquals(200, response.statusCode(), response.body()); return json.readTree(response.body());

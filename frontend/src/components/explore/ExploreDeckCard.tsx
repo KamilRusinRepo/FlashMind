@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { categoryName, languageName } from '../../i18n/labels'
 import type { PublicExploreDeck } from '../../api/explore'
-import followIcon from '../../assets/icons/explore/follow.svg'
+import FollowDeckButton from './FollowDeckButton'
 
-export default function ExploreDeckCard({ deck }: { deck: PublicExploreDeck }) {
-  const { t, count } = useLanguage()
+export default function ExploreDeckCard({ deck: initialDeck }: { deck: PublicExploreDeck }) {
+  const [deck, setDeck] = useState(initialDeck)
+  const { t, count, locale } = useLanguage()
   const { search } = useLocation()
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const tone = deck.deckType === 'LANGUAGE' ? 'purple' : deck.category === 'Science' ? 'green' : deck.category === 'Tech' ? 'orange' : 'blue'
@@ -20,10 +21,9 @@ export default function ExploreDeckCard({ deck }: { deck: PublicExploreDeck }) {
       <p className="explore-deck-author">{t('By {0}', [deck.author.id === null ? t('Deleted user') : deck.author.displayName])}</p>
       {deck.description?.trim() && <p className="explore-deck-description">{deck.description}</p>}
       <p className="explore-deck-languages">{languageName(deck.sourceLanguage, t)}{deck.targetLanguage && <> → {languageName(deck.targetLanguage, t)}</>}</p>
-      <div className="explore-deck-meta"><span>{count(deck.cardCount, 'card')}</span></div>
+      <div className="explore-deck-meta"><span>{count(deck.cardCount, 'card')}</span><span>{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</span></div>
     </div>
-    <div className="explore-deck-actions"><button className={`explore-follow-button${deck.ownDeck ? ' is-owned' : ''}`} type="button" disabled title={deck.ownDeck ? t('This is your deck.') : t('Following decks is coming soon.')}>
-      {!deck.ownDeck && <span className="explore-follow-icon" aria-hidden="true" style={{ maskImage: `url("${followIcon}")` }} />}<span>{deck.ownDeck ? t('Your Deck') : t('Follow Deck')}</span>
-    </button></div>
+    <div className="explore-deck-actions"><FollowDeckButton deckId={deck.id} following={deck.following} ownDeck={deck.ownDeck}
+      followerCount={deck.followerCount} onChanged={next => setDeck(value => ({ ...value, ...next }))} /></div>
   </article>
 }

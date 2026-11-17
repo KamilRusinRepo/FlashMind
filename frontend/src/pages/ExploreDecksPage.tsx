@@ -37,7 +37,7 @@ export default function ExploreDecksPage() {
 
   return <div className="explore-page">
     <header className="explore-heading"><h1>{t('Explore Marketplace')}</h1><p>{t('Find public decks created by other learners.')}</p></header>
-    <p className="explore-preview">{t('Following and ratings are coming soon.')}</p>
+    <p className="explore-preview">{t('Follow public decks to add them to your library and study them.')}</p>
     <ExploreFilters key={filterQuery} initial={filters} onApply={apply} />
     <ExploreResults key={`${user?.id}:${query}`} query={query.toString()} page={page} goToPage={goToPage} onClear={() => apply(emptyExploreFilters)} />
   </div>

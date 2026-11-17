@@ -1,7 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
-import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
+import { DeckApiError, getStudyDeck, type OwnedDeck } from '../api/decks'
 import { completeStudySession, getStudySession, getStudySummary, requestStudyHint, submitStudyAnswer, StudyApiError, type StudySessionData, type StudySummaryData } from '../api/study'
 import { useAuth } from '../auth/AuthContext'
 import StudySidebar from '../components/study/StudySidebar'
@@ -34,7 +34,7 @@ function StudyLanding({ deckId }: { deckId: number }) {
   useEffect(() => {
     window.scrollTo(0, 0)
     const controller = new AbortController()
-    getOwnedDeck(deckId, controller.signal).then(deck => {
+    getStudyDeck(deckId, controller.signal).then(deck => {
       if (!controller.signal.aborted) setState({ status: 'ready', data: deck })
     }).catch(cause => {
       if (controller.signal.aborted) return

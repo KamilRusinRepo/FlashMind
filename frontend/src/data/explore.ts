@@ -3,7 +3,7 @@ export const exploreCategories = ['Academic', 'Language', 'History', 'Science', 
 export const exploreLanguages = ['English', 'Polish', 'German', 'Spanish', 'French', 'Japanese']
 export const exploreSorts: { value: string; label: string; disabled?: boolean }[] = [
   { value: 'newest', label: 'Newest' }, { value: 'cards', label: 'Most Cards' },
-  { value: 'followers', label: 'Most Followed', disabled: true },
+  { value: 'followers', label: 'Most Followed' },
   { value: 'rating', label: 'Highest Rated', disabled: true }, { value: 'reviews', label: 'Most Reviewed', disabled: true },
 ]
 export type ExploreFilters = { q: string; deckType: string; category: string; source: string; target: string; sort: string }

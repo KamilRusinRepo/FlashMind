@@ -54,7 +54,7 @@ public class StatisticsRepository {
         return jdbc.query("""
             SELECT (p.last_answered_at AT TIME ZONE :zone)::date AS day, COUNT(*) AS total
             FROM flashcard_progress p JOIN flashcards f ON f.id = p.flashcard_id JOIN decks d ON d.id = f.deck_id
-            WHERE p.user_id = :userId AND d.owner_id = :userId AND p.mastery_level = 4 AND p.last_answered_at <= :now
+            WHERE p.user_id = :userId AND (d.owner_id = :userId OR (d.is_public = true AND EXISTS (SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :userId))) AND p.mastery_level = 4 AND p.last_answered_at <= :now
             GROUP BY day
             """, parameters(userId, zone, now), (rs, row) -> new MasteredDay(rs.getObject("day", LocalDate.class), rs.getLong("total")));
     }
@@ -83,7 +83,7 @@ public class StatisticsRepository {
                    COUNT(f.id) FILTER (WHERE p.id IS NULL OR p.next_review_at IS NULL OR p.next_review_at <= :now) AS due
             FROM decks d LEFT JOIN flashcards f ON f.deck_id = d.id
             LEFT JOIN flashcard_progress p ON p.flashcard_id = f.id AND p.user_id = :userId
-            WHERE d.owner_id = :userId AND (:deckId = 0 OR d.id = :deckId) GROUP BY d.id
+            WHERE (d.owner_id = :userId OR (d.is_public = true AND EXISTS (SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :userId))) AND (:deckId = 0 OR d.id = :deckId) GROUP BY d.id
             ORDER BY (SELECT MAX(s.started_at) FROM study_sessions s WHERE s.deck_id = d.id AND s.user_id = :userId) DESC NULLS LAST,
                      d.created_at DESC, d.id DESC
             """, new MapSqlParameterSource("userId", userId).addValue("deckId", deckId).addValue("now", Timestamp.from(now)),
@@ -96,7 +96,7 @@ public class StatisticsRepository {
             SELECT GREATEST(1, COALESCE(p.mastery_level, 0)) AS level, COUNT(*) AS total
             FROM flashcards f JOIN decks d ON d.id = f.deck_id
             LEFT JOIN flashcard_progress p ON p.flashcard_id = f.id AND p.user_id = :userId
-            WHERE d.id = :deckId AND d.owner_id = :userId GROUP BY level
+            WHERE d.id = :deckId AND (d.owner_id = :userId OR (d.is_public = true AND EXISTS (SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :userId))) GROUP BY level
             """, Map.of("userId", userId, "deckId", deckId), (rs, row) -> new MasteryReportResponse.Bucket(rs.getInt("level"), rs.getLong("total")));
     }
 
@@ -107,7 +107,7 @@ public class StatisticsRepository {
             SELECT f.id, f.question, f.answer, COALESCE(p.mastery_level, 0) AS level, p.last_answered_at, p.next_review_at
             FROM flashcards f JOIN decks d ON d.id = f.deck_id
             LEFT JOIN flashcard_progress p ON p.flashcard_id = f.id AND p.user_id = :userId
-            WHERE d.id = :deckId AND d.owner_id = :userId
+            WHERE d.id = :deckId AND (d.owner_id = :userId OR (d.is_public = true AND EXISTS (SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :userId)))
               AND (:stars = 0 OR GREATEST(1, COALESCE(p.mastery_level, 0)) = :stars)
             ORDER BY GREATEST(1, COALESCE(p.mastery_level, 0)) %s, LOWER(f.question), f.id
             LIMIT :size OFFSET :offset

@@ -1,8 +1,8 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
-import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
+import { Link, Navigate, useParams } from 'react-router'
+import { DeckApiError, getStudyDeck, type OwnedDeck } from '../api/decks'
 import { createFlashcard, updateFlashcard } from '../api/flashcards'
 import { useAuth } from '../auth/AuthContext'
 import DeckFlashcards from '../components/flashcards/DeckFlashcards'
@@ -37,7 +37,7 @@ function DeckDetailsLoader({ deckId }: { deckId: number }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    getOwnedDeck(deckId, controller.signal).then(deck => {
+    getStudyDeck(deckId, controller.signal).then(deck => {
       if (!controller.signal.aborted) setState({ status: 'ready', deck })
     }).catch(cause => {
       if (controller.signal.aborted) return
@@ -52,7 +52,7 @@ function DeckDetailsLoader({ deckId }: { deckId: number }) {
     <p className="form-notice form-error" role="alert">{t(state.message)}</p>
     <button className="button button-outline" type="button" onClick={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }}>{t("Try again")}</button>
   </div>
-  return <DeckDetails deck={state.deck} />
+  return state.deck.ownDeck ? <DeckDetails deck={state.deck} /> : <Navigate to={`/explore/${state.deck.id}`} replace />
 }
 
 function DeckDetails({ deck }: { deck: OwnedDeck }) {

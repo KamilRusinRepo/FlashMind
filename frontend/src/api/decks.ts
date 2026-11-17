@@ -11,6 +11,8 @@ export type OwnedDeck = {
   backgroundUrl: string | null
   publicDeck: boolean
   createdAt: string
+  ownDeck: boolean
+  author: { id: number | null; displayName: string }
 }
 
 export type DeckPage = { content: OwnedDeck[]; page: number; size: number; totalElements: number; totalPages: number }
@@ -18,6 +20,7 @@ export type DeckPage = { content: OwnedDeck[]; page: number; size: number; total
 export function isOwnedDeck(value: unknown): value is OwnedDeck {
   if (!value || typeof value !== 'object') return false
   const deck = value as Record<string, unknown>
+  const author = deck.author as Record<string, unknown> | null
   return typeof deck.id === 'number' && Number.isSafeInteger(deck.id) && deck.id > 0 && typeof deck.name === 'string'
     && (deck.description === null || typeof deck.description === 'string')
     && (deck.deckType === 'GENERAL' || deck.deckType === 'LANGUAGE')
@@ -25,13 +28,23 @@ export function isOwnedDeck(value: unknown): value is OwnedDeck {
     && (deck.category === null || typeof deck.category === 'string') && typeof deck.publicDeck === 'boolean'
     && (deck.backgroundUrl === null || typeof deck.backgroundUrl === 'string')
     && typeof deck.createdAt === 'string' && !Number.isNaN(Date.parse(deck.createdAt))
+    && typeof deck.ownDeck === 'boolean' && !!author && typeof author === 'object'
+    && (author.id === null || Number.isSafeInteger(author.id) && Number(author.id) > 0) && typeof author.displayName === 'string'
 }
 
 export async function getMyDecks(page: number, search: string, signal: AbortSignal): Promise<DeckPage> {
+  return getDeckPage(page, search, signal, false)
+}
+
+export async function getLibraryDecks(page: number, search: string, signal: AbortSignal): Promise<DeckPage> {
+  return getDeckPage(page, search, signal, true)
+}
+
+async function getDeckPage(page: number, search: string, signal: AbortSignal, library: boolean): Promise<DeckPage> {
   let response: Response
   try {
     const params = new URLSearchParams({ page: String(page), size: '12', search })
-    response = await fetch(`/api/decks?${params}`, {
+    response = await fetch(`/api/decks${library ? '/library' : ''}?${params}`, {
       credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
       signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     })
@@ -96,9 +109,17 @@ async function saveDeck(path: string, method: 'POST' | 'PUT', request: SaveDeckR
 }
 
 export async function getOwnedDeck(id: number, signal: AbortSignal): Promise<OwnedDeck> {
+  return loadDeck(id, signal, false)
+}
+
+export async function getStudyDeck(id: number, signal: AbortSignal): Promise<OwnedDeck> {
+  return loadDeck(id, signal, true)
+}
+
+async function loadDeck(id: number, signal: AbortSignal, studyAccess: boolean): Promise<OwnedDeck> {
   let response: Response
   try {
-    response = await fetch(`/api/decks/${id}`, {
+    response = await fetch(`/api/decks/${id}${studyAccess ? '/study-access' : ''}`, {
       credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
       signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     })

@@ -29,6 +29,20 @@ public class DeckController {
 
     public DeckController(DeckService decks) { this.decks = decks; }
 
+    @GetMapping("/library")
+    public ResponseEntity<DeckPageResponse> library(@AuthenticationPrincipal SessionUser user,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) @Max(1000000) int page,
+            @RequestParam(name = "size", defaultValue = "12") @Min(1) @Max(48) int size,
+            @RequestParam(name = "search", defaultValue = "") @Size(max = 120) String search) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(decks.listLibrary(user.id(), page, size, search));
+    }
+
+    @GetMapping("/{deckId}/study-access")
+    public ResponseEntity<DeckListItemResponse> studyAccess(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "deckId") @Min(1) Long deckId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(decks.getAccessible(user.id(), deckId));
+    }
+
     @PostMapping
     public ResponseEntity<DeckListItemResponse> create(@AuthenticationPrincipal SessionUser user,
                                                       @Valid @RequestBody SaveDeckRequest request) {

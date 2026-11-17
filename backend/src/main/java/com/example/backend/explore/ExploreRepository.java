@@ -21,7 +21,9 @@ public class ExploreRepository {
     private static final String SELECT = """
         SELECT d.id, d.name, d.description, d.deck_type, d.category, d.source_language, d.target_language,
                d.background_url, d.created_at, author.id AS author_id, author.username AS author_name,
-               (SELECT COUNT(*) FROM flashcards card WHERE card.deck_id = d.id) AS card_count
+               (SELECT COUNT(*) FROM flashcards card WHERE card.deck_id = d.id) AS card_count,
+               (SELECT COUNT(*) FROM deck_follows follow WHERE follow.deck_id = d.id) AS follower_count,
+               EXISTS(SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :viewerId) AS following
         """;
 
     // LEFT JOIN preserves public decks whose author was physically deleted.
@@ -48,9 +50,13 @@ public class ExploreRepository {
 
     public List<PublicDeckResponse> find(Long viewerId, ExploreFilters filters, int page, int size) {
         // SQL ordering is chosen from constants, never inserted from raw request text.
-        String order = filters.sort().equals("cards") ? "card_count DESC, d.created_at DESC, d.id DESC" : "d.created_at DESC, d.id DESC";
+        String order = switch (filters.sort()) {
+            case "cards" -> "card_count DESC, d.created_at DESC, d.id DESC";
+            case "followers" -> "follower_count DESC, d.created_at DESC, d.id DESC";
+            default -> "d.created_at DESC, d.id DESC";
+        };
         return jdbc.query(SELECT + FROM + " ORDER BY " + order + " LIMIT :size OFFSET :offset",
-                parameters(filters).addValue("size", size).addValue("offset", (long) page * size),
+                parameters(filters).addValue("viewerId", viewerId).addValue("size", size).addValue("offset", (long) page * size),
                 (rs, row) -> mapDeck(rs, viewerId));
     }
 
@@ -58,7 +64,7 @@ public class ExploreRepository {
         return jdbc.query(SELECT + """
             FROM decks d LEFT JOIN users author ON author.id = d.owner_id
             WHERE d.id = :deckId AND d.is_public = true
-            """, new MapSqlParameterSource("deckId", deckId), (rs, row) -> mapDeck(rs, viewerId)).stream().findFirst();
+            """, new MapSqlParameterSource("deckId", deckId).addValue("viewerId", viewerId), (rs, row) -> mapDeck(rs, viewerId)).stream().findFirst();
     }
 
     public List<FlashcardResponse> findPublicCards(Long deckId, int page, int size) {
@@ -79,6 +85,6 @@ public class ExploreRepository {
         return new PublicDeckResponse(rs.getLong("id"), rs.getString("name"), rs.getString("description"),
                 DeckType.valueOf(rs.getString("deck_type")), rs.getString("category"), rs.getString("source_language"),
                 rs.getString("target_language"), rs.getString("background_url"), rs.getTimestamp("created_at").toInstant(),
-                rs.getLong("card_count"), author, Objects.equals(viewerId, authorId));
+                rs.getLong("card_count"), author, Objects.equals(viewerId, authorId), rs.getBoolean("following"), rs.getLong("follower_count"));
     }
 }

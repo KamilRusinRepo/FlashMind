@@ -1,7 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
-import { DeckApiError, getMyDecks, type DeckPage } from '../api/decks'
+import { DeckApiError, getLibraryDecks, type DeckPage } from '../api/decks'
 import { useAuth } from '../auth/AuthContext'
 import FormField from '../components/FormField'
 import OwnedDeckCard from '../components/decks/OwnedDeckCard'
@@ -59,7 +59,7 @@ function DeckResults({ page, search, goToPage, onChanged }: { page: number; sear
 
   useEffect(() => {
     const controller = new AbortController()
-    getMyDecks(page, search, controller.signal).then(data => {
+    getLibraryDecks(page, search, controller.signal).then(data => {
       if (controller.signal.aborted) return
       if (data.content.length === 0 && page > 0) { goToPage(Math.max(0, Math.min(page - 1, data.totalPages - 1))); return }
       setState({ status: 'success', data })

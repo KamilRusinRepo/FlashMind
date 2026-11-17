@@ -1,9 +1,11 @@
 import { isFlashcard, type FlashcardPage } from './flashcards'
+import { requestWithCsrf } from './csrf'
 
 export type PublicExploreDeck = {
   id: number; name: string; description: string | null; deckType: 'GENERAL' | 'LANGUAGE'
   category: string | null; sourceLanguage: string; targetLanguage: string | null; backgroundUrl: string | null
   createdAt: string; cardCount: number; author: { id: number | null; displayName: string }; ownDeck: boolean
+  following: boolean; followerCount: number
 }
 export type PublicDeckPage = { content: PublicExploreDeck[]; page: number; size: number; totalElements: number; totalPages: number }
 export class ExploreApiError extends Error {
@@ -20,6 +22,7 @@ function isPublicDeck(value: unknown): value is PublicExploreDeck {
     && typeof deck.sourceLanguage === 'string' && optionalText(deck.targetLanguage) && optionalText(deck.backgroundUrl)
     && typeof deck.createdAt === 'string' && !Number.isNaN(Date.parse(deck.createdAt))
     && Number.isSafeInteger(deck.cardCount) && Number(deck.cardCount) >= 0 && typeof deck.ownDeck === 'boolean'
+    && typeof deck.following === 'boolean' && Number.isSafeInteger(deck.followerCount) && Number(deck.followerCount) >= 0
     && !!author && typeof author === 'object' && (author.id === null || Number.isSafeInteger(author.id) && Number(author.id) > 0) && typeof author.displayName === 'string'
 }
 export async function getPublicDecks(query: string, page: number, signal: AbortSignal): Promise<PublicDeckPage> {
@@ -51,6 +54,22 @@ async function getPublicResource(path: string, signal: AbortSignal): Promise<unk
     : response.status === 404 ? 'This public deck is no longer available.' : 'Unable to load this public deck. Please try again.', response.status)
   if (response.status !== 200) throw new ExploreApiError('The server returned unexpected public deck data. Please try again.')
   return response.json().catch(() => null)
+}
+
+export async function setDeckFollowing(deckId: number, following: boolean): Promise<PublicExploreDeck | null> {
+  let response: Response
+  try {
+    response = await requestWithCsrf(`/api/explore/decks/${deckId}/follow`, following ? 'PUT' : 'DELETE', { signal: AbortSignal.timeout(15000) })
+  } catch { throw new ExploreApiError('Unable to confirm following changes. Refresh the page before trying again.') }
+  if (!response.ok) throw new ExploreApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
+    : response.status === 404 ? 'This public deck is no longer available.'
+      : response.status === 409 ? 'You cannot follow your own deck.' : 'Unable to change deck following. Please try again.', response.status)
+  if (!following && response.status === 204) return null
+  const data = await response.json().catch(() => null)
+  if (response.status !== 200 || !isPublicDeck(data) || data.id !== deckId || !data.following) {
+    throw new ExploreApiError('Unable to confirm following changes. Refresh the page before trying again.')
+  }
+  return data
 }
 
 export async function getPublicDeck(deckId: number, signal: AbortSignal): Promise<PublicExploreDeck> {
