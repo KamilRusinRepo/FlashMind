@@ -1,5 +1,10 @@
 package com.example.backend.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+
 import com.example.backend.admin.dto.request.SetUserEnabledRequest;
 import com.example.backend.admin.dto.request.UpdateAdminUserRequest;
 import com.example.backend.admin.dto.response.AdminUserEditResponse;
@@ -21,6 +26,18 @@ public class AdminUserController {
     private final AdminUserService users;
     private final AdminUserEditService edits;
     public AdminUserController(AdminUserService users, AdminUserEditService edits) { this.users = users; this.edits = edits; }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal SessionUser principal,
+            @PathVariable(name = "userId") @Min(1) Long userId,
+            HttpServletRequest request, HttpServletResponse response) {
+        users.delete(principal, userId);
+        if (principal.id().equals(userId)) {
+            new SecurityContextLogoutHandler().logout(request, response, null);
+            new CookieClearingLogoutHandler("JSESSIONID").logout(request, response, null);
+        }
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
 
     @PutMapping("/{userId}")
     public ResponseEntity<AdminUserEditResponse> update(@AuthenticationPrincipal SessionUser principal,

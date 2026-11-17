@@ -7,6 +7,7 @@ import com.example.backend.auth.SessionUser;
 import com.example.backend.role.RoleName;
 import com.example.backend.role.RoleRepository;
 import com.example.backend.user.UserRepository;
+import com.example.backend.user.UserDeletionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -19,8 +20,18 @@ public class AdminUserService {
     private final UserRepository users;
     private final RoleRepository roles;
     private final AdminActorService actor;
-    public AdminUserService(AdminUserRepository listing, UserRepository users, RoleRepository roles, AdminActorService actor) {
+    private final UserDeletionService deletion;
+    public AdminUserService(AdminUserRepository listing, UserRepository users, RoleRepository roles, AdminActorService actor, UserDeletionService deletion) {
         this.listing = listing; this.users = users; this.roles = roles; this.actor = actor;
+        this.deletion = deletion;
+    }
+
+    @Transactional
+    public void delete(SessionUser principal, Long targetId) {
+        roles.findByNameForUpdate(RoleName.ADMIN).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
+        actor.requireActiveForUpdate(principal);
+        users.findByIdForUpdate(targetId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        deletion.deleteAccount(targetId);
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)

@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import FormField from '../FormField'
 import SelectField from '../SelectField'
-import AdminPreviewAction from './AdminPreviewAction'
+import AdminDeleteUserDialog from './AdminDeleteUserDialog'
 import AdminUserStatusDialog from './AdminUserStatusDialog'
 import AdminEditUserDialog from './AdminEditUserDialog'
 import editIcon from '../../assets/icons/admin/edit.svg'
@@ -40,19 +40,22 @@ export default function AdminUsersPanel({ onSummary }: { onSummary: (summary: Ad
         <button className="button button-outline" type="button" onClick={() => { setDraft(emptyFilters); setFilters(emptyFilters); setPage(0); setNotice(''); setRevision(value => value + 1) }}>{t('Clear filters')}</button></div>
     </form>
     <UsersResults key={JSON.stringify([filters, page, revision])} filters={filters} page={page} onPageChange={setPage} onSummary={onSummary}
+      onDeleted={() => { setNotice('The user has been deleted. Public decks have been preserved.'); setRevision(value => value + 1) }}
+      onUnavailable={() => { setNotice(''); setRevision(value => value + 1) }}
       onEdited={result => { setNotice(result.pendingEmail ? 'The user has been updated. Email confirmation has been requested; the current address remains active.' : 'The user has been updated.'); setRevision(value => value + 1) }}
       onSaved={blocked => { setNotice(blocked ? 'The account has been blocked.' : 'The account has been unblocked.'); setRevision(value => value + 1) }} />
   </section>
 }
 
-function UsersResults({ filters, page, onPageChange, onSummary, onSaved, onEdited }: {
+function UsersResults({ filters, page, onPageChange, onSummary, onSaved, onEdited, onDeleted, onUnavailable }: {
+  onDeleted: () => void; onUnavailable: () => void
   filters: AdminUserFilters; page: number; onPageChange: (page: number) => void; onSummary: (summary: AdminUserSummary) => void; onSaved: (blocked: boolean) => void; onEdited: (result: AdminUserEditResponse) => void
 }) {
   const { t, locale } = useLanguage()
   const { user: currentUser, refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [selected, setSelected] = useState<{ mode: 'edit' | 'status'; user: AdminUser } | null>(null)
+  const [selected, setSelected] = useState<{ mode: 'edit' | 'status' | 'delete'; user: AdminUser } | null>(null)
   const { search, role, status } = filters
   useEffect(() => {
     const controller = new AbortController()
@@ -91,7 +94,11 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved, onEdite
             <button className="admin-action-button" type="button" disabled={user.id === currentUser?.id} onClick={() => setSelected({ mode: 'status', user })}
               aria-label={t(user.enabled ? 'Block {0}' : 'Unblock {0}', [user.username])} title={user.id === currentUser?.id ? t('You cannot block your own account.') : t(user.enabled ? 'Block {0}' : 'Unblock {0}', [user.username])}>
               <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${user.enabled ? blockIcon : unblockIcon}")` }} />
-            </button><AdminPreviewAction icon={deleteIcon} label={t('Delete user {0}', [user.username])} danger /></div></td>
+            </button>
+            <button className="admin-action-button is-danger" type="button" onClick={() => setSelected({ mode: 'delete', user })} aria-haspopup="dialog"
+              aria-label={t('Delete user {0}', [user.username])} title={t('Delete user {0}', [user.username])}>
+              <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${deleteIcon}")` }} />
+            </button></div></td>
         </tr>)}</tbody>
       </table></div>}
     {data.totalPages > 1 && <nav className="admin-pagination" aria-label={t('User pagination')}>
@@ -101,5 +108,6 @@ function UsersResults({ filters, page, onPageChange, onSummary, onSaved, onEdite
     </nav>}
     {selected?.mode === 'status' && <AdminUserStatusDialog user={selected.user} onCancel={() => setSelected(null)} onSaved={() => onSaved(selected.user.enabled)} />}
     {selected?.mode === 'edit' && <AdminEditUserDialog user={selected.user} onCancel={() => setSelected(null)} onSaved={onEdited} />}
+    {selected?.mode === 'delete' && <AdminDeleteUserDialog user={selected.user} onCancel={() => setSelected(null)} onDeleted={onDeleted} onUnavailable={onUnavailable} />}
   </>
 }

@@ -1,6 +1,15 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'Delete user?': 'Usunąć użytkownika?',
+  'Delete user': 'Usuń użytkownika',
+  'Delete user {0}? The account, private decks and personal study data will be permanently removed. Public decks will remain available as Deleted user.': 'Usunąć użytkownika {0}? Konto, prywatne talie i osobiste dane nauki zostaną trwale usunięte. Publiczne talie pozostaną dostępne z autorem „Usunięty użytkownik”.',
+  'You are deleting your own account. You will be signed out.': 'Usuwasz własne konto. Nastąpi wylogowanie.',
+  'You cannot delete the last active administrator.': 'Nie możesz usunąć ostatniego aktywnego administratora.',
+  'Unable to confirm account deletion. Refresh the user list before trying again.': 'Nie udało się potwierdzić usunięcia konta. Odśwież listę użytkowników przed kolejną próbą.',
+  'Unable to delete this user. Please try again.': 'Nie udało się usunąć użytkownika. Spróbuj ponownie.',
+  'The user has been deleted. Public decks have been preserved.': 'Użytkownik został usunięty. Publiczne talie zostały zachowane.',
+  'Refresh users': 'Odśwież użytkowników',
   'Admin Panel': 'Panel administratora',
   'Account deletion is coming soon.': 'Usuwanie kont będzie dostępne wkrótce.',
   'Username and role changes sign the user out. A new email address requires confirmation; the current address stays active until then.': 'Zmiana nazwy użytkownika lub ról wyloguje użytkownika. Nowy adres e-mail wymaga potwierdzenia; do tego czasu działa obecny adres.',

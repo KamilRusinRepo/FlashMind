@@ -99,3 +99,19 @@ export async function updateAdminUser(userId: number, request: AdminUserEditRequ
   }
   return data as AdminUserEditResponse
 }
+
+export async function deleteAdminUser(userId: number): Promise<void> {
+  let response: Response
+  try {
+    response = await requestWithCsrf(`/api/admin/users/${userId}`, 'DELETE', { signal: AbortSignal.timeout(15000) })
+  } catch { throw new AdminUsersApiError('Unable to confirm account deletion. Refresh the user list before trying again.') }
+  if (response.status === 204) return
+  const data = await response.json().catch(() => null)
+  const message = response.status === 409 && data?.message === 'You cannot delete the last active administrator.' ? data.message
+    : response.status === 401 ? 'Your session has expired. Please sign in again.'
+      : response.status === 403 ? 'You do not have permission to access this resource.'
+        : response.status === 404 ? 'This user is no longer available. Refresh the user list.'
+          : response.ok ? 'Unable to confirm account deletion. Refresh the user list before trying again.'
+            : 'Unable to delete this user. Please try again.'
+  throw new AdminUsersApiError(message, response.status)
+}
