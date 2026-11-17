@@ -4,6 +4,8 @@ import java.util.Set;
 import com.example.backend.admin.dto.response.AdminDeckPageResponse;
 import com.example.backend.auth.SessionUser;
 import com.example.backend.deck.DeckRepository;
+import com.example.backend.deck.dto.request.SaveDeckRequest;
+import com.example.backend.deck.dto.response.DeckListItemResponse;
 import com.example.backend.explore.ExploreFilters;
 import com.example.backend.explore.ExploreRepository;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,27 @@ public class AdminDeckService {
         long total = publicDecks.count(filters);
         return new AdminDeckPageResponse(publicDecks.find(viewerId, filters, page, size), page, size, total,
                 (int) ((total + size - 1) / size), summary.summary());
+    }
+
+    @Transactional
+    public DeckListItemResponse updatePublic(SessionUser principal, Long deckId, SaveDeckRequest request) {
+        actor.requireActiveForUpdate(principal);
+        var deck = decks.findForUpdate(deckId).filter(value -> value.isPublic())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!request.publicDeck()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        deck.setName(request.name());
+        deck.setDescription(request.description());
+        deck.setLearningLanguages(request.deckType(), request.sourceLanguage(), request.targetLanguage());
+        deck.setCategory(request.category());
+        deck.setBackgroundUrl(request.backgroundUrl());
+        return DeckListItemResponse.from(decks.saveAndFlush(deck), principal.id());
+    }
+
+    @Transactional(readOnly = true)
+    public DeckListItemResponse getPublic(Long viewerId, Long deckId) {
+        var deck = decks.findById(deckId).filter(value -> value.isPublic())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return DeckListItemResponse.from(deck, viewerId);
     }
 
     @Transactional

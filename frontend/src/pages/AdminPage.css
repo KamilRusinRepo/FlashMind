@@ -2,6 +2,10 @@
 .admin-heading h1 { font-size: clamp(30px, 2.4vw, 48px); line-height: 1.2; letter-spacing: -.04em; }
 .admin-heading > p:last-child { color: var(--muted); margin-top: 10px; }
 .admin-info-note { padding: 15px 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--admin-soft); color: var(--muted); font-size: .85em; }
+.admin-status-dialog.admin-edit-deck-dialog { width: min(820px, calc(100vw - 32px)); }
+.admin-edit-deck-dialog .deck-create-form { margin-top: 20px; padding: clamp(14px, 2vw, 24px); background: var(--surface, #fff); }
+.admin-edit-deck-dialog .deck-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 600px) { .admin-edit-deck-dialog .deck-form-grid { grid-template-columns: 1fr; } }
 .admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .admin-metric { display: grid; gap: 8px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--admin-surface); }
 .admin-metric span { color: var(--muted); font-size: .85em; }

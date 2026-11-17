@@ -2,6 +2,9 @@ package com.example.backend.admin;
 
 import com.example.backend.admin.dto.response.AdminDeckPageResponse;
 import com.example.backend.auth.SessionUser;
+import com.example.backend.deck.dto.request.SaveDeckRequest;
+import com.example.backend.deck.dto.response.DeckListItemResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -30,5 +33,17 @@ public class AdminDeckController {
             @PathVariable(name = "deckId") @Min(1) Long deckId) {
         decks.deletePublic(principal, deckId);
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
+
+    @GetMapping("/{deckId}")
+    public ResponseEntity<DeckListItemResponse> details(@AuthenticationPrincipal SessionUser principal,
+            @PathVariable(name = "deckId") @Min(1) Long deckId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(decks.getPublic(principal.id(), deckId));
+    }
+
+    @PutMapping("/{deckId}")
+    public ResponseEntity<DeckListItemResponse> update(@AuthenticationPrincipal SessionUser principal,
+            @PathVariable(name = "deckId") @Min(1) Long deckId, @Valid @RequestBody SaveDeckRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(decks.updatePublic(principal, deckId, request));
     }
 }

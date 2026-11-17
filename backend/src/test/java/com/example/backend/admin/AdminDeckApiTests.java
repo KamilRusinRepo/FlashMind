@@ -173,6 +173,86 @@ class AdminDeckApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void editsPublicDeckDetailsWithoutChangingAuthorCardsOrStudyData() throws Exception {
+        var admin = account(true); var owner = account(false); var removed = account(false);
+        var shared = deck(owner, "Original", true, DeckType.GENERAL);
+        var card = cards.saveAndFlush(new Flashcard(shared, "Question", "Answer"));
+        follows.follow(admin.getId(), shared.getId());
+        var session = study.start(admin.getId(), shared.getId(), StudyMode.FREE_PRACTICE);
+        var orphan = deck(removed, "Orphan", true, DeckType.GENERAL);
+        deletion.deleteAccount(removed.getId());
+        String body = editBody("  Revised deck  ", "LANGUAGE", "Polish", "English", true);
+        try (var client = new Client()) {
+            client.login(admin);
+            var loaded = client.get("/api/admin/decks/" + shared.getId());
+            assertEquals(200, loaded.statusCode(), loaded.body());
+            assertEquals(owner.getId().longValue(), json.readTree(loaded.body()).get("author").get("id").asLong());
+            var saved = client.edit(shared.getId(), body, true);
+            assertEquals(200, saved.statusCode(), saved.body());
+            assertEquals("no-store", saved.headers().firstValue("Cache-Control").orElseThrow());
+            var result = json.readTree(saved.body());
+            assertEquals("Revised deck", result.get("name").asText());
+            assertEquals("LANGUAGE", result.get("deckType").asText());
+            assertEquals("Polish", result.get("sourceLanguage").asText());
+            assertEquals("English", result.get("targetLanguage").asText());
+            assertEquals("Updated description", result.get("description").asText());
+            assertEquals("Tech", result.get("category").asText());
+            assertEquals("https://example.invalid/background.png", result.get("backgroundUrl").asText());
+            assertTrue(result.get("publicDeck").asBoolean());
+            assertFalse(result.get("ownDeck").asBoolean());
+            assertEquals(shared.getCreatedAt().toEpochMilli(), Instant.parse(result.get("createdAt").asText()).toEpochMilli());
+            assertEquals(owner.getId().longValue(), result.get("author").get("id").asLong());
+            assertEquals("Question", cards.findById(card.getId()).orElseThrow().getQuestion());
+            assertTrue(followRows.existsByUser_IdAndDeck_Id(admin.getId(), shared.getId()));
+            assertTrue(sessions.existsById(session.id()));
+            assertEquals(1, client.page("?search=Revised").get("totalElements").asInt());
+            assertEquals(0, client.page("?deck_type=GENERAL&search=Revised").get("totalElements").asInt());
+            assertEquals(200, client.edit(orphan.getId(), body, true).statusCode());
+            var authorless = json.readTree(client.get("/api/admin/decks/" + orphan.getId()).body());
+            assertTrue(authorless.get("author").get("id").isNull());
+            assertEquals("Deleted user", authorless.get("author").get("displayName").asText());
+            var owned = deck(admin, "Own public edit", true, DeckType.LANGUAGE);
+            assertEquals(200, client.edit(owned.getId(), editBody("Now general", "GENERAL", "English", "Polish", true), true).statusCode());
+            assertTrue(json.readTree(client.get("/api/admin/decks/" + owned.getId()).body()).get("targetLanguage").isNull());
+        }
+    }
+
+    @Test void editingRequiresAdminCsrfPublicDeckAndValidatedDetails() throws Exception {
+        var admin = account(true); var learner = account(false);
+        var shared = deck(learner, "Do not change", true, DeckType.GENERAL);
+        var hidden = deck(admin, "Private", false, DeckType.GENERAL);
+        String valid = editBody("Updated", "GENERAL", "English", "", true);
+        try (var client = new Client()) {
+            assertEquals(401, client.edit(shared.getId(), valid, true).statusCode());
+            assertEquals(401, client.get("/api/admin/decks/" + shared.getId()).statusCode());
+            client.login(learner);
+            assertEquals(403, client.edit(shared.getId(), valid, true).statusCode());
+            assertEquals(403, client.get("/api/admin/decks/" + shared.getId()).statusCode());
+            client.login(admin);
+            assertEquals(403, client.edit(shared.getId(), valid, false).statusCode());
+            for (String body : new String[]{editBody(" ", "GENERAL", "English", "", true),
+                    editBody("Updated", "LANGUAGE", "English", "", true),
+                    editBody("Updated", "INVALID", "English", "", true),
+                    valid.replace("https://example.invalid/background.png", "javascript:alert(1)"),
+                    editBody("Updated", "GENERAL", "English", "", false)}) {
+                assertEquals(400, client.edit(shared.getId(), body, true).statusCode(), body);
+            }
+            assertEquals("Do not change", decks.findById(shared.getId()).orElseThrow().getName());
+            assertEquals(404, client.edit(hidden.getId(), valid, true).statusCode());
+            assertEquals(404, client.get("/api/admin/decks/" + hidden.getId()).statusCode());
+            assertEquals(404, client.edit(Long.MAX_VALUE, valid, true).statusCode());
+            assertEquals(400, client.edit(0L, valid, true).statusCode());
+            shared.setPublic(false); decks.saveAndFlush(shared);
+            assertEquals(404, client.edit(shared.getId(), valid, true).statusCode());
+        }
+    }
+
+    private String editBody(String name, String type, String source, String target, boolean publicDeck) throws Exception {
+        return json.writeValueAsString(Map.of("name", name, "description", "Updated description", "deckType", type,
+                "sourceLanguage", source, "targetLanguage", target, "category", "Tech",
+                "backgroundUrl", "https://example.invalid/background.png", "publicDeck", publicDeck));
+    }
+
     private User account(boolean admin) {
         String name = "AdminDeck" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));
@@ -201,6 +281,11 @@ class AdminDeckApiTests extends PostgresIntegrationTest {
             var request = HttpRequest.newBuilder(endpoint("/api/auth/login")).timeout(Duration.ofSeconds(15)).header("X-CSRF-TOKEN", csrf()).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(Map.of("login", user.getUsername(), "password", PASSWORD)))).build();
             var response = http.send(request, HttpResponse.BodyHandlers.ofString()); assertEquals(200, response.statusCode(), response.body());
+        }
+        HttpResponse<String> edit(Long id, String body, boolean withToken) throws Exception {
+            var request = HttpRequest.newBuilder(endpoint("/api/admin/decks/" + id)).timeout(Duration.ofSeconds(15)).header("Content-Type", "application/json");
+            if (withToken) request.header("X-CSRF-TOKEN", csrf());
+            return http.send(request.PUT(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         }
         HttpResponse<String> remove(Long id, boolean withToken) throws Exception {
             var request = HttpRequest.newBuilder(endpoint("/api/admin/decks/" + id)).timeout(Duration.ofSeconds(15));

@@ -1,6 +1,10 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'This deck will remain public. Its author and flashcards will stay unchanged.': 'Talia pozostanie publiczna. Jej autor i fiszki pozostaną bez zmian.',
+  'Unable to save this public deck. Please try again.': 'Nie udało się zapisać publicznej talii. Spróbuj ponownie.',
+  'Unable to confirm deck changes. Refresh the public deck list before trying again.': 'Nie udało się potwierdzić zmian talii. Odśwież listę publicznych talii przed kolejną próbą.',
+  'The public deck has been updated.': 'Publiczna talia została zaktualizowana.',
   'Delete user?': 'Usunąć użytkownika?',
   'Delete user': 'Usuń użytkownika',
   'Delete user {0}? The account, private decks and personal study data will be permanently removed. Public decks will remain available as Deleted user.': 'Usunąć użytkownika {0}? Konto, prywatne talie i osobiste dane nauki zostaną trwale usunięte. Publiczne talie pozostaną dostępne z autorem „Usunięty użytkownik”.',

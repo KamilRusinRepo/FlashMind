@@ -7,7 +7,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import FormField from '../FormField'
 import SelectField from '../SelectField'
-import AdminPreviewAction from './AdminPreviewAction'
+import AdminEditDeckDialog from './AdminEditDeckDialog'
 import AdminDeleteDeckDialog from './AdminDeleteDeckDialog'
 import editIcon from '../../assets/icons/admin/edit.svg'
 import deleteIcon from '../../assets/icons/admin/delete.svg'
@@ -38,18 +38,20 @@ export default function AdminDecksPanel({ onSummary }: { onSummary: (summary: Ad
         <button className="button button-outline" type="button" onClick={() => { setDraft(emptyFilters); setFilters(emptyFilters); setPage(0); setNotice(''); setRevision(value => value + 1) }}>{t('Clear filters')}</button></div>
     </form>
     <DeckResults key={JSON.stringify([filters, page, revision])} filters={filters} page={page} onPageChange={setPage} onSummary={onSummary}
+      onEdited={() => { setNotice('The public deck has been updated.'); setRevision(value => value + 1) }}
       onChanged={deleted => { setNotice(deleted ? 'The public deck has been deleted.' : ''); setRevision(value => value + 1) }} />
   </section>
 }
 
-function DeckResults({ filters, page, onPageChange, onSummary, onChanged }: {
+function DeckResults({ filters, page, onPageChange, onSummary, onChanged, onEdited }: {
+  onEdited: () => void
   filters: AdminDeckFilters; page: number; onPageChange: (page: number) => void; onSummary: (summary: AdminUserSummary) => void; onChanged: (deleted: boolean) => void
 }) {
   const { t, locale, count } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [selected, setSelected] = useState<PublicExploreDeck | null>(null)
+  const [selected, setSelected] = useState<{ mode: 'edit' | 'delete'; deck: PublicExploreDeck } | null>(null)
   const { search, deckType } = filters
   useEffect(() => {
     const controller = new AbortController()
@@ -81,8 +83,11 @@ function DeckResults({ filters, page, onPageChange, onSummary, onChanged }: {
           <td><span className="admin-badge">{deck.deckType === 'LANGUAGE' ? t('Language') : t('General')}</span></td>
           <td>{count(deck.cardCount, 'card')}</td><td>{deck.followerCount.toLocaleString(locale)}</td>
           <td><time dateTime={deck.createdAt}>{new Date(deck.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}</time></td>
-          <td><div className="admin-row-actions"><AdminPreviewAction icon={editIcon} label={t('Edit {0}', [deck.name])} />
-            <button className="admin-action-button is-danger" type="button" onClick={() => setSelected(deck)} title={t('Delete {0}', [deck.name])} aria-label={t('Delete {0}', [deck.name])}>
+          <td><div className="admin-row-actions">
+            <button className="admin-action-button" type="button" onClick={() => setSelected({ mode: 'edit', deck })} title={t('Edit {0}', [deck.name])} aria-label={t('Edit {0}', [deck.name])} aria-haspopup="dialog">
+              <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${editIcon}")` }} />
+            </button>
+            <button className="admin-action-button is-danger" type="button" onClick={() => setSelected({ mode: 'delete', deck })} title={t('Delete {0}', [deck.name])} aria-label={t('Delete {0}', [deck.name])}>
               <span className="admin-action-icon" aria-hidden="true" style={{ maskImage: `url("${deleteIcon}")` }} />
             </button></div></td>
         </tr>)}</tbody>
@@ -92,6 +97,7 @@ function DeckResults({ filters, page, onPageChange, onSummary, onChanged }: {
       <span>{t('Page {0} of {1}', [(page + 1).toLocaleString(locale), data.totalPages.toLocaleString(locale)])}</span>
       <button className="button button-outline" type="button" disabled={page + 1 >= data.totalPages} onClick={() => onPageChange(page + 1)}>{t('Next →')}</button>
     </nav>}
-    {selected && <AdminDeleteDeckDialog deck={selected} onCancel={() => setSelected(null)} onDeleted={() => onChanged(true)} onUnavailable={() => onChanged(false)} />}
+    {selected?.mode === 'delete' && <AdminDeleteDeckDialog deck={selected.deck} onCancel={() => setSelected(null)} onDeleted={() => onChanged(true)} onUnavailable={() => onChanged(false)} />}
+    {selected?.mode === 'edit' && <AdminEditDeckDialog deck={selected.deck} onCancel={() => setSelected(null)} onSaved={onEdited} onUnavailable={() => onChanged(false)} />}
   </>
 }
