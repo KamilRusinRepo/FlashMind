@@ -16,8 +16,30 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeckService {
     private final DeckRepository decks;
     private final UserRepository users;
+    private final DeckAccessService access;
 
-    public DeckService(DeckRepository decks, UserRepository users) { this.decks = decks; this.users = users; }
+    public DeckService(DeckRepository decks, UserRepository users, DeckAccessService access) { this.decks = decks; this.users = users; this.access = access; }
+
+    @Transactional(readOnly = true)
+    public DeckListItemResponse getAccessible(Long userId, Long deckId) {
+        return DeckListItemResponse.from(access.requireAccessible(userId, deckId), userId);
+    }
+
+    @Transactional(readOnly = true)
+    public DeckPageResponse listFollowed(Long userId, int page, int size, String search) {
+        String pattern = "%" + search.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        var result = decks.findFollowed(userId, pattern, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id")));
+        return new DeckPageResponse(result.map(deck -> DeckListItemResponse.from(deck, userId)).getContent(), page, size,
+                result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public DeckPageResponse listLibrary(Long userId, int page, int size, String search) {
+        String pattern = "%" + search.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        var result = decks.findLibrary(userId, pattern, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id")));
+        return new DeckPageResponse(result.map(deck -> DeckListItemResponse.from(deck, userId)).getContent(), page, size,
+                result.getTotalElements(), result.getTotalPages());
+    }
 
     @Transactional
     public DeckListItemResponse create(Long ownerId, SaveDeckRequest request) {

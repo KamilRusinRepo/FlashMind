@@ -228,7 +228,7 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
     }
 
     @Test
-    void freePracticeIncludesWholeDeckAndFutureCardsWithoutChangingReviewProgress() throws Exception {
+    void freePracticeDrawsAtMostTenDistinctCardsAndDoesNotChangeReviewProgress() throws Exception {
         var fixture = fixture(12);
         var card = fixture.answers().getFirst().getFlashcard();
         var state = new FlashcardProgress(fixture.user(), card);
@@ -244,13 +244,19 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
             assertEquals(201, started.statusCode(), started.body());
             var body = json.readTree(started.body());
             assertEquals("FREE_PRACTICE", body.get("mode").asText());
-            assertEquals(12, body.get("totalCards").asInt());
-            assertEquals(12, body.get("cards").size());
+            assertEquals(10, body.get("totalCards").asInt());
+            assertEquals(10, body.get("cards").size());
             long sessionId = body.get("id").asLong();
             assertEquals(StudyMode.FREE_PRACTICE, sessions.findById(sessionId).orElseThrow().getMode());
             assertEquals("FREE_PRACTICE", json.readTree(client.get(sessionId).body()).get("mode").asText());
-            assertEquals(card.getId().longValue(), body.get("cards").get(0).get("flashcardId").asLong());
-            for (int i = 0; i < 12; i++) {
+            var selectedIds = new java.util.HashSet<Long>();
+            var ownedIds = fixture.answers().stream().map(answer -> answer.getFlashcard().getId()).collect(java.util.stream.Collectors.toSet());
+            for (var question : body.get("cards")) {
+                assertTrue(selectedIds.add(question.get("flashcardId").asLong()), "Each card occurs only once in a session.");
+                assertTrue(ownedIds.contains(question.get("flashcardId").asLong()));
+            }
+            assertEquals(body.get("cards"), json.readTree(client.get(sessionId).body()).get("cards")); // Reload preserves the draw.
+            for (int i = 0; i < 10; i++) {
                 String answerPath = "/api/study-sessions/" + sessionId + "/answers/" + body.get("cards").get(i).get("id").asLong();
                 if (i == 0) assertEquals(200, client.post(answerPath + "/hint", Map.of(), true).statusCode());
                 var response = client.post(answerPath, Map.of("userAnswer", i == 1 ? "" : "ciekawość", "skipped", i == 1), true);
@@ -260,7 +266,7 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
             assertEquals(200, completion.statusCode(), completion.body());
             var summary = json.readTree(completion.body());
             assertEquals("FREE_PRACTICE", summary.get("mode").asText());
-            assertEquals(11, summary.get("correctCards").asInt());
+            assertEquals(9, summary.get("correctCards").asInt());
             assertEquals(1, summary.get("wrongCards").asInt());
             assertEquals(summary, json.readTree(client.getPath("/api/study-sessions/" + sessionId + "/summary").body()));
             assertEquals(1, progress.count()); // No progress created for new cards during practice.
@@ -271,16 +277,46 @@ class StudyAnswerApiTests extends PostgresIntegrationTest {
             assertEquals(previousReview, unchanged.getLastAnsweredAt());
             assertEquals(nextReview, unchanged.getNextReviewAt());
             assertEquals(version, unchanged.getVersion());
-            // Repeating the same mode still includes the whole deck, despite future review dates.
+            // Study Again starts a fresh session/draw. Random draws may legitimately overlap.
             var repeated = client.post(startPath, Map.of("mode", summary.get("mode").asText()), true);
             assertEquals(201, repeated.statusCode(), repeated.body());
-            assertEquals(12, json.readTree(repeated.body()).get("totalCards").asInt());
+            var repeatedBody = json.readTree(repeated.body());
+            assertEquals(10, repeatedBody.get("totalCards").asInt());
+            assertEquals(10, repeatedBody.get("cards").size());
+            assertNotEquals(sessionId, repeatedBody.get("id").asLong());
             var scheduled = client.post(startPath, Map.of("mode", "SCHEDULED_REVIEW"), true);
             assertEquals(201, scheduled.statusCode(), scheduled.body());
             var review = json.readTree(scheduled.body());
             assertEquals("SCHEDULED_REVIEW", review.get("mode").asText());
             assertEquals(10, review.get("totalCards").asInt());
             for (var question : review.get("cards")) assertNotEquals(card.getId().longValue(), question.get("flashcardId").asLong());
+        }
+    }
+
+    @Test
+    void freePracticeUsesAllCardsOfASmallDeckEvenWhenTheirReviewsAreInTheFuture() throws Exception {
+        var fixture = fixture(1);
+        var card = fixture.answers().getFirst().getFlashcard();
+        var previous = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MICROS);
+        var next = previous.plus(30, ChronoUnit.DAYS);
+        var saved = new FlashcardProgress(fixture.user(), card);
+        saved.recordReview(true, 4, 0, previous, next);
+        progress.saveAndFlush(saved);
+        try (var client = new Client()) {
+            client.login(fixture.user());
+            var response = client.post("/api/decks/" + fixture.deck().getId() + "/study-sessions", Map.of("mode", "FREE_PRACTICE"), true);
+            assertEquals(201, response.statusCode(), response.body());
+            var body = json.readTree(response.body());
+            assertEquals(1, body.get("totalCards").asInt());
+            assertEquals(card.getId().longValue(), body.get("cards").get(0).get("flashcardId").asLong());
+            var answerPath = "/api/study-sessions/" + body.get("id").asLong() + "/answers/" + body.get("cards").get(0).get("id").asLong();
+            assertEquals(200, client.post(answerPath, Map.of("userAnswer", "wrong"), true).statusCode());
+            var unchanged = progress.findById(saved.getId()).orElseThrow();
+            assertEquals(4, unchanged.getMasteryLevel());
+            assertEquals(1, unchanged.getAttempts());
+            assertEquals(previous, unchanged.getLastAnsweredAt());
+            assertEquals(next, unchanged.getNextReviewAt());
+            assertEquals(saved.getVersion(), unchanged.getVersion());
         }
     }
 

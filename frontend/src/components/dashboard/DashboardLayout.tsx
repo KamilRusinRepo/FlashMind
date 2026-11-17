@@ -13,8 +13,8 @@ import './Dashboard.css'
 const navigation = [
   { label: 'Home', icon: homeIcon, path: '/dashboard' },
   { label: 'My Decks', icon: decksIcon, path: '/decks' },
-  { label: 'Explore Decks', icon: exploreIcon },
-  { label: 'Statistics', icon: statsIcon },
+  { label: 'Explore Decks', icon: exploreIcon, path: '/explore' },
+  { label: 'Statistics', icon: statsIcon, path: '/statistics' },
   { label: 'Settings', icon: settingsIcon, path: '/settings' },
 ]
 

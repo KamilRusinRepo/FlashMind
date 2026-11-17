@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import com.example.backend.deck.DeckRepository;
+import com.example.backend.deck.DeckAccessService;
 import com.example.backend.deck.dto.response.DeckListItemResponse;
 import com.example.backend.flashcard.FlashcardRepository;
 import com.example.backend.study.dto.request.SubmitStudyAnswerRequest;
@@ -21,23 +21,24 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class StudyService {
+    private static final int SESSION_CARD_LIMIT = 10;
     private final StudySessionRepository sessions;
     private final StudyAnswerRepository answers;
     private final FlashcardRepository flashcards;
-    private final DeckRepository decks;
     private final UserRepository users;
     private final Clock clock;
     private final FlashcardProgressRepository progress;
+    private final DeckAccessService access;
 
     public StudyService(StudySessionRepository sessions, StudyAnswerRepository answers, FlashcardRepository flashcards,
-                        DeckRepository decks, UserRepository users, Clock clock, FlashcardProgressRepository progress) {
+                        UserRepository users, Clock clock, FlashcardProgressRepository progress, DeckAccessService access) {
         this.sessions = sessions;
         this.answers = answers;
         this.flashcards = flashcards;
-        this.decks = decks;
         this.users = users;
         this.clock = clock;
         this.progress = progress;
+        this.access = access;
     }
 
     @Transactional
@@ -80,7 +81,7 @@ public class StudyService {
 
     private StudySession findOwnedSession(Long userId, Long sessionId) {
         var session = sessions.findByIdAndUser_Id(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        decks.findByIdAndOwner_Id(session.getDeck().getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        access.requireAccessible(userId, session.getDeck().getId());
         return session;
     }
 
@@ -122,7 +123,7 @@ public class StudyService {
         var user = users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!user.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         var session = sessions.findByIdAndUser_Id(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        decks.findOwnedForUpdate(session.getDeck().getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        access.lockAccessible(userId, session.getDeck().getId());
         return sessions.findOwnedForUpdate(sessionId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
@@ -143,13 +144,13 @@ public class StudyService {
         // Same lock order as deck/card mutations and account deletion.
         var user = users.findByIdForUpdate(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!user.isEnabled()) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        var deck = decks.findOwnedForUpdate(deckId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var deck = access.lockAccessible(userId, deckId);
         var now = clock.instant();
         var cards = mode == StudyMode.FREE_PRACTICE
-                ? flashcards.findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(deckId, userId)
-                : flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, 10));
+                ? flashcards.findForFreePractice(deckId, userId, PageRequest.of(0, SESSION_CARD_LIMIT))
+                : flashcards.findForStudy(deckId, userId, now, PageRequest.of(0, SESSION_CARD_LIMIT));
         if (cards.isEmpty()) {
-            throw new StudyStartException(flashcards.existsByDeck_IdAndDeck_Owner_Id(deckId, userId)
+            throw new StudyStartException(flashcards.existsByDeck_Id(deckId)
                     ? "No flashcards are due for review yet."
                     : "Add at least one flashcard before starting a study session.");
         }
@@ -157,7 +158,7 @@ public class StudyService {
         var selected = new ArrayList<StudyAnswer>();
         for (int i = 0; i < cards.size(); i++) selected.add(new StudyAnswer(session, cards.get(i), i + 1));
         answers.saveAllAndFlush(selected);
-        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(deck), session.getTotalCards(),
+        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(deck, userId), session.getTotalCards(),
                 session.getStatus(), session.getStartedAt(), selected.stream().map(StudyQuestionResponse::from).toList(), session.getMode());
     }
 
@@ -165,7 +166,7 @@ public class StudyService {
     public StudySessionResponse getOwned(Long userId, Long sessionId) {
         var session = findOwnedSession(userId, sessionId);
         var cards = answers.findBySession_IdOrderByPositionAsc(sessionId).stream().map(StudyQuestionResponse::from).toList();
-        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(session.getDeck()), session.getTotalCards(),
+        return new StudySessionResponse(session.getId(), DeckListItemResponse.from(session.getDeck(), userId), session.getTotalCards(),
                 session.getStatus(), session.getStartedAt(), cards, session.getMode());
     }
 }

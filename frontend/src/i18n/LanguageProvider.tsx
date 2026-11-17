@@ -13,10 +13,11 @@ function pageTitle(path: string): string {
     '/': 'Master your learning', '/login': 'Sign in', '/register': 'Create account',
     '/forgot-password': 'Forgot password', '/reset-password': 'Reset password', '/status': 'Connection status',
     '/verify-email': 'Confirm email', '/confirm-email-change': 'Confirm email change',
-    '/dashboard': 'Dashboard', '/decks': 'My Decks', '/decks/create': 'Create Deck', '/settings': 'Settings',
+    '/explore': 'Explore Decks',
+    '/dashboard': 'Dashboard', '/decks': 'My Decks', '/decks/create': 'Create Deck', '/settings': 'Settings', '/statistics': 'Statistics', '/statistics/decks': 'Deck statistics',
   }
-  return titles[path] ?? (/^\/decks\/\d+\/study(?:\/\d+)?$/.test(path) ? 'Study session'
-    : /^\/decks\/\d+\/edit$/.test(path) ? 'Edit Deck' : /^\/decks\/\d+$/.test(path) ? 'Deck details' : 'Page not found')
+  return titles[path] ?? (/^\/statistics\/decks\/[^/]+$/.test(path) ? 'Mastery Report' : /^\/decks\/\d+\/study(?:\/\d+)?$/.test(path) ? 'Study session'
+    : /^\/decks\/\d+\/edit$/.test(path) ? 'Edit Deck' : /^\/(?:decks|explore)\/\d+$/.test(path) ? 'Deck details' : 'Page not found')
 }
 
 export default function LanguageProvider({ children }: { children: ReactNode }) {

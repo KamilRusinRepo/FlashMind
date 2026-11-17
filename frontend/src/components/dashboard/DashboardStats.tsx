@@ -1,20 +1,33 @@
 import { useLanguage } from '../../i18n/LanguageContext'
-import { dashboardStats } from '../../data/dashboard'
+import { isStatisticsOverview } from '../../api/statistics'
+import { useStatisticsResource } from '../statistics/useStatisticsResource'
 
 export default function DashboardStats() {
-  const { t, count } = useLanguage()
-  const { streak, studiedToday, dailyGoal, level, xp, nextLevelXp } = dashboardStats
+  const { t, count, locale } = useLanguage()
+  const { state, retry } = useStatisticsResource('/api/statistics/me', isStatisticsOverview)
+  if (state.status === 'loading') return <div className="db-metrics" aria-label={t('Learning statistics')} aria-busy="true">
+    <p className="db-metric db-metrics-status" role="status">{t('Loading statistics…')}</p>
+  </div>
+  if (state.status === 'error') return <div className="db-metrics" aria-label={t('Learning statistics')}>
+    <div className="db-metric db-metrics-status"><p role="alert">{t(state.message)}</p><button className="db-text-action" type="button" onClick={retry}>{t('Try again')}</button></div>
+  </div>
+  const { streak, dailyGoal, level, totalXp, currentLevelXp, nextLevelXp } = state.data.profile
+  const studiedToday = state.data.periods.day.studied
+  const goalCompleted = dailyGoal > 0 && studiedToday >= dailyGoal
+  const number = new Intl.NumberFormat(locale)
 
-  return <div className="db-metrics" aria-label={t("Sample learning statistics")}>
-    <div className="db-metric db-streak"><span className="db-metric-symbol" aria-hidden="true">🔥</span>
+  return <div className="db-metrics" aria-label={t('Learning statistics')}>
+    <div className={`db-metric db-streak${goalCompleted ? ' is-completed' : ''}`}><span className="db-metric-symbol" aria-hidden="true">🔥</span>
       <div><strong>{count(streak, 'day')}</strong><span>{t("Study streak")}</span></div>
     </div>
-    <div className="db-metric"><span className="db-goal-symbol" aria-hidden="true">✓</span>
-      <div><strong>{studiedToday}/{dailyGoal} {t("cards")}</strong><span>{t("Daily goal")}</span></div>
+    <div className={`db-metric db-goal${goalCompleted ? ' is-completed' : ''}`}>
+      <div><strong>{number.format(studiedToday)}/{number.format(dailyGoal)} {t("cards")}</strong><span>{t("Daily goal")}</span></div>
+      {goalCompleted && <span className="db-sr-only">{t('Daily goal completed')}</span>}
     </div>
     <div className="db-metric db-level">
-      <div className="db-progress-label"><span>{t("LEVEL")} {level}</span><strong>{xp}/{nextLevelXp} {t("XP")}</strong></div>
-      <progress className="db-progress" value={xp} max={nextLevelXp} aria-label={t("Level {0}: {1} of {2} XP", [level, xp, nextLevelXp])} />
+      <div className="db-progress-label"><span>{t("LEVEL")} {number.format(level)}</span><strong>{number.format(currentLevelXp)}/{number.format(nextLevelXp)} {t("XP")}</strong></div>
+      <progress className="db-progress" value={currentLevelXp} max={nextLevelXp} aria-label={t("Level {0}: {1} of {2} XP", [number.format(level), number.format(currentLevelXp), number.format(nextLevelXp)])} />
+      <span className="db-total-xp">{t('Total XP')}: {number.format(totalXp)}</span>
     </div>
   </div>
 }

@@ -28,7 +28,10 @@ public interface DailyReminderRepository extends JpaRepository<DailyReminderDisp
           and not exists (select answer.id from StudyAnswer answer where answer.session.user.id = user.id and answer.answeredAt >= :start and answer.answeredAt < :end)
           and exists (select card.id from Flashcard card
               left join FlashcardProgress progress on progress.flashcard.id = card.id and progress.user.id = user.id
-              where card.deck.owner.id = user.id and (progress.id is null or progress.nextReviewAt is null or progress.nextReviewAt <= :now))
+              left join card.deck.owner owner
+              where (owner.id = user.id or (card.deck.publicDeck = true and exists
+                  (select follow.id from DeckFollow follow where follow.deck = card.deck and follow.user.id = user.id)))
+                and (progress.id is null or progress.nextReviewAt is null or progress.nextReviewAt <= :now))
         order by user.id
         """)
     List<Long> findCandidateIds(@Param("date") LocalDate date, @Param("start") Instant start, @Param("end") Instant end,

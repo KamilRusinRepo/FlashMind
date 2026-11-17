@@ -3,11 +3,16 @@ import PublicLayout from './components/PublicLayout'
 import DashboardLayout from './components/dashboard/DashboardLayout'
 import DashboardPage from './pages/DashboardPage'
 import MyDecksPage from './pages/MyDecksPage'
+import ExploreDecksPage from './pages/ExploreDecksPage'
+import PublicDeckDetailsPage from './pages/PublicDeckDetailsPage'
 import CreateDeckPage from './pages/CreateDeckPage'
 import EditDeckPage from './pages/EditDeckPage'
 import DeckDetailsPage from './pages/DeckDetailsPage'
 import StudyPage from './pages/StudyPage'
 import SettingsPage from './pages/SettingsPage'
+import StatisticsPage from './pages/StatisticsPage'
+import DeckStatisticsPage from './pages/DeckStatisticsPage'
+import MasteryReportPage from './pages/MasteryReportPage'
 import ConfirmEmailChangePage from './pages/ConfirmEmailChangePage'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthPage from './pages/AuthPage'
@@ -27,7 +32,12 @@ function App() {
         <Route path="decks/:deckId/study/:sessionId" element={<StudyPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="explore" element={<ExploreDecksPage />} />
+          <Route path="explore/:deckId" element={<PublicDeckDetailsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="statistics" element={<StatisticsPage />} />
+          <Route path="statistics/decks" element={<DeckStatisticsPage />} />
+          <Route path="statistics/decks/:reportDeckId" element={<MasteryReportPage />} />
           <Route path="decks" element={<MyDecksPage />} />
           <Route path="decks/create" element={<CreateDeckPage />} />
           <Route path="decks/:deckId/edit" element={<EditDeckPage />} />

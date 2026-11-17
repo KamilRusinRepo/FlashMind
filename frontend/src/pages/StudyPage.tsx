@@ -1,7 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
-import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
+import { DeckApiError, getStudyDeck, type OwnedDeck } from '../api/decks'
 import { completeStudySession, getStudySession, getStudySummary, requestStudyHint, submitStudyAnswer, StudyApiError, type StudySessionData, type StudySummaryData } from '../api/study'
 import { useAuth } from '../auth/AuthContext'
 import StudySidebar from '../components/study/StudySidebar'
@@ -34,7 +34,7 @@ function StudyLanding({ deckId }: { deckId: number }) {
   useEffect(() => {
     window.scrollTo(0, 0)
     const controller = new AbortController()
-    getOwnedDeck(deckId, controller.signal).then(deck => {
+    getStudyDeck(deckId, controller.signal).then(deck => {
       if (!controller.signal.aborted) setState({ status: 'ready', data: deck })
     }).catch(cause => {
       if (controller.signal.aborted) return
@@ -46,7 +46,7 @@ function StudyLanding({ deckId }: { deckId: number }) {
   if (state.status === 'loading') return <p className="study-load-message" role="status">{t("Loading your deck…")}</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   return <section className="study-load-message study-entry"><h1>{state.data.name}</h1>
-    <p>{t("Choose Scheduled Review for due and new cards, or Free Practice to practise the whole deck.")}</p>
+    <p>{t("Choose Scheduled Review for due and new cards, or Free Practice for up to 10 random cards.")}</p>
     <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>{t("Back to deck")}</Link>
   </section>
 }
