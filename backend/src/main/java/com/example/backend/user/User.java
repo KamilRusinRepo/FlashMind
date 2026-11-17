@@ -45,6 +45,9 @@ public class User {
     @Column(name = "is_enabled", nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "daily_reminders_enabled", nullable = false)
+    private boolean dailyRemindersEnabled;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -102,6 +105,8 @@ public class User {
     }
 
     public long getSessionVersion() { return sessionVersion; }
+    public boolean isDailyRemindersEnabled() { return dailyRemindersEnabled; }
+    public void setDailyRemindersEnabled(boolean enabled) { dailyRemindersEnabled = enabled; }
 
     public void invalidateSessions() { sessionVersion++; }
 

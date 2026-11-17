@@ -56,7 +56,11 @@ class FlashcardRepositoryTests extends PostgresIntegrationTest {
         Long firstId = flashcards.saveAndFlush(new Flashcard(firstDeck, "First question", "First answer")).getId();
         Long otherId = flashcards.saveAndFlush(new Flashcard(otherDeck, "Other question", "Other answer")).getId();
 
-        decks.delete(firstDeck);
+        // A DB cascade does not update other entities already managed by Hibernate.
+        // Start deletion with a fresh persistence context, like a separate HTTP request.
+        entityManager.flush();
+        entityManager.clear();
+        decks.deleteById(firstDeck.getId());
         decks.flush();
         entityManager.clear();
 

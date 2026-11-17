@@ -1,3 +1,5 @@
+import { useLanguage } from '../../i18n/LanguageContext'
+import { categoryName, languageName } from '../../i18n/labels'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { DeckApiError, type OwnedDeck, type DeckFieldErrors, type SaveDeckRequest } from '../../api/decks'
@@ -23,6 +25,7 @@ type Props = {
 }
 
 export default function DeckForm({ initialValues, save, onSaved, submitLabel = 'Create Deck', pendingLabel = 'Creating deck…', cancelTo = '/decks' }: Props) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [deckType, setDeckType] = useState<SaveDeckRequest['deckType']>(initialValues?.deckType ?? 'GENERAL')
   const [errors, setErrors] = useState<DeckFieldErrors>({})
@@ -83,34 +86,34 @@ export default function DeckForm({ initialValues, save, onSaved, submitLabel = '
   return (
     <form className="deck-create-form" noValidate aria-busy={sending} onSubmit={handleSubmit} onInput={() => setError('')}>
       <div className="deck-form-grid">
-        <div className="deck-form-wide"><FormField id="deck-name" name="name" label="Deck name" placeholder="e.g. English A1, Java Fundamentals…" defaultValue={initialValues?.name ?? ''} maxLength={120} required disabled={sending} error={errors.name} /></div>
-        <div className="form-field deck-form-wide"><label htmlFor="deck-description">Description (optional)</label>
+        <div className="deck-form-wide"><FormField id="deck-name" name="name" label={t("Deck name")} placeholder={t("e.g. English A1, Java Fundamentals…")} defaultValue={initialValues?.name ?? ''} maxLength={120} required disabled={sending} error={t(errors.name)} /></div>
+        <div className="form-field deck-form-wide"><label htmlFor="deck-description">{t("Description (optional)")}</label>
           <div className={`input-wrapper${errors.description ? ' input-invalid' : ''}`}><textarea id="deck-description" name="description" defaultValue={initialValues?.description ?? ''} rows={4} maxLength={2000}
-            placeholder="What will you learn with this deck?" disabled={sending} aria-invalid={errors.description ? true : undefined} aria-describedby={errors.description ? 'deck-description-error' : undefined} /></div>
-          {errors.description && <p className="field-error" id="deck-description-error">{errors.description}</p>}
+            placeholder={t("What will you learn with this deck?")} disabled={sending} aria-invalid={errors.description ? true : undefined} aria-describedby={errors.description ? 'deck-description-error' : undefined} /></div>
+          {errors.description && <p className="field-error" id="deck-description-error">{t(errors.description)}</p>}
         </div>
-        <SelectField id="deck-type" name="deckType" label="Deck type" value={deckType} required disabled={sending} error={errors.deckType}
+        <SelectField id="deck-type" name="deckType" label={t("Deck type")} value={deckType} required disabled={sending} error={t(errors.deckType)}
           onChange={event => { setDeckType(event.target.value === 'LANGUAGE' ? 'LANGUAGE' : 'GENERAL'); setErrors(current => ({ ...current, targetLanguage: undefined })) }}>
-          <option value="GENERAL">General</option><option value="LANGUAGE">Language</option>
+          <option value="GENERAL">{t("General")}</option><option value="LANGUAGE">{t("Language")}</option>
         </SelectField>
-        <SelectField id="deck-category" name="category" label="Category (optional)" defaultValue={initialValues?.category ?? ''} disabled={sending} error={errors.category}>
-          <option value="">No category</option>{withCurrentValue(categories, initialValues?.category).map(category => <option key={category}>{category}</option>)}
+        <SelectField id="deck-category" name="category" label={t("Category (optional)")} defaultValue={initialValues?.category ?? ''} disabled={sending} error={t(errors.category)}>
+          <option value="">{t("No category")}</option>{withCurrentValue(categories, initialValues?.category).map(category => <option key={category} value={category}>{categoryName(category, t)}</option>)}
         </SelectField>
-        <SelectField id="source-language" name="sourceLanguage" label="Source language" defaultValue={initialValues?.sourceLanguage ?? ''} required disabled={sending} error={errors.sourceLanguage}>
-          <option value="">Select language</option>{withCurrentValue(languages, initialValues?.sourceLanguage).map(language => <option key={language}>{language}</option>)}
+        <SelectField id="source-language" name="sourceLanguage" label={t("Source language")} defaultValue={initialValues?.sourceLanguage ?? ''} required disabled={sending} error={t(errors.sourceLanguage)}>
+          <option value="">{t("Select language")}</option>{withCurrentValue(languages, initialValues?.sourceLanguage).map(language => <option key={language} value={language}>{languageName(language, t)}</option>)}
         </SelectField>
-        {deckType === 'LANGUAGE' && <SelectField id="target-language" name="targetLanguage" label="Target language" defaultValue={initialValues?.targetLanguage ?? ''} required disabled={sending} error={errors.targetLanguage}>
-          <option value="">Select language</option>{withCurrentValue(languages, initialValues?.targetLanguage).map(language => <option key={language}>{language}</option>)}
+        {deckType === 'LANGUAGE' && <SelectField id="target-language" name="targetLanguage" label={t("Target language")} defaultValue={initialValues?.targetLanguage ?? ''} required disabled={sending} error={t(errors.targetLanguage)}>
+          <option value="">{t("Select language")}</option>{withCurrentValue(languages, initialValues?.targetLanguage).map(language => <option key={language} value={language}>{languageName(language, t)}</option>)}
         </SelectField>}
-        <div className="deck-form-wide"><FormField id="deck-background" name="backgroundUrl" label="Background image URL (optional)" type="url" placeholder="https://example.com/image.jpg"
-          defaultValue={initialValues?.backgroundUrl ?? ''} maxLength={2048} disabled={sending} error={errors.backgroundUrl} hint="Use an http or https link to an image." /></div>
+        <div className="deck-form-wide"><FormField id="deck-background" name="backgroundUrl" label={t("Background image URL (optional)")} type="url" placeholder={t("https://example.com/image.jpg")}
+          defaultValue={initialValues?.backgroundUrl ?? ''} maxLength={2048} disabled={sending} error={t(errors.backgroundUrl)} hint={t("Use an http or https link to an image.")} /></div>
       </div>
       <label className="deck-public-choice"><input type="checkbox" name="publicDeck" defaultChecked={initialValues?.publicDeck ?? false} disabled={sending} />
-        <span><strong>Make this deck public</strong><span>Allow other learners to discover it. Public decks stay available after account deletion.</span></span>
+        <span><strong>{t("Make this deck public")}</strong><span>{t("Allow other learners to discover it. Public decks stay available after account deletion.")}</span></span>
       </label>
-      {error && <p className="form-notice form-error" role="alert">{error}</p>}
-      {Object.keys(errors).some(field => errors[field as keyof DeckFieldErrors]) && <p className="field-error" role="alert">Please check the highlighted fields.</p>}
-      <div className="deck-form-actions"><Link className="button button-outline" to={cancelTo}>Cancel</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? pendingLabel : submitLabel}</button></div>
+      {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
+      {Object.keys(errors).some(field => errors[field as keyof DeckFieldErrors]) && <p className="field-error" role="alert">{t("Please check the highlighted fields.")}</p>}
+      <div className="deck-form-actions"><Link className="button button-outline" to={cancelTo}>{t("Cancel")}</Link><button className="button button-primary" type="submit" disabled={sending}>{sending ? t(pendingLabel) : t(submitLabel)}</button></div>
     </form>
   )
 }

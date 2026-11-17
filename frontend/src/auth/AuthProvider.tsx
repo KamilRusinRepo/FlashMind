@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AuthUser } from '../api/authUser'
 import { loginAccount } from '../api/login'
 import { getCurrentUser, logoutSession } from '../api/session'
+import { updateUsername } from '../api/profile'
 import { AuthContext, type AuthState } from './AuthContext'
 
 function resolved(user: AuthUser | null): AuthState {
@@ -61,5 +62,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  return <AuthContext value={{ ...state, isLoggingOut, signIn, signOut, refresh }}>{children}</AuthContext>
+  const userId = state.user?.id
+  const changeUsername = useCallback(async (username: string) => {
+    if (!userId || signingOut.current) throw new Error('Sign in before changing your username.')
+    const version = ++revision.current
+    const saved = await updateUsername(username, userId)
+    // A delayed save must not restore a user after logout or another login.
+    if (version === revision.current) setState(current => current.user?.id === saved.id ? resolved(saved) : current)
+    return saved
+  }, [userId])
+
+  return <AuthContext value={{ ...state, isLoggingOut, signIn, signOut, changeUsername, refresh }}>{children}</AuthContext>
 }

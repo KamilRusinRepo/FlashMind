@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { resendVerification, ResendVerificationError } from '../api/resendVerification'
 import FormField from './FormField'
@@ -5,6 +6,7 @@ import FormField from './FormField'
 type Props = { email?: string; initialCooldownSeconds?: number }
 
 export default function ResendVerificationForm({ email, initialCooldownSeconds = 0 }: Props) {
+  const { t } = useLanguage()
   const [remaining, setRemaining] = useState(initialCooldownSeconds)
   const [initialDeadline] = useState(() => Date.now() + initialCooldownSeconds * 1000)
   const deadline = useRef(initialDeadline)
@@ -55,16 +57,16 @@ export default function ResendVerificationForm({ email, initialCooldownSeconds =
 
   return (
     <div className="resend-verification">
-      <h2>Need a new confirmation link?</h2>
-      <p className="field-hint">Check your spam folder first. Requesting a new link replaces earlier confirmation links.</p>
+      <h2>{t("Need a new confirmation link?")}</h2>
+      <p className="field-hint">{t("Check your spam folder first. Requesting a new link replaces earlier confirmation links.")}</p>
       <form className="auth-form" noValidate aria-busy={sending} onSubmit={handleSubmit}>
-        {!email && <FormField id="resend-email" name="email" label="Email" type="email" placeholder="name@example.com"
-          autoComplete="email" maxLength={255} required disabled={sending} error={emailError} />}
-        {email && emailError && <p className="field-error" role="alert">{emailError}</p>}
-        {notice && <p className="form-notice form-success" role="status">{notice}</p>}
-        {error && <p className="form-notice form-error" role="alert">{error}</p>}
+        {!email && <FormField id="resend-email" name="email" label={t("Email")} type="email" placeholder={t("name@example.com")}
+          autoComplete="email" maxLength={255} required disabled={sending} error={t(emailError)} />}
+        {email && emailError && <p className="field-error" role="alert">{t(emailError)}</p>}
+        {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+        {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
         <button type="submit" className="button button-secondary button-full" disabled={sending || remaining > 0}>
-          {sending ? 'Requesting email…' : remaining > 0 ? `Resend in ${remaining}s` : 'Resend verification email'}
+          {sending ? t("Requesting email…") : remaining > 0 ? t("Resend in {0}s", [remaining]) : t("Resend verification email")}
         </button>
       </form>
     </div>

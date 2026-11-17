@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { EmailVerificationError, verifyEmail } from '../api/emailVerification'
@@ -19,6 +20,7 @@ export default function EmailVerificationPage() {
 }
 
 function VerificationResult({ token, onRetry }: { token: string; onRetry: () => void }) {
+  const { t } = useLanguage()
   const validFormat = /^[A-Za-z0-9_-]{43}$/.test(token)
   const [state, setState] = useState<VerificationState>(() => validFormat
     ? { status: 'pending' }
@@ -46,30 +48,30 @@ function VerificationResult({ token, onRetry }: { token: string; onRetry: () => 
 
   return (
     <div className="auth-page">
-      <Link to="/" className="back-link"><span aria-hidden="true">←</span> Back to home</Link>
+      <Link to="/" className="back-link"><span aria-hidden="true">←</span> {t("Back to home")}</Link>
       <section className="auth-card" aria-labelledby="verification-title" aria-busy={state.status === 'pending'}>
         <div className="auth-heading">
-          <span className="eyebrow">EMAIL CONFIRMATION</span>
-          <h1 id="verification-title">{state.status === 'success' ? 'Email confirmed' : state.status === 'pending' ? 'Confirming your email' : 'Unable to confirm email'}</h1>
-          <p>{state.status === 'pending' ? 'Please wait while we check your confirmation link.' : state.status === 'success' ? 'Your email address has been confirmed.' : 'Check your confirmation link below.'}</p>
+          <span className="eyebrow">{t("EMAIL CONFIRMATION")}</span>
+          <h1 id="verification-title">{state.status === 'success' ? t("Email confirmed") : state.status === 'pending' ? t("Confirming your email") : t("Unable to confirm email")}</h1>
+          <p>{state.status === 'pending' ? t("Please wait while we check your confirmation link.") : state.status === 'success' ? t("Your email address has been confirmed.") : t("Check your confirmation link below.")}</p>
         </div>
         <div className="registration-success">
-          {state.status === 'pending' && <p className="form-notice" role="status">Confirming your email…</p>}
+          {state.status === 'pending' && <p className="form-notice" role="status">{t("Confirming your email…")}</p>}
           {state.status === 'success' && (
             <div className="form-notice form-success" role="status">
-              <p>Your email confirmation is complete. You can close this page.</p>
-              <p>You can now sign in to your account.</p>
+              <p>{t("Your email confirmation is complete. You can close this page.")}</p>
+              <p>{t("You can now sign in to your account.")}</p>
             </div>
           )}
-          {state.status === 'success' && <Link className="button button-primary button-full" to="/login">Go to sign in</Link>}
+          {state.status === 'success' && <Link className="button button-primary button-full" to="/login">{t("Go to sign in")}</Link>}
           {state.status === 'error' && (
             <>
-              <p className="form-notice form-error" role="alert">{state.message}</p>
-              {state.retryable && <button type="button" className="button button-primary button-full" onClick={onRetry}>Try again</button>}
+              <p className="form-notice form-error" role="alert">{t(state.message)}</p>
+              {state.retryable && <button type="button" className="button button-primary button-full" onClick={onRetry}>{t("Try again")}</button>}
               {!state.retryable && <ResendVerificationForm />}
             </>
           )}
-          <Link className="button button-secondary button-full" to="/">Back to home</Link>
+          <Link className="button button-secondary button-full" to="/">{t("Back to home")}</Link>
         </div>
       </section>
     </div>

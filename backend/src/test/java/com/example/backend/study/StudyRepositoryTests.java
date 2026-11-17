@@ -102,7 +102,11 @@ class StudyRepositoryTests extends PostgresIntegrationTest {
         Long answerId = answers.saveAndFlush(answer).getId();
         progress.saveAndFlush(new FlashcardProgress(user, card));
 
-        cards.delete(card);
+        // Leave the saved answer/progress out of the deleting persistence context.
+        // PostgreSQL applies SET NULL/CASCADE; a fresh read below verifies their effect.
+        entityManager.flush();
+        entityManager.clear();
+        cards.deleteById(card.getId());
         cards.flush();
         entityManager.clear();
 
@@ -133,6 +137,9 @@ class StudyRepositoryTests extends PostgresIntegrationTest {
         Long ownerProgressId = progress.saveAndFlush(new FlashcardProgress(owner, publicCard)).getId();
         Long learnerProgressId = progress.saveAndFlush(new FlashcardProgress(learner, publicCard)).getId();
 
+        // Simulate a separate request, without managed decks/sessions pointing at the removed user.
+        entityManager.flush();
+        entityManager.clear();
         userDeletion.deleteAccount(owner.getId());
         entityManager.clear();
 

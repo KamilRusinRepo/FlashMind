@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import FormField from '../components/FormField'
@@ -16,6 +17,7 @@ export default function ResetPasswordPage() {
 }
 
 function ResetPasswordForm({ token }: { token: string | null }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [errors, setErrors] = useState<PasswordErrors>({})
   const [error, setError] = useState('')
@@ -67,28 +69,28 @@ function ResetPasswordForm({ token }: { token: string | null }) {
   }
 
   return <div className="auth-page">
-    <Link to="/login" className="back-link"><span aria-hidden="true">←</span> Back to sign in</Link>
+    <Link to="/login" className="back-link"><span aria-hidden="true">←</span> {t("Back to sign in")}</Link>
     <section className="auth-card" aria-labelledby="reset-password-title">
       <div className="auth-heading">
-        <span className="eyebrow">A FRESH START</span>
-        <h1 id="reset-password-title">{success ? 'Password reset' : invalidLink ? 'Invalid reset link' : 'Set a new password'}</h1>
-        <p>{success ? 'Your password has been changed.' : invalidLink ? 'Request a new link to reset your password.' : 'Choose a new password and enter it again to confirm.'}</p>
+        <span className="eyebrow">{t("A FRESH START")}</span>
+        <h1 id="reset-password-title">{success ? t("Password reset") : invalidLink ? t("Invalid reset link") : t("Set a new password")}</h1>
+        <p>{success ? t("Your password has been changed.") : invalidLink ? t("Request a new link to reset your password.") : t("Choose a new password and enter it again to confirm.")}</p>
       </div>
       {success ? <div className="registration-success">
-        <p className="form-notice form-success" role="status">Your password has been reset. Previous sessions have been revoked. Sign in with your new password.</p>
-        <Link className="button button-primary button-full" to="/login">Go to sign in</Link>
+        <p className="form-notice form-success" role="status">{t("Your password has been reset. Previous sessions have been revoked. Sign in with your new password.")}</p>
+        <Link className="button button-primary button-full" to="/login">{t("Go to sign in")}</Link>
       </div> : invalidLink ? <div className="registration-success">
-        <p className="form-notice form-error" role="alert">{error || 'This reset link is missing or invalid. Please use the complete link from your latest email.'}</p>
-        <Link className="button button-primary button-full" to="/forgot-password">Request a new reset link</Link>
+        <p className="form-notice form-error" role="alert">{t(error) || t("This reset link is missing or invalid. Please use the complete link from your latest email.")}</p>
+        <Link className="button button-primary button-full" to="/forgot-password">{t("Request a new reset link")}</Link>
       </div> : <form className="auth-form" noValidate aria-busy={sending} onSubmit={handleSubmit} onInput={() => { setErrors({}); setError('') }}>
-        <FormField id="new-password" name="password" label="New password" type="password" placeholder="At least 8 characters"
-          autoComplete="new-password" required disabled={sending} error={errors.password} hint="Use at least 8 characters and no more than 72 UTF-8 bytes." />
-        <FormField id="confirm-new-password" name="confirmation" label="Confirm password" type="password" placeholder="Repeat your new password"
-          autoComplete="new-password" required disabled={sending} error={errors.confirmation} />
-        {error && <p className="form-notice form-error" role="alert">{error}</p>}
-        <button className="button button-primary button-full" type="submit" disabled={sending}>{sending ? 'Resetting password…' : 'Reset password'} <span aria-hidden="true">→</span></button>
+        <FormField id="new-password" name="password" label={t("New password")} type="password" placeholder={t("At least 8 characters")}
+          autoComplete="new-password" required disabled={sending} error={t(errors.password)} hint={t("Use at least 8 characters and no more than 72 UTF-8 bytes.")} />
+        <FormField id="confirm-new-password" name="confirmation" label={t("Confirm password")} type="password" placeholder={t("Repeat your new password")}
+          autoComplete="new-password" required disabled={sending} error={t(errors.confirmation)} />
+        {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
+        <button className="button button-primary button-full" type="submit" disabled={sending}>{sending ? t("Resetting password…") : t("Reset password")} <span aria-hidden="true">→</span></button>
       </form>}
     </section>
-    <p className="auth-footer">Need a reset link? <Link to="/forgot-password">Forgot password</Link></p>
+    <p className="auth-footer">{t("Need a reset link?")} <Link to="/forgot-password">{t("Forgot password")}</Link></p>
   </div>
 }

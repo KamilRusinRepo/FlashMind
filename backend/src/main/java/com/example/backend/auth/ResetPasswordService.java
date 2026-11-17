@@ -28,5 +28,6 @@ public class ResetPasswordService {
         user.setPasswordHash(encoder.encode(password));
         user.invalidateSessions();
         storedTokens.deleteUnusedByUserIdAndType(user.getId(), TokenType.PASSWORD_RESET);
+        storedTokens.deleteUnusedByUserIdAndType(user.getId(), TokenType.EMAIL_CHANGE);
     }
 }

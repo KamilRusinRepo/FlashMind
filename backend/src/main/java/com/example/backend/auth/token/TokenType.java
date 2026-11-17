@@ -2,5 +2,6 @@ package com.example.backend.auth.token;
 
 public enum TokenType {
     EMAIL_VERIFICATION,
-    PASSWORD_RESET
+    PASSWORD_RESET,
+    EMAIL_CHANGE
 }

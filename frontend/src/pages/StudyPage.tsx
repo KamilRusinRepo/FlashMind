@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { DeckApiError, getOwnedDeck, type OwnedDeck } from '../api/decks'
@@ -26,11 +27,11 @@ export default function StudyPage() {
 }
 
 function StudyLanding({ deckId }: { deckId: number }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState<OwnedDeck>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    document.title = 'Start study | FlashMind'
     window.scrollTo(0, 0)
     const controller = new AbortController()
     getOwnedDeck(deckId, controller.signal).then(deck => {
@@ -42,20 +43,20 @@ function StudyLanding({ deckId }: { deckId: number }) {
     })
     return () => controller.abort()
   }, [deckId, attempt, refresh])
-  if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your deck…</p>
+  if (state.status === 'loading') return <p className="study-load-message" role="status">{t("Loading your deck…")}</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   return <section className="study-load-message study-entry"><h1>{state.data.name}</h1>
-    <p>Choose Scheduled Review for due and new cards, or Free Practice to practise the whole deck.</p>
-    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link>
+    <p>{t("Choose Scheduled Review for due and new cards, or Free Practice to practise the whole deck.")}</p>
+    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>{t("Back to deck")}</Link>
   </section>
 }
 
 function StudyLoader({ deckId, sessionId }: { deckId: number; sessionId: number }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState<StudySessionData>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    document.title = 'Study session | FlashMind'
     window.scrollTo(0, 0)
     const controller = new AbortController()
     getStudySession(sessionId, controller.signal).then(session => {
@@ -69,15 +70,16 @@ function StudyLoader({ deckId, sessionId }: { deckId: number; sessionId: number 
     })
     return () => controller.abort()
   }, [deckId, sessionId, attempt, refresh])
-  if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your study session…</p>
+  if (state.status === 'loading') return <p className="study-load-message" role="status">{t("Loading your study session…")}</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   if (state.data.status === 'COMPLETED') return <StudySummaryLoader deckId={deckId} sessionId={sessionId} />
-  if (state.data.status !== 'ACTIVE') return <section className="study-load-message study-entry"><h1>This session has ended</h1>
-    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link></section>
+  if (state.data.status !== 'ACTIVE') return <section className="study-load-message study-entry"><h1>{t("This session has ended")}</h1>
+    <StudyStartButton deckId={deckId} /><Link className="button button-outline" to={`/decks/${deckId}`}>{t("Back to deck")}</Link></section>
   return <StudySession session={state.data} onReload={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
 }
 
 function StudySummaryLoader({ deckId, sessionId }: { deckId: number; sessionId: number }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState<StudySummaryData>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -94,12 +96,13 @@ function StudySummaryLoader({ deckId, sessionId }: { deckId: number; sessionId: 
     })
     return () => controller.abort()
   }, [deckId, sessionId, attempt, refresh])
-  if (state.status === 'loading') return <p className="study-load-message" role="status">Loading your summary…</p>
+  if (state.status === 'loading') return <p className="study-load-message" role="status">{t("Loading your summary…")}</p>
   if (state.status === 'error') return <StudyLoadError state={state} deckId={deckId} retry={() => { setState({ status: 'loading' }); setAttempt(value => value + 1) }} />
   return <StudySummary summary={state.data} />
 }
 
 function StudySession({ session, onReload }: { session: StudySessionData; onReload: () => void }) {
+  const { t } = useLanguage()
   const { refresh } = useAuth()
   const [cards, setCards] = useState(session.cards)
   const [index, setIndex] = useState(() => {
@@ -125,7 +128,6 @@ function StudySession({ session, onReload }: { session: StudySessionData; onRelo
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   useEffect(() => {
     if (summary) return
-    document.title = `Study: ${deck.name} | FlashMind`
     if (sending) return
     if (result) {
       submitRef.current?.focus()
@@ -188,41 +190,43 @@ function StudySession({ session, onReload }: { session: StudySessionData; onRelo
   if (summary) return <StudySummary summary={summary} />
   return <div className="study-layout">
     <StudySidebar deck={deck} correct={correct} wrong={answered - correct} />
-    <section className="study-content" aria-label="Study practice">
-      <div className="study-progress-label"><span>{session.mode === 'FREE_PRACTICE' ? 'Free Practice' : 'Scheduled Review'}</span><strong>{index + 1} of {session.totalCards} cards</strong></div>
-      <progress className="study-progress study-session-progress" max={session.totalCards} value={answered} aria-label="Answered flashcards" />
+    <section className="study-content" aria-label={t("Study practice")}>
+      <div className="study-progress-label"><span>{session.mode === 'FREE_PRACTICE' ? t("Free Practice") : t("Scheduled Review")}</span><strong>{t('Card {0} of {1}', [index + 1, session.totalCards])}</strong></div>
+      <progress className="study-progress study-session-progress" max={session.totalCards} value={answered} aria-label={t("Answered flashcards")} />
       <StudyCard key={card.id} card={{ id: String(card.id), question: card.question, answer: result?.answer,
         exampleSentence: card.exampleSentence ?? undefined, translatedExample: result?.translatedExample ?? undefined, imageUrl: card.imageUrl ?? undefined }}
         result={result ? { cardId: String(card.id), userAnswer: result.userAnswer, correct: result.correct, usedHint: result.usedHint, skipped: result.skipped } : undefined} />
-      {error && <div className="form-notice form-error study-action-error" role="alert"><p>{error}</p>
-        <button className="button button-outline" type="button" disabled={!!sending} onClick={onReload}>Refresh session</button></div>}
+      {error && <div className="form-notice form-error study-action-error" role="alert"><p>{t(error)}</p>
+        <button className="button button-outline" type="button" disabled={!!sending} onClick={onReload}>{t("Refresh session")}</button></div>}
       <form className="study-answer-form" onSubmit={handleSubmit} aria-busy={!!sending}>
-        <div className="study-answer-field"><label className="study-input-label" htmlFor="study-answer">{deck.deckType === 'LANGUAGE' ? 'Your translation' : 'Your answer'}</label>
+        <div className="study-answer-field"><label className="study-input-label" htmlFor="study-answer">{deck.deckType === 'LANGUAGE' ? t("Your translation") : t("Your answer")}</label>
           <input ref={inputRef} id="study-answer" type="text" value={guess} onChange={event => setGuess(event.target.value)} maxLength={2000}
             disabled={!!result || !!sending} autoComplete="off" spellCheck={false}
-            placeholder={deck.deckType === 'LANGUAGE' ? 'Type translation…' : 'Type your answer…'} aria-describedby="study-answer-help" /></div>
+            placeholder={deck.deckType === 'LANGUAGE' ? t("Type translation…") : t("Type your answer…")} aria-describedby="study-answer-help" /></div>
         <button ref={submitRef} className="button button-primary study-submit" type="submit" disabled={!!sending || (!!result && last && !allSaved)}
           onClick={event => { if (event.detail > 1) event.preventDefault() }}>
-          <span>{sending === 'complete' ? 'Finishing…' : sending === 'answer' ? 'Checking…' : result ? last ? 'Finish session' : 'Next' : 'Submit'}</span><img src={submitIcon} alt="" /></button>
+          <span>{sending === 'complete' ? t("Finishing…") : sending === 'answer' ? t("Checking…") : result ? last ? t("Finish session") : t("Next") : t("Submit")}</span><img src={submitIcon} alt="" /></button>
       </form>
       <div className="study-actions"><button className="study-text-action" type="button" disabled={!!sending || !!result} onClick={() => void act('hint')}>
-          <img src={hintIcon} alt="" />{sending === 'hint' ? 'Loading…' : 'Hint'}</button>
+          <img src={hintIcon} alt="" />{sending === 'hint' ? t("Loading…") : t("Hint")}</button>
         <button className="study-text-action" type="button" disabled={!!sending || !!result} onClick={() => void act('skip')}>
-          <img src={skipIcon} alt="" />{sending === 'skip' ? 'Saving…' : 'Skip'}</button>
+          <img src={skipIcon} alt="" />{sending === 'skip' ? t("Saving…") : t("Skip")}</button>
         <span id="study-answer-help">{allSaved
-          ? 'All answers saved. Finish the session to see your results.'
-          : result ? 'Press Enter to continue' : card.usedHint ? 'Hint used · Press Enter to submit' : 'Press Enter to submit'}</span></div>
+          ? t("All answers saved. Finish the session to see your results.")
+          : result ? t("Press Enter to continue") : card.usedHint ? t("Hint used · Press Enter to submit") : t("Press Enter to submit")}</span></div>
     </section>
   </div>
 }
 function StudyLoadError({ state, deckId, retry }: { state: { message: string; code: number }; deckId: number; retry: () => void }) {
+  const { t } = useLanguage()
   if (state.code === 404) return <StudyUnavailable />
-  return <div className="study-load-message"><p className="form-notice form-error" role="alert">{state.message}</p>
-    <button className="button button-outline" type="button" onClick={retry}>Try again</button>
-    <Link className="button button-outline" to={`/decks/${deckId}`}>Back to deck</Link></div>
+  return <div className="study-load-message"><p className="form-notice form-error" role="alert">{t(state.message)}</p>
+    <button className="button button-outline" type="button" onClick={retry}>{t("Try again")}</button>
+    <Link className="button button-outline" to={`/decks/${deckId}`}>{t("Back to deck")}</Link></div>
 }
 
 function StudyUnavailable() {
-  return <div className="study-load-message"><h1>Study session not found</h1><p>This deck or session is unavailable or does not belong to your account.</p>
-    <Link className="button button-primary" to="/decks">Go to My Decks</Link></div>
+  const { t } = useLanguage()
+  return <div className="study-load-message"><h1>{t("Study session not found")}</h1><p>{t("This deck or session is unavailable or does not belong to your account.")}</p>
+    <Link className="button button-primary" to="/decks">{t("Go to My Decks")}</Link></div>
 }

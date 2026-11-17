@@ -1,9 +1,11 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import FormField from '../components/FormField'
 import { requestPasswordReset, ForgotPasswordError } from '../api/forgotPassword'
 
 export default function ForgotPasswordPage() {
+  const { t } = useLanguage()
   const [emailError, setEmailError] = useState('')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
@@ -53,24 +55,24 @@ export default function ForgotPasswordPage() {
   }
 
   return <div className="auth-page">
-    <Link to="/login" className="back-link"><span aria-hidden="true">←</span> Back to sign in</Link>
+    <Link to="/login" className="back-link"><span aria-hidden="true">←</span> {t("Back to sign in")}</Link>
     <section className="auth-card" aria-labelledby="forgot-password-title">
       <div className="auth-heading">
-        <span className="eyebrow">LET’S GET YOU BACK</span>
-        <h1 id="forgot-password-title">Forgot password?</h1>
-        <p>Enter your email address to request a password reset link.</p>
+        <span className="eyebrow">{t("LET’S GET YOU BACK")}</span>
+        <h1 id="forgot-password-title">{t("Forgot password?")}</h1>
+        <p>{t("Enter your email address to request a password reset link.")}</p>
       </div>
       <form className="auth-form" noValidate aria-busy={sending} onSubmit={handleSubmit} onInput={() => { setEmailError(''); setNotice(''); setError('') }}>
-        <FormField id="recovery-email" name="email" label="Email" type="email" placeholder="name@example.com"
-          autoComplete="email" maxLength={255} required disabled={sending} error={emailError} />
-        <p className="field-hint">Requesting a new reset link replaces earlier reset links. Please wait 60 seconds between requests.</p>
-        {notice && <p className="form-notice" role="status">{notice}</p>}
-        {error && <p className="form-notice form-error" role="alert">{error}</p>}
+        <FormField id="recovery-email" name="email" label={t("Email")} type="email" placeholder={t("name@example.com")}
+          autoComplete="email" maxLength={255} required disabled={sending} error={t(emailError)} />
+        <p className="field-hint">{t("Requesting a new reset link replaces earlier reset links. Please wait 60 seconds between requests.")}</p>
+        {notice && <p className="form-notice" role="status">{t(notice)}</p>}
+        {error && <p className="form-notice form-error" role="alert">{t(error)}</p>}
         <button className="button button-primary button-full" type="submit" disabled={sending || remaining > 0}>
-          {sending ? 'Requesting reset link…' : remaining > 0 ? `Try again in ${remaining}s` : 'Send reset link'} <span aria-hidden="true">→</span>
+          {sending ? t("Requesting reset link…") : remaining > 0 ? t("Try again in {0}s", [remaining]) : t("Send reset link")} <span aria-hidden="true">→</span>
         </button>
       </form>
     </section>
-    <p className="auth-footer">Remember your password? <Link to="/login">Sign in</Link></p>
+    <p className="auth-footer">{t("Remember your password?")} <Link to="/login">{t("Sign in")}</Link></p>
   </div>
 }

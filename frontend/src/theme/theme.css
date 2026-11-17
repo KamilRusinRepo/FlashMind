@@ -1,0 +1,121 @@
+/* Shared dark palette. Existing light colours remain the default. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --text: #e7edf5;
+  --muted: #a3b2c6;
+  --primary: #24bd69;
+  --primary-dark: #57dfa0;
+  --border: #334257;
+  --danger: #ff97a5;
+  --shadow: 0 18px 60px #00000030;
+  --page-background: #101720;
+  --surface: #192331;
+  --surface-soft: #141d29;
+  --surface-hover: #253348;
+  --success-background: #17372b;
+  --success-border: #2d684b;
+  --success-text: #91e8b5;
+  --danger-background: #3c222d;
+  --danger-border: #814351;
+  --info-background: #1b3048;
+  --info-text: #b0cfee;
+  --track: #2c3b50;
+  --primary-hover: #168b4a;
+}
+
+html[data-theme='dark'] body { background: radial-gradient(ellipse at top left, #18273d 0, #101720 50%, #12261f 100%); }
+html[data-theme='dark'] :is(.dashboard-shell, .study-shell) { background: var(--page-background); }
+
+/* Panels, cards, dialogs and their controls. */
+html[data-theme='dark'] :is(.auth-card, .connection-card, .demo-card, .db-sidebar, .db-metric,
+  .db-section-placeholder, .db-learning-card, .db-deck-card, .decks-search, .decks-message, .decks-empty,
+  .deck-delete-dialog, .deck-create-form, .deck-details-meta, .flashcard-preview, .flashcard-dialog,
+  .settings-card, .settings-password-dialog, .study-panel, .study-card, .study-entry,
+  .study-summary-stat, .study-mode-dialog, .study-mode-close, .settings-dialog-close,
+  .skip-link, .button-outline, .db-collapse) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+html[data-theme='dark'] :is(.db-sidebar, .db-profile, .db-metric, .db-learning-card, .db-deck-card,
+  .db-explore-meta, .flashcard-preview-top, .flashcard-preview-side + .flashcard-preview-side) { border-color: var(--border); }
+html[data-theme='dark'] .db-mobile-nav { background: #192331f5; border-color: var(--border); }
+html[data-theme='dark'] :is(.input-wrapper, .flashcard-form textarea, .flashcard-image, .settings-language,
+  .study-answer-field input, .settings-segment) { background: var(--surface-soft); }
+html[data-theme='dark'] :is(.input-wrapper:focus-within, .settings-segment button.is-active) { background: var(--surface-hover); }
+html[data-theme='dark'] :is(input, textarea, select) { color: var(--text); }
+html[data-theme='dark'] select option { background: var(--surface); color: var(--text); }
+html[data-theme='dark'] :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+html[data-theme='dark'] :is(input, textarea):-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-soft) inset;
+  caret-color: var(--text);
+}
+html[data-theme='dark'] .study-answer-field input:disabled { background: var(--track); color: var(--muted); }
+html[data-theme='dark'] .flashcard-preview-side + .flashcard-preview-side { background: var(--surface-soft); }
+html[data-theme='dark'] :is(.form-field > label, .button-outline, .nav-login) { color: var(--text); }
+html[data-theme='dark'] :is(.db-nav-item, .db-signout, .db-progress-label, .db-eyebrow,
+  .db-deck-footer, .db-deck-footer strong, .db-explore-meta, .db-collapse, .card-side, .or-separator) { color: var(--muted); }
+html[data-theme='dark'] .or-separator::before,
+html[data-theme='dark'] .or-separator::after { background: var(--border); }
+html[data-theme='dark'] :is(.button-outline:hover, .db-collapse:hover, .password-toggle:hover,
+  .study-mode-option:hover) { background: var(--surface-hover); }
+html[data-theme='dark'] :is(.input-invalid, .input-invalid:focus-within) { border-color: var(--danger); }
+
+/* Accents and semantic feedback retain their meaning on dark surfaces. */
+html[data-theme='dark'] :is(.button-secondary, .hero-badge, .feature-number, .card-category, .demo-card.is-flipped,
+  .db-avatar, .db-goal-symbol, .db-create-action, .decks-empty-icon, .flashcard-preview-number,
+  .settings-row-icon, .study-deck-icon, .study-active-label, .study-tip, .study-stat.is-correct,
+  .study-preview-banner, .study-summary-check, .study-summary-notice, .study-mode-icon,
+  .study-mode-option.is-selected, .study-mode-close:hover, .form-success) {
+  background: var(--success-background);
+  color: var(--success-text);
+  border-color: var(--success-border);
+}
+html[data-theme='dark'] .settings-avatar { background: linear-gradient(#204c39, #17372b); }
+html[data-theme='dark'] :is(.db-text-action, .db-create-action, .card-flip-hint, .study-tip p) { color: var(--success-text); }
+html[data-theme='dark'] .button-secondary:hover { background: #24513b; }
+html[data-theme='dark'] :is(.db-nav-item.is-active, .db-nav-item:not(:disabled):hover, .db-nav-item:not(:disabled):focus-visible) {
+  background: var(--success-background);
+  color: var(--success-text);
+}
+html[data-theme='dark'] :is(.form-error, .deck-delete-button, .study-stat.is-wrong, .db-signout:hover:not(:disabled)) {
+  background: var(--danger-background);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+html[data-theme='dark'] .deck-delete-button:hover:not(:disabled) { background: #572b38; }
+html[data-theme='dark'] .study-card.is-correct { background: #182c25; border-color: var(--success-border); }
+html[data-theme='dark'] .study-card.is-wrong { background: #2d202a; border-color: var(--danger-border); }
+html[data-theme='dark'] :is(.form-notice:not(.form-error):not(.form-success), .db-preview-note) {
+  background: var(--info-background); border-color: #38597b; color: var(--info-text);
+}
+html[data-theme='dark'] .db-preview-badge { color: var(--info-text); }
+html[data-theme='dark'] .connection-card button { background: var(--success-background); border-color: var(--success-border); color: var(--success-text); }
+html[data-theme='dark'] .db-streak { background: #31291c; border-color: #665132; }
+html[data-theme='dark'] .study-summary-stat.is-xp .study-summary-value strong { color: #f0ca66; }
+html[data-theme='dark'] :is(.button-primary:hover, .study-exit:hover) { background: var(--primary-hover); }
+
+/* Deck category colours are themed without altering uploaded images. */
+html[data-theme='dark'] .db-tone-purple { background: #332745; color: #d1a9f2; }
+html[data-theme='dark'] .db-tone-blue { background: #203751; color: #9ac8f4; }
+html[data-theme='dark'] .db-tone-orange { background: #463223; color: #f1be83; }
+html[data-theme='dark'] .db-tone-green { background: #1d3c30; color: #94ddb8; }
+html[data-theme='dark'] .db-tags > span:first-child { background: var(--info-background); color: var(--info-text); }
+html[data-theme='dark'] .hero-preview { background: linear-gradient(150deg, #101c2e, #1e354a); }
+html[data-theme='dark'] .flashcard-stack::before { background: #405967; }
+html[data-theme='dark'] .flashcard-stack::after { background: #607e77; }
+
+/* Progress tracks, switches, icon assets and modal backdrops. */
+html[data-theme='dark'] :is(.db-progress, .study-progress, .study-summary-track) { background: var(--track); }
+html[data-theme='dark'] .db-progress::-webkit-progress-bar,
+html[data-theme='dark'] .study-progress::-webkit-progress-bar,
+html[data-theme='dark'] .study-summary-track::-webkit-progress-bar { background: var(--track); }
+html[data-theme='dark'] .settings-toggle > span { background: var(--track); }
+html[data-theme='dark'] .settings-toggle input:checked + span { background: var(--primary); }
+html[data-theme='dark'] .db-nav-item img { filter: brightness(0) saturate(100%) invert(77%) sepia(12%) saturate(450%) hue-rotate(175deg); }
+html[data-theme='dark'] :is(.db-nav-item.is-active, .db-nav-item:not(:disabled):hover, .db-nav-item:not(:disabled):focus-visible) img {
+  filter: brightness(0) saturate(100%) invert(85%) sepia(28%) saturate(650%) hue-rotate(88deg);
+}
+html[data-theme='dark'] .password-toggle img { filter: brightness(0) invert(.8); }
+html[data-theme='dark'] .study-summary-background-icon { opacity: .26; }
+html[data-theme='dark'] dialog::backdrop { background: #050b14b8; }
