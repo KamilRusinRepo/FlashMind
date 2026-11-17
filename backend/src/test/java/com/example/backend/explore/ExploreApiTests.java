@@ -228,6 +228,12 @@ class ExploreApiTests extends PostgresIntegrationTest {
             var followed = json.readTree(client.getPath("/api/decks/library?search=Shared").body()).get("content").get(0);
             assertFalse(followed.get("ownDeck").asBoolean());
             assertEquals(author.getUsername(), followed.get("author").get("displayName").asText());
+            var followedPage = client.getPath("/api/decks/following?search=Shared");
+            assertEquals(200, followedPage.statusCode(), followedPage.body());
+            assertEquals(shared.getId().longValue(), json.readTree(followedPage.body()).get("content").get(0).get("id").asLong());
+            var ownedPage = json.readTree(client.getPath("/api/decks").body());
+            assertEquals(1, ownedPage.get("totalElements").asInt());
+            assertEquals(own.getId().longValue(), ownedPage.get("content").get(0).get("id").asLong());
             assertEquals(404, client.send("DELETE", "/api/decks/" + shared.getId(), "", true).statusCode());
             assertEquals(404, client.send("PUT", "/api/decks/" + shared.getId(), json.writeValueAsString(Map.of(
                     "name", "Forged", "deckType", "GENERAL", "sourceLanguage", "English", "publicDeck", true)), true).statusCode());
@@ -238,6 +244,18 @@ class ExploreApiTests extends PostgresIntegrationTest {
             assertFalse(client.page("/" + shared.getId()).get("following").asBoolean());
             assertEquals(1, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
             assertEquals(shared.getId().longValue(), client.page("?sort=followers").get("content").get(0).get("id").asLong());
+            assertEquals(0, json.readTree(client.getPath("/api/decks/following").body()).get("totalElements").asInt());
+            follows.follow(viewer.getId(), shared.getId());
+            var newer = deck(author, "New shared", true, DeckType.GENERAL, "English", null, null);
+            follows.follow(viewer.getId(), newer.getId());
+            var firstFollowed = json.readTree(client.getPath("/api/decks/following?size=1").body());
+            assertEquals(2, firstFollowed.get("totalElements").asInt());
+            assertEquals(2, firstFollowed.get("totalPages").asInt());
+            assertEquals(newer.getId().longValue(), firstFollowed.get("content").get(0).get("id").asLong());
+            assertEquals(shared.getId().longValue(), json.readTree(client.getPath("/api/decks/following?size=1&page=1").body()).get("content").get(0).get("id").asLong());
+            for (String invalid : new String[]{"?page=-1", "?size=49", "?search=" + "x".repeat(121)}) {
+                assertEquals(400, client.getPath("/api/decks/following" + invalid).statusCode());
+            }
         }
     }
 
@@ -297,12 +315,16 @@ class ExploreApiTests extends PostgresIntegrationTest {
         try (var client = new Client()) {
             client.login(viewer);
             assertEquals(0, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
+            assertEquals(0, json.readTree(client.getPath("/api/decks/following").body()).get("totalElements").asInt());
             assertEquals(204, client.send("DELETE", "/api/explore/decks/" + shared.getId() + "/follow", "", true).statusCode());
             shared.setPublic(true); decks.saveAndFlush(shared);
             follows.follow(viewer.getId(), shared.getId());
             deletion.deleteAccount(author.getId());
             assertEquals("Deleted user", client.page("/" + shared.getId()).get("author").get("displayName").asText());
             assertEquals(1, json.readTree(client.getPath("/api/decks/library").body()).get("totalElements").asInt());
+            var orphanPage = json.readTree(client.getPath("/api/decks/following").body());
+            assertEquals(1, orphanPage.get("totalElements").asInt());
+            assertEquals("Deleted user", orphanPage.get("content").get(0).get("author").get("displayName").asText());
             assertEquals(1, study.start(viewer.getId(), shared.getId(), StudyMode.FREE_PRACTICE).totalCards());
             assertEquals(1, study.start(viewer.getId(), shared.getId(), StudyMode.SCHEDULED_REVIEW).totalCards());
             assertEquals(200, client.getPath("/api/statistics/me/decks/" + shared.getId()).statusCode());

@@ -38,7 +38,9 @@ export default function StudyStartButton({ deckId, label = 'Start Study', icon, 
   return <>
     <button className="button button-primary" type="button" disabled={sending || disabled} aria-busy={sending} aria-haspopup={mode === undefined ? 'dialog' : undefined}
       onClick={() => { if (mode === undefined) { setError(''); setChoosingMode(true) } else void start(mode) }}>{icon && <img src={icon} alt="" />}{sending ? t("Starting…") : t(label)}</button>
-    {choosingMode && <StudyModeDialog sending={sending} error={t(error)} onStart={selected => void start(selected)} onClose={() => { if (!submitting.current) setChoosingMode(false) }} />}
-    {error && !choosingMode && <p className="form-notice form-error study-start-error" role="alert">{t(error)}</p>}
+    {choosingMode && <StudyModeDialog sending={sending} error={t(error)} onStart={selected => void start(selected)} onClose={() => {
+      if (!submitting.current) { setChoosingMode(false); setError('') }
+    }} />}
+    {error && mode !== undefined && !choosingMode && <p className="form-notice form-error study-start-error" role="alert">{t(error)}</p>}
   </>
 }

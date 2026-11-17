@@ -2,10 +2,9 @@ import { useLanguage } from '../i18n/LanguageContext'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import DashboardStats from '../components/dashboard/DashboardStats'
-import ExploreDeckCard from '../components/dashboard/DeckCard'
+import ExploreMore from '../components/dashboard/ExploreMore'
 import ContinueLearning from '../components/dashboard/ContinueLearning'
 import DashboardDeckCard from '../components/dashboard/DashboardDeckCard'
-import { exploreDecks } from '../data/dashboard'
 import { DeckApiError, getMyDecks, type DeckPage } from '../api/decks'
 import { useAuth } from '../auth/AuthContext'
 import { isDeckMasteryList } from '../api/statistics'
@@ -78,10 +77,7 @@ function DashboardContent({ username }: { username: string }) {
             mastery={masteryDecks.find(item => item.id === deck.id)} masteryLoading={learning.state.status === 'loading'} />)}</div>
         </>}
     </section>
-    <section className="db-section" aria-labelledby="explore-title">
-      <div className="db-section-heading"><div><h2 id="explore-title">{t("Explore More")}</h2><p>{t("Sample public decks. Explore is coming soon.")}</p></div><button className="db-text-action" type="button" disabled title={t("Exploring public decks is coming soon")}>{t("Explore Marketplace")} <span aria-hidden="true">→</span></button></div>
-      <div className="db-deck-grid">{exploreDecks.map(deck => <ExploreDeckCard key={deck.id} deck={deck} />)}</div>
-    </section>
+    <ExploreMore />
     <footer className="db-page-footer">{t("Small steps. Big progress.")}<span>{t("Your decks. Your pace.")}</span></footer>
   </div>
 }

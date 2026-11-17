@@ -28,6 +28,19 @@ public interface DeckRepository extends JpaRepository<Deck, Long> {
         """)
     Page<Deck> findLibrary(@Param("userId") Long userId, @Param("pattern") String pattern, Pageable pageable);
 
+    @Query(value = """
+        select deck from Deck deck left join fetch deck.owner owner
+        where deck.publicDeck = true and (owner.id is null or owner.id <> :userId)
+          and exists (select follow.id from DeckFollow follow where follow.deck = deck and follow.user.id = :userId)
+          and lower(deck.name) like lower(:pattern) escape '!'
+        """, countQuery = """
+        select count(deck) from Deck deck left join deck.owner owner
+        where deck.publicDeck = true and (owner.id is null or owner.id <> :userId)
+          and exists (select follow.id from DeckFollow follow where follow.deck = deck and follow.user.id = :userId)
+          and lower(deck.name) like lower(:pattern) escape '!'
+        """)
+    Page<Deck> findFollowed(@Param("userId") Long userId, @Param("pattern") String pattern, Pageable pageable);
+
     Optional<Deck> findByIdAndOwner_Id(Long id, Long ownerId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

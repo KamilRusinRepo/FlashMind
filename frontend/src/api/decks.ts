@@ -33,18 +33,22 @@ export function isOwnedDeck(value: unknown): value is OwnedDeck {
 }
 
 export async function getMyDecks(page: number, search: string, signal: AbortSignal): Promise<DeckPage> {
-  return getDeckPage(page, search, signal, false)
+  return getDeckPage(page, search, signal, '')
 }
 
 export async function getLibraryDecks(page: number, search: string, signal: AbortSignal): Promise<DeckPage> {
-  return getDeckPage(page, search, signal, true)
+  return getDeckPage(page, search, signal, '/library')
 }
 
-async function getDeckPage(page: number, search: string, signal: AbortSignal, library: boolean): Promise<DeckPage> {
+export async function getFollowedDecks(page: number, search: string, signal: AbortSignal): Promise<DeckPage> {
+  return getDeckPage(page, search, signal, '/following')
+}
+
+async function getDeckPage(page: number, search: string, signal: AbortSignal, collection: '' | '/library' | '/following'): Promise<DeckPage> {
   let response: Response
   try {
     const params = new URLSearchParams({ page: String(page), size: '12', search })
-    response = await fetch(`/api/decks${library ? '/library' : ''}?${params}`, {
+    response = await fetch(`/api/decks${collection}?${params}`, {
       credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
       signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     })

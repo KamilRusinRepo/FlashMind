@@ -26,6 +26,14 @@ public class DeckService {
     }
 
     @Transactional(readOnly = true)
+    public DeckPageResponse listFollowed(Long userId, int page, int size, String search) {
+        String pattern = "%" + search.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        var result = decks.findFollowed(userId, pattern, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id")));
+        return new DeckPageResponse(result.map(deck -> DeckListItemResponse.from(deck, userId)).getContent(), page, size,
+                result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
     public DeckPageResponse listLibrary(Long userId, int page, int size, String search) {
         String pattern = "%" + search.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
         var result = decks.findLibrary(userId, pattern, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id")));

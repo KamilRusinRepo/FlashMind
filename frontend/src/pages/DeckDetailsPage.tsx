@@ -1,7 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { DeckApiError, getStudyDeck, type OwnedDeck } from '../api/decks'
 import { createFlashcard, updateFlashcard } from '../api/flashcards'
 import { useAuth } from '../auth/AuthContext'
@@ -10,6 +10,7 @@ import StudyStartButton from '../components/study/StudyStartButton'
 import FlashcardDialog from '../components/flashcards/FlashcardDialog'
 import FlashcardForm from '../components/flashcards/FlashcardForm'
 import DeleteFlashcardDialog from '../components/flashcards/DeleteFlashcardDialog'
+import DeleteDeckDialog from '../components/decks/DeleteDeckDialog'
 import type { PreviewFlashcard } from '../data/flashcardPreview'
 import './MyDecks.css'
 import './DeckDetails.css'
@@ -57,6 +58,8 @@ function DeckDetailsLoader({ deckId }: { deckId: number }) {
 
 function DeckDetails({ deck }: { deck: OwnedDeck }) {
   const { t, locale } = useLanguage()
+  const navigate = useNavigate()
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const languageDeck = deck.deckType === 'LANGUAGE'
   const [dialog, setDialog] = useState<{ mode: 'create' } | { mode: 'edit' | 'delete'; card: PreviewFlashcard } | null>(null)
@@ -76,7 +79,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
           : <span>{deck.name.slice(0, 1).toUpperCase()}</span>}
       </div>
       <div className="deck-details-heading"><div className="db-tags"><span>{deck.publicDeck ? t("PUBLIC") : t("PRIVATE")}</span><span className={`db-tone-${tone}`}>{deck.category ? categoryName(deck.category, t) : t("Uncategorized")}</span></div>
-        <h1>{deck.name}</h1><p>{deck.description || t("No description yet.")}</p>
+        <h1>{deck.name}</h1>{deck.description?.trim() && <p>{deck.description}</p>}
       </div>
     </header>
     <div className="deck-details-summary">
@@ -89,10 +92,14 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>{t("Edit Deck")}</Link>
       <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>{t("＋ Add Flashcard")}</button>
       <StudyStartButton deckId={deck.id} />
+      <button className="button deck-delete-button" type="button" onClick={() => setConfirmingDelete(true)}>{t('Delete Deck')}</button>
     </div>
     </div>
     </div>
     {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+    {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
+      onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
+      onUnavailable={() => navigate('/decks', { replace: true })} />}
     <DeckFlashcards key={`${deck.id}:${createdRevision}`} deckId={deck.id} revision={flashcardRevision} onAdd={() => setDialog({ mode: 'create' })}
       onEdit={card => setDialog({ mode: 'edit', card })} onDelete={card => setDialog({ mode: 'delete', card })} />
     {dialog && dialog.mode !== 'delete' && <FlashcardDialog title={dialog.mode === 'edit' ? t("Edit Flashcard") : t("Add Flashcard")} onCancel={() => setDialog(null)}>
