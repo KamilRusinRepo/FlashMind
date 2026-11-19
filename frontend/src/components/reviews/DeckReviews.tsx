@@ -1,38 +1,44 @@
 import { useEffect, useId, useState } from 'react'
-import { getDeckReviews, ReviewsApiError, type ReviewPage } from '../../api/reviews'
+import { getDeckReviews, ReviewsApiError, type RatingSummary, type ReviewPage } from '../../api/reviews'
 import { useAuth } from '../../auth/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
-import RatingStars, { StarIcon } from './RatingStars'
+import RatingStars from './RatingStars'
+import ReviewForm from './ReviewForm'
 import './DeckReviews.css'
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: ReviewPage }
 
-export default function DeckReviews({ deckId, ownDeck, ownerView = false }: { deckId: number; ownDeck: boolean; ownerView?: boolean }) {
+export default function DeckReviews({ deckId, ownDeck, ownerView = false, onRatingChange }: {
+  deckId: number; ownDeck: boolean; ownerView?: boolean; onRatingChange?: (summary: RatingSummary) => void
+}) {
   const { t, locale } = useLanguage()
   const { refresh } = useAuth()
   const id = useId()
   const [page, setPage] = useState(0)
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [notice, setNotice] = useState('')
   useEffect(() => {
     const controller = new AbortController()
     getDeckReviews(deckId, page, controller.signal, ownerView).then(data => {
       if (controller.signal.aborted) return
       if (page > 0 && data.content.length === 0) { setPage(Math.max(0, data.totalPages - 1)); return }
       setState({ status: 'ready', data })
+      onRatingChange?.(data.summary)
     }).catch(cause => {
       if (controller.signal.aborted) return
       if (cause instanceof ReviewsApiError && (cause.status === 401 || cause.status === 403)) { refresh(); return }
       setState({ status: 'error', message: cause instanceof ReviewsApiError ? cause.message : 'Unable to load reviews. Please try again.' })
     })
     return () => controller.abort()
-  }, [deckId, page, attempt, refresh, ownerView])
+  }, [deckId, page, attempt, refresh, ownerView, onRatingChange])
 
   const number = new Intl.NumberFormat(locale)
   const summary = state.status === 'ready' ? state.data.summary : null
   function changePage(next: number) { setState({ status: 'loading' }); setPage(next) }
   return <section className="deck-reviews" id="public-deck-reviews" aria-labelledby={`${id}-title`}>
     <div className="db-section-heading"><h2 id={`${id}-title`}>{t('Ratings and reviews')}</h2></div>
+    {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
     <div className="review-overview">
       <div className="review-summary" aria-label={t('Rating summary')}>
         {state.status === 'loading' && <p role="status">{t('Loading reviews…')}</p>}
@@ -51,7 +57,14 @@ export default function DeckReviews({ deckId, ownDeck, ownerView = false }: { de
           </div>)}</div>
         </>}
       </div>
-      {ownDeck ? <div className="review-own-note"><h3>{t('Your deck')}</h3><p>{t('You cannot review your own deck.')}</p></div> : <ReviewFormPreview />}
+      {ownDeck ? <div className="review-own-note"><h3>{t('Your deck')}</h3><p>{t('You cannot review your own deck.')}</p></div>
+        : state.status === 'ready' && state.data.ownReview ? <div className="review-own-note">
+          <h3>{t('Your review')}</h3><RatingStars rating={state.data.ownReview.rating} />
+          {state.data.ownReview.comment && <p className="review-comment">{state.data.ownReview.comment}</p>}
+          <p>{t('You have already reviewed this deck.')}</p>
+        </div> : <ReviewForm key={attempt} deckId={deckId} disabled={state.status !== 'ready'}
+          onCreated={() => { setNotice('Your review has been added.'); setState({ status: 'loading' }); setPage(0); setAttempt(value => value + 1) }}
+          onRefresh={() => { setNotice(''); setState({ status: 'loading' }); setAttempt(value => value + 1) }} />}
     </div>
     {state.status === 'ready' && <>
       {state.data.totalElements === 0 ? <div className="decks-empty review-list"><h3>{t('No reviews yet')}</h3><p>{t('This deck has not been reviewed yet.')}</p></div>
@@ -69,30 +82,4 @@ export default function DeckReviews({ deckId, ownDeck, ownerView = false }: { de
       </nav>}
     </>}
   </section>
-}
-
-function ReviewFormPreview() {
-  const { t, locale } = useLanguage()
-  const id = useId()
-  const [rating, setRating] = useState(0)
-  const [hovered, setHovered] = useState(0)
-  const [comment, setComment] = useState('')
-  return <form className="review-form" onSubmit={event => event.preventDefault()} aria-describedby={`${id}-hint`}>
-    <h3>{t('Write a review')}</h3>
-    <fieldset className="review-rating-field"><legend>{t('Your rating')}</legend>
-      <div className="review-rating-options" onMouseLeave={() => setHovered(0)}>
-        {[1, 2, 3, 4, 5].map(value => <label className="review-rating-choice" key={value} onMouseEnter={() => setHovered(value)}>
-          <input type="radio" name={`${id}-rating`} value={value} checked={rating === value} onChange={() => setRating(value)} aria-label={t('Rate {0} out of 5', [value])} />
-          <span className={value <= (hovered || rating) ? 'is-selected' : ''}><StarIcon /></span>
-        </label>)}
-      </div>
-      <p className="field-hint" role="status">{rating ? t('Selected rating: {0} out of 5', [rating]) : t('Choose 1 to 5 stars.')}</p>
-    </fieldset>
-    <div className="review-comment-field"><label htmlFor={`${id}-comment`}>{t('Comment (optional)')}</label>
-      <textarea id={`${id}-comment`} name="comment" rows={4} maxLength={1000} value={comment} onChange={event => setComment(event.target.value)} placeholder={t('What did you think of this deck?')} aria-describedby={`${id}-length`} />
-      <p className="field-hint review-character-count" id={`${id}-length`}>{t('{0} / {1} characters', [comment.length.toLocaleString(locale), (1000).toLocaleString(locale)])}</p>
-    </div>
-    <button className="button button-primary" type="submit" disabled aria-describedby={`${id}-hint`}>{t('Submit review')}</button>
-    <p className="field-hint" id={`${id}-hint`}>{t('Submitting reviews will be available in a later step.')}</p>
-  </form>
 }

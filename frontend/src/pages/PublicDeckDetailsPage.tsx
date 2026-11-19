@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { ExploreApiError, getPublicDeck, getPublicFlashcards, type PublicExploreDeck } from '../api/explore'
 import type { FlashcardPage } from '../api/flashcards'
@@ -9,6 +9,7 @@ import StudyStartButton from '../components/study/StudyStartButton'
 import DeckReviews from '../components/reviews/DeckReviews'
 import DeckRating from '../components/reviews/DeckRating'
 import DeckDetailsTabs from '../components/decks/DeckDetailsTabs'
+import type { RatingSummary } from '../api/reviews'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
@@ -43,6 +44,9 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const updateRating = useCallback((summary: RatingSummary) => {
+    setState(current => current.status === 'ready' ? { ...current, deck: { ...current.deck, averageRating: summary.averageRating, reviewCount: summary.reviewCount } } : current)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -83,7 +87,7 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
       </nav>}
     </section>
     <div role="tabpanel" tabIndex={0} id={`${tabsId}-reviews-panel`} aria-labelledby={`${tabsId}-reviews-tab`} hidden={activeTab !== 'reviews'}>
-      <DeckReviews deckId={deck.id} ownDeck={deck.ownDeck} />
+      <DeckReviews deckId={deck.id} ownDeck={deck.ownDeck} onRatingChange={updateRating} />
     </div>
   </>
 }

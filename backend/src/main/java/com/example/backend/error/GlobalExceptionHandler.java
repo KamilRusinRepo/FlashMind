@@ -6,6 +6,7 @@ import java.util.Map;
 import com.example.backend.admin.AdminUserActionException;
 import com.example.backend.admin.AdminUserEditException;
 import com.example.backend.flashcard.csv.CsvPreviewException;
+import com.example.backend.deck.review.DeckReviewConflictException;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
@@ -36,6 +37,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(DeckReviewConflictException.class)
+    public ResponseEntity<ApiError> handleDeckReviewConflict(DeckReviewConflictException exception, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of()));
+    }
 
     @ExceptionHandler(CsvPreviewException.class)
     public ResponseEntity<ApiError> handleCsvPreview(CsvPreviewException exception, HttpServletRequest request) {

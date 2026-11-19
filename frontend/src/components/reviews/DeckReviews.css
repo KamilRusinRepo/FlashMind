@@ -29,6 +29,10 @@
 .review-character-count { text-align: right; margin-top: 6px; }
 .review-form > .button { justify-self: start; font-size: .85em; }
 .review-form > .button:disabled { cursor: not-allowed; opacity: .55; }
+.review-rating-field:disabled label { cursor: not-allowed; opacity: .55; }
+.review-comment-field textarea[aria-invalid='true'] { border-color: var(--danger); }
+.review-form > .form-notice { margin: 0; }
+.deck-reviews > .form-success { margin-bottom: 20px; }
 .review-own-note { display: grid; gap: 12px; padding: 24px; border: 1px solid var(--border); border-radius: 16px; }
 .review-own-note p { color: var(--muted); line-height: 1.7; }
 .review-list { display: grid; gap: 16px; margin-top: 28px; }

@@ -1,6 +1,13 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'Choose a whole-star rating from 1 to 5.': 'Wybierz ocenę od 1 do 5 pełnych gwiazdek.',
+  'You have already reviewed this deck.': 'Ta talia ma już Twoją recenzję.',
+  'Your review has been added.': 'Twoja recenzja została dodana.',
+  'Unable to add your review. Please try again.': 'Nie udało się dodać recenzji. Spróbuj ponownie.',
+  'Unable to confirm your review. Refresh reviews before trying again.': 'Nie udało się potwierdzić zapisu recenzji. Odśwież recenzje przed kolejną próbą.',
+  'Refresh reviews': 'Odśwież recenzje',
+  'Submitting review…': 'Dodawanie recenzji…',
   'No ratings yet': 'Brak ocen',
   'No reviews yet': 'Brak recenzji',
   'This deck has not been reviewed yet.': 'Ta talia nie ma jeszcze recenzji.',

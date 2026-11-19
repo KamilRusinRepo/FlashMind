@@ -2,6 +2,12 @@ package com.example.backend.deck.review;
 
 import com.example.backend.auth.SessionUser;
 import com.example.backend.deck.review.dto.response.DeckReviewPageResponse;
+import com.example.backend.deck.review.dto.response.DeckReviewResponse;
+import com.example.backend.deck.review.dto.request.CreateDeckReviewRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -17,6 +23,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class DeckReviewController {
     private final DeckReviewService reviews;
     public DeckReviewController(DeckReviewService reviews) { this.reviews = reviews; }
+
+    @Operation(summary = "Review another user's public deck",
+            description = "Requires an active verified session and CSRF. Whole-star rating 1–5, optional comment up to 1000 characters. One review per user/deck; own decks cannot be reviewed.")
+    @PostMapping("/api/explore/decks/{deckId}/reviews")
+    public ResponseEntity<DeckReviewResponse> create(@AuthenticationPrincipal SessionUser viewer,
+            @PathVariable("deckId") @Min(1) Long deckId, @Valid @RequestBody CreateDeckReviewRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(reviews.createPublic(viewer, deckId, request));
+    }
 
     @Operation(summary = "List public deck reviews and overall rating statistics",
             description = "Signed-in users only. Newest first, including reviews of authorless public decks. Summary covers every review, not only this page. No ratings gives averageRating=null.")

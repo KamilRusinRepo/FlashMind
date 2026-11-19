@@ -19,6 +19,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,6 +54,7 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
             var data = json.readTree(response.body());
             assertEquals(7, data.get("totalElements").asInt()); assertEquals(3, data.get("totalPages").asInt());
             assertEquals(3, data.get("content").size());
+            assertEquals(own.getId().longValue(), data.get("ownReview").get("id").asLong());
             assertEquals(latest.getId().longValue(), data.get("content").get(0).get("id").asLong());
             assertTrue(data.get("content").get(0).get("comment").isNull());
             var summary = data.get("summary");
@@ -140,6 +143,79 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void createsReviewWithCurrentAuthorAndNormalizesCommentIncludingAuthorlessPublicDecks() throws Exception {
+        var owner = account(); var viewer = account(); var deck = deck(owner, true);
+        try (var client = new Client()) {
+            client.login(viewer);
+            var response = client.postReview(deck.getId(), "{\"rating\":5,\"comment\":\"  Przydatna talia!  \"}", true);
+            assertEquals(201, response.statusCode(), response.body());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+            var data = json.readTree(response.body());
+            assertEquals(viewer.getId().longValue(), data.get("author").get("id").asLong());
+            assertEquals(viewer.getUsername(), data.get("author").get("displayName").asText());
+            assertEquals(5, data.get("rating").asInt()); assertEquals("Przydatna talia!", data.get("comment").asText());
+            assertTrue(data.get("ownReview").asBoolean()); assertFalse(response.body().contains("email"));
+            var page = json.readTree(client.get("/api/explore/decks/" + deck.getId() + "/reviews").body());
+            assertEquals(1, page.get("summary").get("reviewCount").asInt());
+            assertEquals(data.get("id").asLong(), page.get("ownReview").get("id").asLong());
+            deletion.deleteAccount(owner.getId());
+            var removed = account(); var orphan = deck(removed, true); deletion.deleteAccount(removed.getId());
+            var noComment = client.postReview(orphan.getId(), "{\"rating\":1,\"comment\":\"   \"}", true);
+            assertEquals(201, noComment.statusCode(), noComment.body()); assertTrue(json.readTree(noComment.body()).get("comment").isNull());
+            assertEquals(2, reviews.count());
+        }
+    }
+
+    @Test void rejectsOwnPrivateDuplicateInvalidAndUnprotectedReviewRequests() throws Exception {
+        var owner = account(); var viewer = account(); var deck = deck(owner, true); var hidden = deck(owner, false);
+        String valid = "{\"rating\":4}";
+        try (var client = new Client()) {
+            assertEquals(401, client.postReview(deck.getId(), valid, true).statusCode());
+            client.login(owner);
+            assertEquals(409, client.postReview(deck.getId(), valid, true).statusCode());
+            client.login(viewer);
+            assertEquals(403, client.postReview(deck.getId(), valid, false).statusCode());
+            assertEquals(404, client.postReview(hidden.getId(), valid, true).statusCode());
+            for (String body : new String[]{"{}", "{\"rating\":null}", "{\"rating\":0}", "{\"rating\":6}", "{\"rating\":4.5}"}) {
+                var response = client.postReview(deck.getId(), body, true);
+                assertEquals(400, response.statusCode(), response.body()); assertTrue(json.readTree(response.body()).get("fieldErrors").has("rating"));
+            }
+            var tooLong = client.postReview(deck.getId(), json.writeValueAsString(Map.of("rating", 4, "comment", "x".repeat(1001))), true);
+            assertEquals(400, tooLong.statusCode()); assertTrue(json.readTree(tooLong.body()).get("fieldErrors").has("comment"));
+            assertEquals(0, reviews.count());
+            assertEquals(201, client.postReview(deck.getId(), valid, true).statusCode());
+            var duplicate = client.postReview(deck.getId(), "{\"rating\":1}", true);
+            assertEquals(409, duplicate.statusCode());
+            assertEquals("You have already reviewed this deck.", json.readTree(duplicate.body()).get("message").asText());
+            assertEquals(4, reviews.findByUser_IdAndDeck_Id(viewer.getId(), deck.getId()).orElseThrow().getRating());
+            var changed = deck(owner, true);
+            assertEquals(200, client.get("/api/explore/decks/" + changed.getId()).statusCode());
+            changed.setPublic(false); decks.saveAndFlush(changed);
+            assertEquals(404, client.postReview(changed.getId(), valid, true).statusCode());
+            assertEquals(404, client.postReview(Long.MAX_VALUE, valid, true).statusCode());
+            assertEquals(400, client.postReview(0L, valid, true).statusCode());
+            assertEquals(1, reviews.count());
+        }
+    }
+
+    @Test void simultaneousSubmissionsFromTwoSessionsCreateOnlyOneReview() throws Exception {
+        var owner = account(); var viewer = account(); var deck = deck(owner, true);
+        try (var first = new Client(); var second = new Client()) {
+            first.login(viewer); second.login(viewer);
+            String firstToken = first.csrf(); String secondToken = second.csrf();
+            var one = CompletableFuture.supplyAsync(() -> createStatus(first, deck.getId(), firstToken));
+            var two = CompletableFuture.supplyAsync(() -> createStatus(second, deck.getId(), secondToken));
+            int a = one.join(); int b = two.join();
+            assertTrue(a == 201 && b == 409 || a == 409 && b == 201, "Statuses: " + a + ", " + b);
+            assertEquals(1, reviews.count());
+        }
+    }
+
+    private int createStatus(Client client, Long deckId, String token) {
+        try { return client.postReviewWithToken(deckId, "{\"rating\":5}", token).statusCode(); }
+        catch (Exception exception) { throw new CompletionException(exception); }
+    }
+
     private User account() {
         String name = "ReviewRead" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));
@@ -161,6 +237,18 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
                     .header("Content-Type", "application/json").header("X-CSRF-TOKEN", csrf)
                     .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(Map.of("login", user.getUsername(), "password", PASSWORD)))).build();
             var response = http.send(request, HttpResponse.BodyHandlers.ofString()); assertEquals(200, response.statusCode(), response.body());
+        }
+        String csrf() throws Exception {
+            var response = get("/api/auth/csrf"); assertEquals(200, response.statusCode()); return json.readTree(response.body()).get("token").asText();
+        }
+        HttpResponse<String> postReview(Long deckId, String body, boolean withCsrf) throws Exception {
+            return postReviewWithToken(deckId, body, withCsrf ? csrf() : null);
+        }
+        HttpResponse<String> postReviewWithToken(Long deckId, String body, String token) throws Exception {
+            var request = HttpRequest.newBuilder(endpoint("/api/explore/decks/" + deckId + "/reviews")).timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json");
+            if (token != null) request.header("X-CSRF-TOKEN", token);
+            return http.send(request.POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         }
         @Override public void close() { http.close(); }
     }
