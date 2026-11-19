@@ -1,4 +1,5 @@
 import { useLanguage } from '../../i18n/LanguageContext'
+import './RatingStars.css'
 
 export function StarIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9Z" /></svg>

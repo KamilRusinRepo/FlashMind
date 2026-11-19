@@ -1,0 +1,8 @@
+.review-stars { display: inline-flex; gap: 4px; }
+.review-star { position: relative; display: inline-block; width: 24px; height: 24px; color: var(--border); }
+.review-star svg { display: block; width: 24px; height: 24px; fill: currentColor; }
+.review-star-fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #e9a829; }
+.deck-rating { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: .8em; }
+.deck-rating > span { color: var(--muted); }
+.deck-rating .review-star, .deck-rating .review-star svg { width: 18px; height: 18px; }
+.deck-rating .review-stars { gap: 2px; }

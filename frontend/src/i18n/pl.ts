@@ -1,6 +1,18 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'No ratings yet': 'Brak ocen',
+  'No reviews yet': 'Brak recenzji',
+  'This deck has not been reviewed yet.': 'Ta talia nie ma jeszcze recenzji.',
+  'Loading reviews…': 'Wczytywanie recenzji…',
+  'Rating summary': 'Podsumowanie ocen',
+  '{0} reviews': 'Liczba recenzji: {0}',
+  '{0} stars: {1} reviews': '{0} gwiazdek: liczba recenzji {1}',
+  'Your review': 'Twoja recenzja',
+  'Review pagination': 'Strony recenzji',
+  'Unable to load reviews. Check your connection and try again.': 'Nie udało się wczytać recenzji. Sprawdź połączenie i spróbuj ponownie.',
+  'Unable to load reviews. Please try again.': 'Nie udało się wczytać recenzji. Spróbuj ponownie.',
+  'The server returned an unexpected review list. Please try again.': 'Serwer zwrócił nieprawidłową listę recenzji. Spróbuj ponownie.',
   'Deck sections': 'Sekcje talii',
   'Reviews': 'Recenzje',
   'Ratings and reviews': 'Oceny i recenzje',

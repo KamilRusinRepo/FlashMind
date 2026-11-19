@@ -6,7 +6,8 @@ import { useAuth } from '../auth/AuthContext'
 import FlashcardPreview from '../components/flashcards/FlashcardPreview'
 import FollowDeckButton, { type FollowState } from '../components/explore/FollowDeckButton'
 import StudyStartButton from '../components/study/StudyStartButton'
-import DeckReviewsPreview from '../components/reviews/DeckReviewsPreview'
+import DeckReviews from '../components/reviews/DeckReviews'
+import DeckRating from '../components/reviews/DeckRating'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
@@ -90,7 +91,7 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
       </nav>}
     </section>
     <div role="tabpanel" tabIndex={0} id={`${tabsId}-reviews-panel`} aria-labelledby={`${tabsId}-reviews-tab`} hidden={activeTab !== 'reviews'}>
-      <DeckReviewsPreview ownDeck={deck.ownDeck} />
+      <DeckReviews deckId={deck.id} ownDeck={deck.ownDeck} />
     </div>
   </>
 }
@@ -121,6 +122,7 @@ function PublicDeckHeader({ deck, onChanged }: { deck: PublicExploreDeck; onChan
       </dl>
       <p className="decks-result-count">{count(deck.cardCount, 'card')}</p>
       <p className="decks-result-count">{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</p>
+      <DeckRating averageRating={deck.averageRating} reviewCount={deck.reviewCount} />
       <div className="deck-details-actions">
         {deck.ownDeck ? <Link className="button button-primary" to={`/decks/${deck.id}`}>{t('Manage Deck')}</Link>
           : <FollowDeckButton deckId={deck.id} following={deck.following} followerCount={deck.followerCount} onChanged={onChanged} />}

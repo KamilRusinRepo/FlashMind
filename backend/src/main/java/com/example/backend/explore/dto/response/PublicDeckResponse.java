@@ -6,4 +6,5 @@ import com.example.backend.deck.dto.response.DeckAuthorResponse;
 
 public record PublicDeckResponse(Long id, String name, String description, DeckType deckType,
         String category, String sourceLanguage, String targetLanguage, String backgroundUrl,
-        Instant createdAt, long cardCount, DeckAuthorResponse author, boolean ownDeck, boolean following, long followerCount) {}
+        Instant createdAt, long cardCount, DeckAuthorResponse author, boolean ownDeck, boolean following, long followerCount,
+        Double averageRating, long reviewCount) {}
