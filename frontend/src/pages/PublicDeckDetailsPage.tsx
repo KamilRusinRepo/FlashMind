@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { ExploreApiError, getPublicDeck, getPublicFlashcards, type PublicExploreDeck } from '../api/explore'
 import type { FlashcardPage } from '../api/flashcards'
@@ -6,11 +6,13 @@ import { useAuth } from '../auth/AuthContext'
 import FlashcardPreview from '../components/flashcards/FlashcardPreview'
 import FollowDeckButton, { type FollowState } from '../components/explore/FollowDeckButton'
 import StudyStartButton from '../components/study/StudyStartButton'
+import DeckReviewsPreview from '../components/reviews/DeckReviewsPreview'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
 import './DeckDetails.css'
 import './ExploreDecks.css'
+import './PublicDeckDetails.css'
 
 type LoadState = { status: 'loading' } | { status: 'ready'; deck: PublicExploreDeck; cards: FlashcardPage }
   | { status: 'error'; message: string; code: number }
@@ -34,6 +36,8 @@ function PublicDeckContent({ deckId }: { deckId: number }) {
 }
 
 function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page: number; onPageChange: (page: number) => void }) {
+  const tabsId = useId()
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'reviews'>('flashcards')
   const { t, count, locale } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
@@ -64,7 +68,16 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   const number = new Intl.NumberFormat(locale)
   return <>
     <PublicDeckHeader deck={deck} onChanged={next => setState({ status: 'ready', deck: { ...deck, ...next }, cards })} />
-    <section className="deck-details-flashcards" aria-labelledby="public-flashcards-title">
+    <div className="public-deck-tabs" role="tablist" aria-label={t('Deck sections')}>
+      {(['flashcards', 'reviews'] as const).map((tab, index) => <button key={tab} id={`${tabsId}-${tab}-tab`} type="button" role="tab"
+        aria-selected={activeTab === tab} aria-controls={`${tabsId}-${tab}-panel`} tabIndex={activeTab === tab ? 0 : -1}
+        onClick={() => setActiveTab(tab)} onKeyDown={event => {
+          const next = event.key === 'Home' ? 'flashcards' : event.key === 'End' ? 'reviews'
+            : event.key === 'ArrowLeft' || event.key === 'ArrowRight' ? (index === 0 ? 'reviews' : 'flashcards') : null
+          if (next) { event.preventDefault(); setActiveTab(next); document.getElementById(`${tabsId}-${next}-tab`)?.focus() }
+        }}>{t(tab === 'flashcards' ? 'Flashcards' : 'Reviews')}</button>)}
+    </div>
+    <section className="deck-details-flashcards" role="tabpanel" tabIndex={0} id={`${tabsId}-flashcards-panel`} aria-labelledby={`${tabsId}-flashcards-tab`} hidden={activeTab !== 'flashcards'}>
       <div className="db-section-heading"><h2 id="public-flashcards-title">{t('Flashcards')}</h2><p role="status">{count(cards.totalElements, 'card')}</p></div>
       {cards.totalElements === 0 ? <div className="decks-empty"><h3>{t('No flashcards yet')}</h3><p>{t('This public deck has no flashcards yet.')}</p></div>
         : <div className="flashcard-preview-list">{cards.content.map((card, index) => <FlashcardPreview key={card.id} preview={false}
@@ -76,6 +89,9 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
         <button className="button button-outline" type="button" disabled={page + 1 >= cards.totalPages} onClick={() => onPageChange(page + 1)}>{t('Next →')}</button>
       </nav>}
     </section>
+    <div role="tabpanel" tabIndex={0} id={`${tabsId}-reviews-panel`} aria-labelledby={`${tabsId}-reviews-tab`} hidden={activeTab !== 'reviews'}>
+      <DeckReviewsPreview ownDeck={deck.ownDeck} />
+    </div>
   </>
 }
 
