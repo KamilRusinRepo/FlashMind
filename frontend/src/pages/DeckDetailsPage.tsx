@@ -104,7 +104,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     </div>
     {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
     {exportError && <p className="form-notice form-error" role="alert">{t(exportError)}</p>}
-    {importingCsv && <ImportFlashcardsDialog onCancel={() => setImportingCsv(false)} />}
+    {importingCsv && <ImportFlashcardsDialog deckId={deck.id} onCancel={() => setImportingCsv(false)} />}
     {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
       onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
       onUnavailable={() => navigate('/decks', { replace: true })} />}

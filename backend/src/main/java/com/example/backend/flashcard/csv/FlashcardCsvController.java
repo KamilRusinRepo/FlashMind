@@ -17,12 +17,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/decks/{deckId}/flashcards")
 public class FlashcardCsvController {
     private final FlashcardCsvService csv;
     public FlashcardCsvController(FlashcardCsvService csv) { this.csv = csv; }
+
+    @Operation(summary = "Analyse a CSV file and preview flashcards without saving",
+            description = "Owner only; CSRF required. Multipart field file, UTF-8 with optional BOM, comma separator, unique header names. "
+                    + "Maximum 1 MiB and 1000 flashcards. Row numbers are physical starting lines. Validation errors are returned in the preview; no rows are persisted.")
+    @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CsvPreviewResponse> preview(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "deckId") @Min(1) Long deckId, @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(csv.previewOwned(user.id(), deckId, file));
+    }
 
     @Operation(summary = "Export all flashcards from an owned deck as UTF-8 CSV",
             description = "Owner only, including private decks. Returns all cards in creation order, without pagination. "

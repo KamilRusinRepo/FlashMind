@@ -111,6 +111,7 @@ public class OpenApiConfiguration {
                         || path.contains("study-sessions") || path.endsWith("/follow")))
                     responses.addApiResponse("409", error("Operation conflicts with the current state or a business rule; see message/fieldErrors."));
                 responses.addApiResponse("500", error("Unexpected server error; internal details are not exposed."));
+                if (path.endsWith("/flashcards/import/preview")) responses.addApiResponse("413", error("CSV file exceeds 1 MiB or the multipart request is too large."));
                 if (path.equals("/api/status")) responses.addApiResponse("503", new ApiResponse().description("Database is unavailable; status and database are DOWN.")
                         .content(responses.get("200").getContent()));
             }));

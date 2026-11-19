@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import com.example.backend.admin.AdminUserActionException;
 import com.example.backend.admin.AdminUserEditException;
+import com.example.backend.flashcard.csv.CsvPreviewException;
 
 import com.example.backend.auth.RegistrationConflictException;
 import com.example.backend.user.UsernameConflictException;
@@ -35,6 +36,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(CsvPreviewException.class)
+    public ResponseEntity<ApiError> handleCsvPreview(CsvPreviewException exception, HttpServletRequest request) {
+        return ResponseEntity.status(exception.getStatus()).header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(createError(exception.getStatus(), exception.getMessage(), request.getRequestURI(), Map.of("file", exception.getMessage())));
+    }
 
     @ExceptionHandler(AdminUserEditException.class)
     public ResponseEntity<ApiError> handleAdminUserEdit(AdminUserEditException exception, HttpServletRequest request) {

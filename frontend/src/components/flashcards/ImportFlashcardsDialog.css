@@ -19,6 +19,21 @@
 .csv-example-download { justify-self: start; font-size: .85em; }
 .csv-import-content .flashcard-dialog-actions { margin-top: 0; }
 .csv-import-content button:disabled { opacity: .55; cursor: not-allowed; }
+.csv-preview { display: grid; gap: 16px; min-width: 0; padding-top: 24px; border-top: 1px solid var(--border); }
+.csv-preview-rows { display: grid; gap: 14px; }
+.csv-preview-row { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.csv-preview-row.is-invalid { border-color: var(--danger); }
+.csv-preview-row h4 { margin-bottom: 12px; }
+.csv-preview-row dl { display: grid; gap: 10px; margin: 0; }
+.csv-preview-row dl > div { display: grid; grid-template-columns: minmax(120px, .7fr) minmax(0, 1fr); gap: 12px; }
+.csv-preview-row dt { color: var(--muted); font-size: .75em; overflow-wrap: anywhere; }
+.csv-preview-row dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85em; }
+.csv-preview-row ul, .csv-file-errors { padding-left: 20px; overflow-wrap: anywhere; }
+.csv-preview-row .field-error { margin-top: 12px; }
+.csv-file-errors { color: var(--danger); font-size: .85em; }
+.csv-preview-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: .8em; }
+.csv-preview-pagination .button { font-size: inherit; }
+@media (max-width: 550px) { .csv-preview-row dl > div { grid-template-columns: 1fr; gap: 4px; } }
 @media (max-width: 550px) {
   .csv-columns > div { grid-template-columns: 1fr; gap: 6px; }
   .csv-example-download { justify-self: stretch; text-align: center; }
