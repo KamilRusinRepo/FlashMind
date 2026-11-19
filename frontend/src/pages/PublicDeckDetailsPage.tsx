@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { ExploreApiError, getPublicDeck, getPublicFlashcards, type PublicExploreDeck } from '../api/explore'
 import type { FlashcardPage } from '../api/flashcards'
@@ -6,6 +6,10 @@ import { useAuth } from '../auth/AuthContext'
 import FlashcardPreview from '../components/flashcards/FlashcardPreview'
 import FollowDeckButton, { type FollowState } from '../components/explore/FollowDeckButton'
 import StudyStartButton from '../components/study/StudyStartButton'
+import DeckReviews from '../components/reviews/DeckReviews'
+import DeckRating from '../components/reviews/DeckRating'
+import DeckDetailsTabs from '../components/decks/DeckDetailsTabs'
+import type { RatingSummary } from '../api/reviews'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
@@ -34,10 +38,15 @@ function PublicDeckContent({ deckId }: { deckId: number }) {
 }
 
 function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page: number; onPageChange: (page: number) => void }) {
+  const tabsId = useId()
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'reviews'>('flashcards')
   const { t, count, locale } = useLanguage()
   const { refresh } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const updateRating = useCallback((summary: RatingSummary) => {
+    setState(current => current.status === 'ready' ? { ...current, deck: { ...current.deck, averageRating: summary.averageRating, reviewCount: summary.reviewCount } } : current)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -64,7 +73,8 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   const number = new Intl.NumberFormat(locale)
   return <>
     <PublicDeckHeader deck={deck} onChanged={next => setState({ status: 'ready', deck: { ...deck, ...next }, cards })} />
-    <section className="deck-details-flashcards" aria-labelledby="public-flashcards-title">
+    <DeckDetailsTabs id={tabsId} activeTab={activeTab} onChange={setActiveTab} />
+    <section className="deck-details-flashcards" role="tabpanel" tabIndex={0} id={`${tabsId}-flashcards-panel`} aria-labelledby={`${tabsId}-flashcards-tab`} hidden={activeTab !== 'flashcards'}>
       <div className="db-section-heading"><h2 id="public-flashcards-title">{t('Flashcards')}</h2><p role="status">{count(cards.totalElements, 'card')}</p></div>
       {cards.totalElements === 0 ? <div className="decks-empty"><h3>{t('No flashcards yet')}</h3><p>{t('This public deck has no flashcards yet.')}</p></div>
         : <div className="flashcard-preview-list">{cards.content.map((card, index) => <FlashcardPreview key={card.id} preview={false}
@@ -76,6 +86,9 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
         <button className="button button-outline" type="button" disabled={page + 1 >= cards.totalPages} onClick={() => onPageChange(page + 1)}>{t('Next →')}</button>
       </nav>}
     </section>
+    <div role="tabpanel" tabIndex={0} id={`${tabsId}-reviews-panel`} aria-labelledby={`${tabsId}-reviews-tab`} hidden={activeTab !== 'reviews'}>
+      <DeckReviews deckId={deck.id} ownDeck={deck.ownDeck} onRatingChange={updateRating} />
+    </div>
   </>
 }
 
@@ -105,6 +118,7 @@ function PublicDeckHeader({ deck, onChanged }: { deck: PublicExploreDeck; onChan
       </dl>
       <p className="decks-result-count">{count(deck.cardCount, 'card')}</p>
       <p className="decks-result-count">{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</p>
+      <DeckRating averageRating={deck.averageRating} reviewCount={deck.reviewCount} />
       <div className="deck-details-actions">
         {deck.ownDeck ? <Link className="button button-primary" to={`/decks/${deck.id}`}>{t('Manage Deck')}</Link>
           : <FollowDeckButton deckId={deck.id} following={deck.following} followerCount={deck.followerCount} onChanged={onChanged} />}

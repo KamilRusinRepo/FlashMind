@@ -40,7 +40,11 @@
 .explore-deck-description { flex: 1; margin-block: 12px; color: var(--muted); font-size: .9em; line-height: 1.6; overflow-wrap: anywhere; }
 .explore-deck-languages { color: var(--muted); font-size: .75em; margin-bottom: 16px; }
 .explore-deck-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; color: var(--muted); font-size: .8em; font-weight: 650; }
-.explore-deck-rating { margin-left: auto; white-space: nowrap; color: var(--primary-dark); }
+.explore-deck-meta > span { white-space: nowrap; }
+.explore-deck-meta .deck-rating { flex-wrap: nowrap; gap: 6px; font-size: inherit; white-space: nowrap; }
+.explore-deck-meta .deck-rating strong { color: var(--text); }
+.explore-deck-meta .review-stars { flex-shrink: 0; gap: 1px; }
+.explore-deck-meta .review-star, .explore-deck-meta .review-star svg { width: 14px; height: 14px; }
 .explore-deck-actions { display: flex; justify-content: center; padding: 10px 24px 24px; }
 .explore-follow-button { display: flex; align-items: center; justify-content: center; gap: 9px; width: min(210px, 100%); min-height: 44px; padding: 10px 16px; border: 2px solid var(--primary-dark); border-radius: 14px; background: transparent; color: var(--primary-dark); font: inherit; font-size: .85em; font-weight: 750; }
 .explore-follow-button:disabled { cursor: not-allowed; opacity: .65; }

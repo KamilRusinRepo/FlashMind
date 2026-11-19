@@ -1,0 +1,6 @@
+.public-deck-tabs { display: flex; gap: 8px; margin-bottom: 26px; border-bottom: 1px solid var(--border); }
+.public-deck-tabs button { min-height: 48px; padding: 12px 24px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font: inherit; font-weight: 650; font-size: .9em; cursor: pointer; }
+.public-deck-tabs button:hover { color: var(--primary-dark); background: var(--surface-soft, #eff8f3); }
+.public-deck-tabs button[aria-selected='true'] { border-bottom-color: var(--primary-dark); color: var(--primary-dark); }
+.public-deck-tabs button:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: -3px; border-radius: 8px 8px 0 0; }
+@media (max-width: 550px) { .public-deck-tabs button { flex: 1; min-width: 0; padding-inline: 12px; } }

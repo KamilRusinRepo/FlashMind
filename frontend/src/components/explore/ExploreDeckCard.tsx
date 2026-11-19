@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router'
 import { categoryName, languageName } from '../../i18n/labels'
 import type { PublicExploreDeck } from '../../api/explore'
 import FollowDeckButton from './FollowDeckButton'
+import DeckRating from '../reviews/DeckRating'
 
 export default function ExploreDeckCard({ deck: initialDeck }: { deck: PublicExploreDeck }) {
   const [deck, setDeck] = useState(initialDeck)
@@ -21,7 +22,11 @@ export default function ExploreDeckCard({ deck: initialDeck }: { deck: PublicExp
       <p className="explore-deck-author">{t('By {0}', [deck.author.id === null ? t('Deleted user') : deck.author.displayName])}</p>
       {deck.description?.trim() && <p className="explore-deck-description">{deck.description}</p>}
       <p className="explore-deck-languages">{languageName(deck.sourceLanguage, t)}{deck.targetLanguage && <> → {languageName(deck.targetLanguage, t)}</>}</p>
-      <div className="explore-deck-meta"><span>{count(deck.cardCount, 'card')}</span><span>{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</span></div>
+      <div className="explore-deck-meta">
+        <span>{count(deck.cardCount, 'card')}</span>
+        <span>{t('Followers: {0}', [deck.followerCount.toLocaleString(locale)])}</span>
+        <DeckRating averageRating={deck.averageRating} reviewCount={deck.reviewCount} />
+      </div>
     </div>
     <div className="explore-deck-actions"><FollowDeckButton deckId={deck.id} following={deck.following} ownDeck={deck.ownDeck}
       followerCount={deck.followerCount} onChanged={next => setDeck(value => ({ ...value, ...next }))} /></div>

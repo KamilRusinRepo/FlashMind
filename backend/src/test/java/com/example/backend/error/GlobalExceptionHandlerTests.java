@@ -3,6 +3,7 @@ package com.example.backend.error;
 import com.example.backend.auth.token.InvalidTokenException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,6 +14,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -56,6 +58,22 @@ class GlobalExceptionHandlerTests {
                 .andExpect(jsonPath("$.fieldErrors.username").value("Username is required."))
                 .andExpect(jsonPath("$.fieldErrors.password").value("Password is required."))
                 .andExpect(jsonPath("$.rejectedValue").doesNotExist());
+    }
+
+    @Test
+    void preservesBodyFieldErrorsWhenPathConstraintsEnableMethodValidation() throws Exception {
+        mvc.perform(post("/test/errors/validate/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"\",\"password\":\"private-submitted-value\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.username").value("Username is required."))
+                .andExpect(content().string(not(containsString("private-submitted-value"))));
+        mvc.perform(post("/test/errors/validate/0")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"ValidName\",\"password\":\"private-submitted-value\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors").isMap())
+                .andExpect(content().string(not(containsString("private-submitted-value"))));
     }
 
     @Test
@@ -143,6 +161,10 @@ class GlobalExceptionHandlerTests {
 
         @PostMapping(value = "/validate", consumes = MediaType.APPLICATION_JSON_VALUE)
         void validate(@Valid @RequestBody TestRequest request) {
+        }
+
+        @PostMapping(value = "/validate/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+        void validateWithPath(@PathVariable("id") @Min(1) Long id, @Valid @RequestBody TestRequest request) {
         }
 
         @GetMapping("/number")

@@ -23,6 +23,8 @@ public class ExploreRepository {
                d.background_url, d.created_at, author.id AS author_id, author.username AS author_name,
                (SELECT COUNT(*) FROM flashcards card WHERE card.deck_id = d.id) AS card_count,
                (SELECT COUNT(*) FROM deck_follows follow WHERE follow.deck_id = d.id) AS follower_count,
+               (SELECT AVG(review.rating) FROM deck_reviews review WHERE review.deck_id = d.id) AS average_rating,
+               (SELECT COUNT(*) FROM deck_reviews review WHERE review.deck_id = d.id) AS review_count,
                EXISTS(SELECT 1 FROM deck_follows follow WHERE follow.deck_id = d.id AND follow.user_id = :viewerId) AS following
         """;
 
@@ -80,11 +82,13 @@ public class ExploreRepository {
     }
 
     private PublicDeckResponse mapDeck(ResultSet rs, Long viewerId) throws SQLException {
+        var averageRating = rs.getBigDecimal("average_rating");
         Long authorId = rs.getObject("author_id", Long.class);
         var author = new DeckAuthorResponse(authorId, authorId == null ? "Deleted user" : rs.getString("author_name"));
         return new PublicDeckResponse(rs.getLong("id"), rs.getString("name"), rs.getString("description"),
                 DeckType.valueOf(rs.getString("deck_type")), rs.getString("category"), rs.getString("source_language"),
                 rs.getString("target_language"), rs.getString("background_url"), rs.getTimestamp("created_at").toInstant(),
-                rs.getLong("card_count"), author, Objects.equals(viewerId, authorId), rs.getBoolean("following"), rs.getLong("follower_count"));
+                rs.getLong("card_count"), author, Objects.equals(viewerId, authorId), rs.getBoolean("following"), rs.getLong("follower_count"),
+                averageRating == null ? null : averageRating.doubleValue(), rs.getLong("review_count"));
     }
 }

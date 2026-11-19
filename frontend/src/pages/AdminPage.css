@@ -54,6 +54,11 @@
 .admin-table tbody th { font-weight: 650; max-width: 250px; overflow-wrap: anywhere; }
 .admin-table tbody tr:last-child > * { border-bottom: 0; }
 .admin-table tbody tr:hover { background: var(--admin-soft); }
+.admin-reviews-description { margin-bottom: 20px; color: var(--muted); font-size: .85em; line-height: 1.7; }
+.admin-review-visibility { display: block; width: fit-content; margin-top: 8px; }
+.admin-reviews-table .admin-review-comment { min-width: 200px; max-width: 440px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-review-author { max-width: 180px; overflow-wrap: anywhere; }
+.admin-reviews-table .review-stars { white-space: nowrap; }
 .admin-user-cell { display: flex; align-items: center; gap: 12px; }
 .admin-avatar { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 12px; background: var(--admin-soft); color: var(--primary-dark); }
 .admin-user-cell > div { display: grid; gap: 4px; }

@@ -1,11 +1,12 @@
 import { isFlashcard, type FlashcardPage } from './flashcards'
 import { requestWithCsrf } from './csrf'
+import { isRatingSummary } from './reviews'
 
 export type PublicExploreDeck = {
   id: number; name: string; description: string | null; deckType: 'GENERAL' | 'LANGUAGE'
   category: string | null; sourceLanguage: string; targetLanguage: string | null; backgroundUrl: string | null
   createdAt: string; cardCount: number; author: { id: number | null; displayName: string }; ownDeck: boolean
-  following: boolean; followerCount: number
+  following: boolean; followerCount: number; averageRating: number | null; reviewCount: number
 }
 export type PublicDeckPage = { content: PublicExploreDeck[]; page: number; size: number; totalElements: number; totalPages: number }
 export class ExploreApiError extends Error {
@@ -23,6 +24,7 @@ export function isPublicDeck(value: unknown): value is PublicExploreDeck {
     && typeof deck.createdAt === 'string' && !Number.isNaN(Date.parse(deck.createdAt))
     && Number.isSafeInteger(deck.cardCount) && Number(deck.cardCount) >= 0 && typeof deck.ownDeck === 'boolean'
     && typeof deck.following === 'boolean' && Number.isSafeInteger(deck.followerCount) && Number(deck.followerCount) >= 0
+    && isRatingSummary(deck)
     && !!author && typeof author === 'object' && (author.id === null || Number.isSafeInteger(author.id) && Number(author.id) > 0) && typeof author.displayName === 'string'
 }
 export async function getPublicDecks(query: string, page: number, signal: AbortSignal): Promise<PublicDeckPage> {
