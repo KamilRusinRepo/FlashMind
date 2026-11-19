@@ -178,7 +178,7 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
             assertEquals(404, client.postReview(hidden.getId(), valid, true).statusCode());
             for (String body : new String[]{"{}", "{\"rating\":null}", "{\"rating\":0}", "{\"rating\":6}", "{\"rating\":4.5}"}) {
                 var response = client.postReview(deck.getId(), body, true);
-                assertEquals(400, response.statusCode(), response.body()); assertTrue(json.readTree(response.body()).get("fieldErrors").has("rating"));
+                assertEquals(400, response.statusCode(), response.body()); assertTrue(json.readTree(response.body()).get("fieldErrors").has("rating"), body + ": " + response.body());
             }
             var tooLong = client.postReview(deck.getId(), json.writeValueAsString(Map.of("rating", 4, "comment", "x".repeat(1001))), true);
             assertEquals(400, tooLong.statusCode()); assertTrue(json.readTree(tooLong.body()).get("fieldErrors").has("comment"));
@@ -275,9 +275,9 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
                 assertEquals(404, client.changeReview(method, deck.getId(), Long.MAX_VALUE, body, true).statusCode());
                 assertEquals(400, client.changeReview(method, deck.getId(), 0L, body, true).statusCode());
             }
-            for (String invalid : new String[]{"{}", "{\"rating\":0}", "{\"rating\":6}", "{\"rating\":4.5}"}) {
+            for (String invalid : new String[]{"{}", "{\"rating\":null}", "{\"rating\":0}", "{\"rating\":6}", "{\"rating\":4.5}"}) {
                 var result = client.changeReview("PUT", deck.getId(), own.getId(), invalid, true);
-                assertEquals(400, result.statusCode(), result.body()); assertTrue(json.readTree(result.body()).get("fieldErrors").has("rating"));
+                assertEquals(400, result.statusCode(), result.body()); assertTrue(json.readTree(result.body()).get("fieldErrors").has("rating"), invalid + ": " + result.body());
             }
             var tooLong = client.changeReview("PUT", deck.getId(), own.getId(), json.writeValueAsString(Map.of("rating", 5, "comment", "x".repeat(1001))), true);
             assertEquals(400, tooLong.statusCode()); assertTrue(json.readTree(tooLong.body()).get("fieldErrors").has("comment"));

@@ -27,6 +27,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
@@ -117,6 +119,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage()));
 
         ApiError body = createError(status, "Please check the submitted fields.", path(request), fieldErrors);
+        return handleExceptionInternal(exception, body, headers, status, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request
+    ) {
+        // Constraints on path/query parameters enable method validation for the whole endpoint,
+        // including @Valid request bodies. Preserve their field errors just as for body-only validation.
+        if (exception.isForReturnValue()) return handleExceptionInternal(exception, null, headers, status, request);
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        for (var result : exception.getParameterValidationResults()) {
+            if (result instanceof ParameterErrors errors) {
+                errors.getFieldErrors().forEach(error -> fieldErrors.putIfAbsent(error.getField(),
+                        error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage()));
+            }
+        }
+        ApiError body = createError(status, fieldErrors.isEmpty() ? messageFor(status) : "Please check the submitted fields.", path(request), fieldErrors);
         return handleExceptionInternal(exception, body, headers, status, request);
     }
 
