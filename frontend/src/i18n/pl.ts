@@ -1,9 +1,12 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'Exporting CSV…': 'Eksportowanie CSV…',
+  'Unable to export flashcards. Check your connection and try again.': 'Nie udało się wyeksportować fiszek. Sprawdź połączenie i spróbuj ponownie.',
+  'Unable to export flashcards. Please try again.': 'Nie udało się wyeksportować fiszek. Spróbuj ponownie.',
+  'The server returned an unexpected CSV file. Please try again.': 'Serwer zwrócił nieprawidłowy plik CSV. Spróbuj ponownie.',
   'Import CSV': 'Importuj CSV',
   'Export CSV': 'Eksportuj CSV',
-  'CSV export will be available in a later step.': 'Eksport CSV będzie dostępny w kolejnym etapie.',
   'Add multiple flashcards to this deck using a CSV file.': 'Dodaj wiele fiszek do tej talii za pomocą pliku CSV.',
   'Import is not available yet. You can choose a file, but it will not be uploaded or saved.': 'Import nie jest jeszcze dostępny. Możesz wybrać plik, ale nie zostanie on przesłany ani zapisany.',
   'CSV file': 'Plik CSV',

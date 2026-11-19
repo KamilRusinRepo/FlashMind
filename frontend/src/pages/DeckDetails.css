@@ -20,7 +20,6 @@
 .deck-details-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .deck-details-actions .button { font-size: .9em; }
 .deck-details-actions .button:disabled { opacity: .55; cursor: not-allowed; }
-.deck-csv-export-hint { margin-top: 12px; }
 .deck-details-flashcards { padding-bottom: 32px; }
 .deck-details-flashcards > .db-section-heading { flex-wrap: wrap; }
 .deck-details-flashcards > .db-section-heading .button { font-size: .85em; min-height: 44px; padding: 10px 16px; }

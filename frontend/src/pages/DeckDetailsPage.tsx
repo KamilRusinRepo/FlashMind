@@ -11,6 +11,7 @@ import FlashcardDialog from '../components/flashcards/FlashcardDialog'
 import FlashcardForm from '../components/flashcards/FlashcardForm'
 import DeleteFlashcardDialog from '../components/flashcards/DeleteFlashcardDialog'
 import ImportFlashcardsDialog from '../components/flashcards/ImportFlashcardsDialog'
+import ExportFlashcardsButton from '../components/flashcards/ExportFlashcardsButton'
 import DeleteDeckDialog from '../components/decks/DeleteDeckDialog'
 import type { PreviewFlashcard } from '../data/flashcardPreview'
 import './MyDecks.css'
@@ -62,6 +63,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
   const navigate = useNavigate()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [importingCsv, setImportingCsv] = useState(false)
+  const [exportError, setExportError] = useState('')
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const languageDeck = deck.deckType === 'LANGUAGE'
   const [dialog, setDialog] = useState<{ mode: 'create' } | { mode: 'edit' | 'delete'; card: PreviewFlashcard } | null>(null)
@@ -94,14 +96,14 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>{t("Edit Deck")}</Link>
       <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>{t("＋ Add Flashcard")}</button>
       <button className="button button-outline" type="button" aria-haspopup="dialog" onClick={() => setImportingCsv(true)}>{t('Import CSV')}</button>
-      <button className="button button-outline" type="button" disabled aria-describedby="csv-export-hint">{t('Export CSV')}</button>
+      <ExportFlashcardsButton deckId={deck.id} onError={setExportError} />
       <StudyStartButton deckId={deck.id} />
       <button className="button deck-delete-button" type="button" onClick={() => setConfirmingDelete(true)}>{t('Delete Deck')}</button>
     </div>
-    <p className="field-hint deck-csv-export-hint" id="csv-export-hint">{t('CSV export will be available in a later step.')}</p>
     </div>
     </div>
     {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+    {exportError && <p className="form-notice form-error" role="alert">{t(exportError)}</p>}
     {importingCsv && <ImportFlashcardsDialog onCancel={() => setImportingCsv(false)} />}
     {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
       onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
