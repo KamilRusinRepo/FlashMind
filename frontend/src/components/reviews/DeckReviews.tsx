@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import RatingStars from './RatingStars'
 import ReviewForm from './ReviewForm'
+import OwnReview from './OwnReview'
 import './DeckReviews.css'
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: ReviewPage }
@@ -36,6 +37,7 @@ export default function DeckReviews({ deckId, ownDeck, ownerView = false, onRati
   const number = new Intl.NumberFormat(locale)
   const summary = state.status === 'ready' ? state.data.summary : null
   function changePage(next: number) { setState({ status: 'loading' }); setPage(next) }
+  function reload(message = '') { setNotice(message); setState({ status: 'loading' }); setPage(0); setAttempt(value => value + 1) }
   return <section className="deck-reviews" id="public-deck-reviews" aria-labelledby={`${id}-title`}>
     <div className="db-section-heading"><h2 id={`${id}-title`}>{t('Ratings and reviews')}</h2></div>
     {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
@@ -58,13 +60,10 @@ export default function DeckReviews({ deckId, ownDeck, ownerView = false, onRati
         </>}
       </div>
       {ownDeck ? <div className="review-own-note"><h3>{t('Your deck')}</h3><p>{t('You cannot review your own deck.')}</p></div>
-        : state.status === 'ready' && state.data.ownReview ? <div className="review-own-note">
-          <h3>{t('Your review')}</h3><RatingStars rating={state.data.ownReview.rating} />
-          {state.data.ownReview.comment && <p className="review-comment">{state.data.ownReview.comment}</p>}
-          <p>{t('You have already reviewed this deck.')}</p>
-        </div> : <ReviewForm key={attempt} deckId={deckId} disabled={state.status !== 'ready'}
-          onCreated={() => { setNotice('Your review has been added.'); setState({ status: 'loading' }); setPage(0); setAttempt(value => value + 1) }}
-          onRefresh={() => { setNotice(''); setState({ status: 'loading' }); setAttempt(value => value + 1) }} />}
+        : state.status === 'ready' && state.data.ownReview ? <OwnReview key={attempt} deckId={deckId} review={state.data.ownReview}
+          onChanged={reload} onRefresh={() => reload()} /> : <ReviewForm key={attempt} deckId={deckId} disabled={state.status !== 'ready'}
+          onSaved={() => reload('Your review has been added.')}
+          onRefresh={() => reload()} />}
     </div>
     {state.status === 'ready' && <>
       {state.data.totalElements === 0 ? <div className="decks-empty review-list"><h3>{t('No reviews yet')}</h3><p>{t('This deck has not been reviewed yet.')}</p></div>

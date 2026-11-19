@@ -7,6 +7,8 @@ import com.example.backend.deck.review.dto.request.CreateDeckReviewRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.Max;
@@ -30,6 +32,24 @@ public class DeckReviewController {
     public ResponseEntity<DeckReviewResponse> create(@AuthenticationPrincipal SessionUser viewer,
             @PathVariable("deckId") @Min(1) Long deckId, @Valid @RequestBody CreateDeckReviewRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(reviews.createPublic(viewer, deckId, request));
+    }
+
+    @Operation(summary = "Edit your own review of a public deck",
+            description = "Author only, active verified session and CSRF required. Same rating/comment validation as creation. Private, missing and another user's reviews return 404.")
+    @PutMapping("/api/explore/decks/{deckId}/reviews/{reviewId}")
+    public ResponseEntity<DeckReviewResponse> update(@AuthenticationPrincipal SessionUser viewer,
+            @PathVariable("deckId") @Min(1) Long deckId, @PathVariable("reviewId") @Min(1) Long reviewId,
+            @Valid @RequestBody CreateDeckReviewRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(reviews.updateOwn(viewer, deckId, reviewId, request));
+    }
+
+    @Operation(summary = "Delete your own review of a public deck",
+            description = "Author only, active verified session and CSRF required. Private, missing and another user's reviews return 404. Rating aggregates reflect the deletion immediately.")
+    @DeleteMapping("/api/explore/decks/{deckId}/reviews/{reviewId}")
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal SessionUser viewer,
+            @PathVariable("deckId") @Min(1) Long deckId, @PathVariable("reviewId") @Min(1) Long reviewId) {
+        reviews.deleteOwn(viewer, deckId, reviewId);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     @Operation(summary = "List public deck reviews and overall rating statistics",

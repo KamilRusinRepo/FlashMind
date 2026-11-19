@@ -1,4 +1,4 @@
-import { postWithCsrf } from './csrf'
+import { requestWithCsrf } from './csrf'
 
 export type RatingSummary = { averageRating: number | null; reviewCount: number }
 export type Review = { id: number; author: { id: number; displayName: string }; rating: number; comment: string | null; createdAt: string; updatedAt: string; ownReview: boolean }
@@ -62,11 +62,19 @@ export async function getDeckReviews(deckId: number, page: number, signal: Abort
 }
 
 export async function createDeckReview(deckId: number, rating: number, comment: string, signal: AbortSignal): Promise<Review> {
+  return saveDeckReview(deckId, rating, comment, signal)
+}
+
+export async function updateDeckReview(deckId: number, reviewId: number, rating: number, comment: string, signal: AbortSignal): Promise<Review> {
+  return saveDeckReview(deckId, rating, comment, signal, reviewId)
+}
+
+async function saveDeckReview(deckId: number, rating: number, comment: string, signal: AbortSignal, reviewId?: number): Promise<Review> {
   const request = { rating, comment: comment.trim() || null }
   const uncertain = 'Unable to confirm your review. Refresh reviews before trying again.'
   let response: Response
   try {
-    response = await postWithCsrf(`/api/explore/decks/${deckId}/reviews`, {
+    response = await requestWithCsrf(`/api/explore/decks/${deckId}/reviews${reviewId === undefined ? '' : `/${reviewId}`}`, reviewId === undefined ? 'POST' : 'PUT', {
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     })
   } catch { throw new ReviewsApiError(uncertain, 0, {}, true) }
@@ -78,11 +86,27 @@ export async function createDeckReview(deckId: number, rating: number, comment: 
     throw new ReviewsApiError(Object.keys(fields).length ? 'Please check the highlighted fields.'
       : response.status === 401 ? 'Your session has expired. Please sign in again.'
         : response.status === 403 ? 'You do not have permission to access this resource.'
-          : response.status === 404 ? 'This public deck is no longer available.'
-            : conflict ? data.message : response.status >= 500 ? uncertain : 'Unable to add your review. Please try again.', response.status, fields, response.status >= 500)
+          : response.status === 404 ? (reviewId === undefined ? 'This public deck is no longer available.' : 'This review is no longer available for editing.')
+            : conflict ? data.message : response.status >= 500 ? uncertain : reviewId === undefined ? 'Unable to add your review. Please try again.' : 'Unable to update your review. Please try again.', response.status, fields, response.status >= 500)
   }
-  if (response.status !== 201 || !isReview(data) || !data.ownReview || data.rating !== request.rating || data.comment !== request.comment) {
+  if (response.status !== (reviewId === undefined ? 201 : 200) || !isReview(data) || !data.ownReview
+    || (reviewId !== undefined && data.id !== reviewId) || data.rating !== request.rating || data.comment !== request.comment) {
     throw new ReviewsApiError(uncertain, response.status, {}, true)
   }
   return data
+}
+
+export async function deleteDeckReview(deckId: number, reviewId: number, signal: AbortSignal): Promise<void> {
+  const uncertain = 'Unable to confirm deletion. Refresh reviews before trying again.'
+  let response: Response
+  try {
+    response = await requestWithCsrf(`/api/explore/decks/${deckId}/reviews/${reviewId}`, 'DELETE', {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
+    })
+  } catch { throw new ReviewsApiError(uncertain, 0, {}, true) }
+  if (!response.ok) throw new ReviewsApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
+    : response.status === 403 ? 'You do not have permission to access this resource.'
+      : response.status === 404 ? 'This review is no longer available for editing.'
+        : response.status >= 500 ? uncertain : 'Unable to delete your review. Please try again.', response.status, {}, response.status >= 500)
+  if (response.status !== 204) throw new ReviewsApiError(uncertain, response.status, {}, true)
 }

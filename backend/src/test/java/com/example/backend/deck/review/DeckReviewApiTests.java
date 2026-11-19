@@ -211,6 +211,85 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void authorCanEditDeleteAndReviewAgainWithUpdatedAggregates() throws Exception {
+        var owner = account(); var viewer = account(); var other = account(); var deck = deck(owner, true);
+        var own = reviews.saveAndFlush(new DeckReview(viewer, deck, 2, "Original"));
+        reviews.saveAndFlush(new DeckReview(other, deck, 3, null));
+        String path = "/api/explore/decks/" + deck.getId() + "/reviews";
+        try (var client = new Client()) {
+            client.login(viewer);
+            var response = client.changeReview("PUT", deck.getId(), own.getId(), "{\"rating\":5,\"comment\":\"  Updated  \"}", true);
+            assertEquals(200, response.statusCode(), response.body());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+            var updated = json.readTree(response.body());
+            assertEquals(own.getId().longValue(), updated.get("id").asLong());
+            assertEquals(viewer.getId().longValue(), updated.get("author").get("id").asLong());
+            assertEquals(5, updated.get("rating").asInt()); assertEquals("Updated", updated.get("comment").asText());
+            // PostgreSQL timestamps have microsecond precision; Java Instant can retain nanoseconds.
+            assertTrue(Duration.between(own.getCreatedAt(), Instant.parse(updated.get("createdAt").asText())).abs().compareTo(Duration.ofMillis(1)) < 0);
+            assertTrue(Instant.parse(updated.get("updatedAt").asText()).compareTo(own.getUpdatedAt()) >= 0);
+            var page = json.readTree(client.get(path).body());
+            assertEquals(2, page.get("summary").get("reviewCount").asInt());
+            assertEquals(4.0, page.get("summary").get("averageRating").asDouble());
+            assertEquals("Updated", page.get("ownReview").get("comment").asText());
+            assertEquals(200, client.changeReview("PUT", deck.getId(), own.getId(), "{\"rating\":5,\"comment\":\"   \"}", true).statusCode());
+            assertNull(reviews.findById(own.getId()).orElseThrow().getComment());
+            var removed = client.changeReview("DELETE", deck.getId(), own.getId(), "", true);
+            assertEquals(204, removed.statusCode(), removed.body()); assertEquals("", removed.body());
+            assertEquals("no-store", removed.headers().firstValue("Cache-Control").orElseThrow());
+            assertFalse(reviews.existsById(own.getId()));
+            page = json.readTree(client.get(path).body());
+            assertTrue(page.get("ownReview").isNull());
+            assertEquals(1, page.get("summary").get("reviewCount").asInt());
+            assertEquals(3.0, page.get("summary").get("averageRating").asDouble());
+            assertEquals(404, client.changeReview("DELETE", deck.getId(), own.getId(), "", true).statusCode());
+            assertEquals(201, client.postReview(deck.getId(), "{\"rating\":4}", true).statusCode());
+            client.login(other);
+            var remaining = reviews.findByUser_IdAndDeck_Id(other.getId(), deck.getId()).orElseThrow();
+            assertEquals(204, client.changeReview("DELETE", deck.getId(), remaining.getId(), "", true).statusCode());
+            client.login(viewer);
+            remaining = reviews.findByUser_IdAndDeck_Id(viewer.getId(), deck.getId()).orElseThrow();
+            assertEquals(204, client.changeReview("DELETE", deck.getId(), remaining.getId(), "", true).statusCode());
+            page = json.readTree(client.get(path).body());
+            assertEquals(0, page.get("summary").get("reviewCount").asInt());
+            assertTrue(page.get("summary").get("averageRating").isNull());
+        }
+    }
+
+    @Test void editAndDeleteRequireAuthorPublicDeckCsrfAndValidContent() throws Exception {
+        var owner = account(); var viewer = account(); var stranger = account(); var deck = deck(owner, true); var another = deck(owner, true);
+        var own = reviews.saveAndFlush(new DeckReview(viewer, deck, 4, "Keep"));
+        String body = "{\"rating\":1}";
+        try (var client = new Client()) {
+            for (String method : new String[]{"PUT", "DELETE"})
+                assertEquals(401, client.changeReview(method, deck.getId(), own.getId(), body, true).statusCode());
+            for (var account : new User[]{owner, stranger}) {
+                client.login(account);
+                for (String method : new String[]{"PUT", "DELETE"})
+                    assertEquals(404, client.changeReview(method, deck.getId(), own.getId(), body, true).statusCode());
+            }
+            client.login(viewer);
+            for (String method : new String[]{"PUT", "DELETE"}) {
+                assertEquals(403, client.changeReview(method, deck.getId(), own.getId(), body, false).statusCode());
+                assertEquals(404, client.changeReview(method, another.getId(), own.getId(), body, true).statusCode());
+                assertEquals(404, client.changeReview(method, deck.getId(), Long.MAX_VALUE, body, true).statusCode());
+                assertEquals(400, client.changeReview(method, deck.getId(), 0L, body, true).statusCode());
+            }
+            for (String invalid : new String[]{"{}", "{\"rating\":0}", "{\"rating\":6}", "{\"rating\":4.5}"}) {
+                var result = client.changeReview("PUT", deck.getId(), own.getId(), invalid, true);
+                assertEquals(400, result.statusCode(), result.body()); assertTrue(json.readTree(result.body()).get("fieldErrors").has("rating"));
+            }
+            var tooLong = client.changeReview("PUT", deck.getId(), own.getId(), json.writeValueAsString(Map.of("rating", 5, "comment", "x".repeat(1001))), true);
+            assertEquals(400, tooLong.statusCode()); assertTrue(json.readTree(tooLong.body()).get("fieldErrors").has("comment"));
+            deck.setPublic(false); decks.saveAndFlush(deck);
+            for (String method : new String[]{"PUT", "DELETE"})
+                assertEquals(404, client.changeReview(method, deck.getId(), own.getId(), body, true).statusCode());
+            var unchanged = reviews.findById(own.getId()).orElseThrow();
+            assertEquals(4, unchanged.getRating()); assertEquals("Keep", unchanged.getComment());
+            assertEquals(1, reviews.count());
+        }
+    }
+
     private int createStatus(Client client, Long deckId, String token) {
         try { return client.postReviewWithToken(deckId, "{\"rating\":5}", token).statusCode(); }
         catch (Exception exception) { throw new CompletionException(exception); }
@@ -249,6 +328,12 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
                     .header("Content-Type", "application/json");
             if (token != null) request.header("X-CSRF-TOKEN", token);
             return http.send(request.POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        }
+        HttpResponse<String> changeReview(String method, Long deckId, Long reviewId, String body, boolean withCsrf) throws Exception {
+            var request = HttpRequest.newBuilder(endpoint("/api/explore/decks/" + deckId + "/reviews/" + reviewId)).timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json");
+            if (withCsrf) request.header("X-CSRF-TOKEN", csrf());
+            return http.send(request.method(method, method.equals("DELETE") ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         }
         @Override public void close() { http.close(); }
     }

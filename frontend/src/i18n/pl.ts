@@ -1,5 +1,15 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Edit review': 'Edytuj recenzję',
+  'Delete review': 'Usuń recenzję',
+  'Delete review?': 'Usunąć recenzję?',
+  'Your review has been updated.': 'Twoja recenzja została zaktualizowana.',
+  'Your review has been deleted.': 'Twoja recenzja została usunięta.',
+  'Your rating and comment will be permanently deleted. You can write a new review afterwards.': 'Twoja ocena i komentarz zostaną trwale usunięte. Później możesz napisać nową recenzję.',
+  'This review is no longer available for editing.': 'Ta recenzja nie jest już dostępna do edycji lub usunięcia.',
+  'Unable to update your review. Please try again.': 'Nie udało się zaktualizować recenzji. Spróbuj ponownie.',
+  'Unable to delete your review. Please try again.': 'Nie udało się usunąć recenzji. Spróbuj ponownie.',
+  'Unable to confirm deletion. Refresh reviews before trying again.': 'Nie udało się potwierdzić usunięcia. Odśwież recenzje przed kolejną próbą.',
   'ADMINISTRATION': 'ADMINISTRACJA',
   'Choose a whole-star rating from 1 to 5.': 'Wybierz ocenę od 1 do 5 pełnych gwiazdek.',
   'You have already reviewed this deck.': 'Ta talia ma już Twoją recenzję.',
