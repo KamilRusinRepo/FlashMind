@@ -25,16 +25,16 @@ function isReview(value: unknown): value is Review {
     && typeof review.updatedAt === 'string' && !Number.isNaN(Date.parse(review.updatedAt))
 }
 
-export async function getDeckReviews(deckId: number, page: number, signal: AbortSignal): Promise<ReviewPage> {
+export async function getDeckReviews(deckId: number, page: number, signal: AbortSignal, owned = false): Promise<ReviewPage> {
   let response: Response
   try {
-    response = await fetch(`/api/explore/decks/${deckId}/reviews?${new URLSearchParams({ page: String(page), size: '5' })}`, {
+    response = await fetch(`${owned ? '/api/decks' : '/api/explore/decks'}/${deckId}/reviews?${new URLSearchParams({ page: String(page), size: '5' })}`, {
       credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer', signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
     })
   } catch { throw new ReviewsApiError('Unable to load reviews. Check your connection and try again.') }
   if (!response.ok) throw new ReviewsApiError(response.status === 401 ? 'Your session has expired. Please sign in again.'
     : response.status === 403 ? 'You do not have permission to access this resource.'
-      : response.status === 404 ? 'This public deck is no longer available.' : 'Unable to load reviews. Please try again.', response.status)
+      : response.status === 404 ? (owned ? 'This deck is unavailable or does not belong to your account.' : 'This public deck is no longer available.') : 'Unable to load reviews. Please try again.', response.status)
   const data = await response.json().catch(() => null)
   const summary = data?.summary
   if (response.status !== 200 || !data || !Array.isArray(data.content) || !data.content.every(isReview) || data.content.length > 5

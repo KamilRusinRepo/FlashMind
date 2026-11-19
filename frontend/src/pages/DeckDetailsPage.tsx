@@ -1,6 +1,6 @@
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { DeckApiError, getStudyDeck, type OwnedDeck } from '../api/decks'
 import { createFlashcard, updateFlashcard } from '../api/flashcards'
@@ -13,6 +13,9 @@ import DeleteFlashcardDialog from '../components/flashcards/DeleteFlashcardDialo
 import ImportFlashcardsDialog from '../components/flashcards/ImportFlashcardsDialog'
 import ExportFlashcardsButton from '../components/flashcards/ExportFlashcardsButton'
 import DeleteDeckDialog from '../components/decks/DeleteDeckDialog'
+import DeckDetailsTabs, { type DeckDetailsTab } from '../components/decks/DeckDetailsTabs'
+import DeckReviews from '../components/reviews/DeckReviews'
+import { getDeckReviews, ReviewsApiError } from '../api/reviews'
 import type { PreviewFlashcard } from '../data/flashcardPreview'
 import './MyDecks.css'
 import './DeckDetails.css'
@@ -59,6 +62,24 @@ function DeckDetailsLoader({ deckId }: { deckId: number }) {
 }
 
 function DeckDetails({ deck }: { deck: OwnedDeck }) {
+  const tabsId = useId()
+  const [activeTab, setActiveTab] = useState<DeckDetailsTab>('flashcards')
+  const { refresh } = useAuth()
+  const [privateReviews, setPrivateReviews] = useState<{ status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; hasReviews: boolean }>({ status: 'loading' })
+  const [reviewAttempt, setReviewAttempt] = useState(0)
+  useEffect(() => {
+    if (deck.publicDeck) return
+    const controller = new AbortController()
+    getDeckReviews(deck.id, 0, controller.signal, true).then(data => {
+      if (!controller.signal.aborted) setPrivateReviews({ status: 'ready', hasReviews: data.totalElements > 0 })
+    }).catch(cause => {
+      if (controller.signal.aborted) return
+      if (cause instanceof ReviewsApiError && (cause.status === 401 || cause.status === 403)) { refresh(); return }
+      setPrivateReviews({ status: 'error', message: cause instanceof ReviewsApiError ? cause.message : 'Unable to load reviews. Please try again.' })
+    })
+    return () => controller.abort()
+  }, [deck.id, deck.publicDeck, reviewAttempt, refresh])
+  const showReviewTabs = deck.publicDeck || privateReviews.status === 'ready' && privateReviews.hasReviews
   const { t, locale } = useLanguage()
   const navigate = useNavigate()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -95,7 +116,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     </dl>
     <div className="deck-details-actions">
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>{t("Edit Deck")}</Link>
-      <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>{t("＋ Add Flashcard")}</button>
+      <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => { setActiveTab('flashcards'); setDialog({ mode: 'create' }) }}>{t("＋ Add Flashcard")}</button>
       <button className="button button-outline" type="button" aria-haspopup="dialog" onClick={() => setImportingCsv(true)}>{t('Import CSV')}</button>
       <ExportFlashcardsButton deckId={deck.id} onError={setExportError} />
       <StudyStartButton deckId={deck.id} />
@@ -107,16 +128,27 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     {exportError && <p className="form-notice form-error" role="alert">{t(exportError)}</p>}
     {importingCsv && <ImportFlashcardsDialog deckId={deck.id} onCancel={() => setImportingCsv(false)}
       onImported={count => {
-        setImportingCsv(false); setNotice('Imported {0} flashcards.'); setNoticeValues([count.toLocaleString(locale)])
+        setImportingCsv(false); setActiveTab('flashcards'); setNotice('Imported {0} flashcards.'); setNoticeValues([count.toLocaleString(locale)])
         setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1)
         requestAnimationFrame(() => addButtonRef.current?.focus())
       }}
-      onRefresh={() => { setImportingCsv(false); setNotice(''); setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1) }} />}
+      onRefresh={() => { setImportingCsv(false); setActiveTab('flashcards'); setNotice(''); setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1) }} />}
     {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
       onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
       onUnavailable={() => navigate('/decks', { replace: true })} />}
+    {!deck.publicDeck && privateReviews.status === 'error' && <div className="form-notice form-error" role="alert">
+      <p>{t(privateReviews.message)}</p><button className="button button-outline" type="button" onClick={() => { setPrivateReviews({ status: 'loading' }); setReviewAttempt(value => value + 1) }}>{t('Try again')}</button>
+    </div>}
+    {showReviewTabs && <DeckDetailsTabs id={tabsId} activeTab={activeTab} onChange={setActiveTab} />}
+    <div role={showReviewTabs ? 'tabpanel' : undefined} tabIndex={showReviewTabs ? 0 : undefined}
+      id={showReviewTabs ? `${tabsId}-flashcards-panel` : undefined} aria-labelledby={showReviewTabs ? `${tabsId}-flashcards-tab` : undefined}
+      hidden={showReviewTabs && activeTab !== 'flashcards'}>
     <DeckFlashcards key={`${deck.id}:${createdRevision}`} deckId={deck.id} revision={flashcardRevision} onAdd={() => setDialog({ mode: 'create' })}
       onEdit={card => setDialog({ mode: 'edit', card })} onDelete={card => setDialog({ mode: 'delete', card })} />
+    </div>
+    {showReviewTabs && <div role="tabpanel" tabIndex={0} id={`${tabsId}-reviews-panel`} aria-labelledby={`${tabsId}-reviews-tab`} hidden={activeTab !== 'reviews'}>
+      <DeckReviews deckId={deck.id} ownDeck ownerView />
+    </div>}
     {dialog && dialog.mode !== 'delete' && <FlashcardDialog title={dialog.mode === 'edit' ? t("Edit Flashcard") : t("Add Flashcard")} onCancel={() => setDialog(null)}>
       <FlashcardForm initialValues={dialog.mode === 'edit' ? dialog.card : undefined} onSubmit={async values => {
         if (dialog.mode === 'edit') {

@@ -8,12 +8,12 @@ import FollowDeckButton, { type FollowState } from '../components/explore/Follow
 import StudyStartButton from '../components/study/StudyStartButton'
 import DeckReviews from '../components/reviews/DeckReviews'
 import DeckRating from '../components/reviews/DeckRating'
+import DeckDetailsTabs from '../components/decks/DeckDetailsTabs'
 import { useLanguage } from '../i18n/LanguageContext'
 import { categoryName, languageName } from '../i18n/labels'
 import './MyDecks.css'
 import './DeckDetails.css'
 import './ExploreDecks.css'
-import './PublicDeckDetails.css'
 
 type LoadState = { status: 'loading' } | { status: 'ready'; deck: PublicExploreDeck; cards: FlashcardPage }
   | { status: 'error'; message: string; code: number }
@@ -69,15 +69,7 @@ function PublicDeckLoader({ deckId, page, onPageChange }: { deckId: number; page
   const number = new Intl.NumberFormat(locale)
   return <>
     <PublicDeckHeader deck={deck} onChanged={next => setState({ status: 'ready', deck: { ...deck, ...next }, cards })} />
-    <div className="public-deck-tabs" role="tablist" aria-label={t('Deck sections')}>
-      {(['flashcards', 'reviews'] as const).map((tab, index) => <button key={tab} id={`${tabsId}-${tab}-tab`} type="button" role="tab"
-        aria-selected={activeTab === tab} aria-controls={`${tabsId}-${tab}-panel`} tabIndex={activeTab === tab ? 0 : -1}
-        onClick={() => setActiveTab(tab)} onKeyDown={event => {
-          const next = event.key === 'Home' ? 'flashcards' : event.key === 'End' ? 'reviews'
-            : event.key === 'ArrowLeft' || event.key === 'ArrowRight' ? (index === 0 ? 'reviews' : 'flashcards') : null
-          if (next) { event.preventDefault(); setActiveTab(next); document.getElementById(`${tabsId}-${next}-tab`)?.focus() }
-        }}>{t(tab === 'flashcards' ? 'Flashcards' : 'Reviews')}</button>)}
-    </div>
+    <DeckDetailsTabs id={tabsId} activeTab={activeTab} onChange={setActiveTab} />
     <section className="deck-details-flashcards" role="tabpanel" tabIndex={0} id={`${tabsId}-flashcards-panel`} aria-labelledby={`${tabsId}-flashcards-tab`} hidden={activeTab !== 'flashcards'}>
       <div className="db-section-heading"><h2 id="public-flashcards-title">{t('Flashcards')}</h2><p role="status">{count(cards.totalElements, 'card')}</p></div>
       {cards.totalElements === 0 ? <div className="decks-empty"><h3>{t('No flashcards yet')}</h3><p>{t('This public deck has no flashcards yet.')}</p></div>

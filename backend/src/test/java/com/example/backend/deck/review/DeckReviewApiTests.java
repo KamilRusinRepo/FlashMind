@@ -115,6 +115,31 @@ class DeckReviewApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void onlyOwnerCanReadRetainedReviewsAfterMakingDeckPrivate() throws Exception {
+        var owner = account(); var viewer = account(); var deck = deck(owner, true);
+        reviews.saveAndFlush(new DeckReview(viewer, deck, 4, "Keep this review"));
+        deck.setPublic(false); decks.saveAndFlush(deck);
+        String owned = "/api/decks/" + deck.getId() + "/reviews";
+        String explored = "/api/explore/decks/" + deck.getId() + "/reviews";
+        try (var client = new Client()) {
+            assertEquals(401, client.get(owned).statusCode());
+            client.login(viewer);
+            assertEquals(404, client.get(owned).statusCode()); assertEquals(404, client.get(explored).statusCode());
+            client.login(owner);
+            var response = client.get(owned);
+            assertEquals(200, response.statusCode(), response.body());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+            var data = json.readTree(response.body());
+            assertEquals(1, data.get("totalElements").asInt()); assertEquals(4.0, data.get("summary").get("averageRating").asDouble());
+            assertEquals("Keep this review", data.get("content").get(0).get("comment").asText());
+            assertEquals(404, client.get(explored).statusCode());
+            var empty = deck(owner, false);
+            assertEquals(0, json.readTree(client.get("/api/decks/" + empty.getId() + "/reviews").body()).get("totalElements").asInt());
+            assertEquals(404, client.get("/api/decks/" + Long.MAX_VALUE + "/reviews").statusCode());
+            assertEquals(400, client.get(owned + "?size=0").statusCode());
+        }
+    }
+
     private User account() {
         String name = "ReviewRead" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));

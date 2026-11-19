@@ -7,7 +7,7 @@ import './DeckReviews.css'
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: ReviewPage }
 
-export default function DeckReviews({ deckId, ownDeck }: { deckId: number; ownDeck: boolean }) {
+export default function DeckReviews({ deckId, ownDeck, ownerView = false }: { deckId: number; ownDeck: boolean; ownerView?: boolean }) {
   const { t, locale } = useLanguage()
   const { refresh } = useAuth()
   const id = useId()
@@ -16,7 +16,7 @@ export default function DeckReviews({ deckId, ownDeck }: { deckId: number; ownDe
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   useEffect(() => {
     const controller = new AbortController()
-    getDeckReviews(deckId, page, controller.signal).then(data => {
+    getDeckReviews(deckId, page, controller.signal, ownerView).then(data => {
       if (controller.signal.aborted) return
       if (page > 0 && data.content.length === 0) { setPage(Math.max(0, data.totalPages - 1)); return }
       setState({ status: 'ready', data })
@@ -26,7 +26,7 @@ export default function DeckReviews({ deckId, ownDeck }: { deckId: number; ownDe
       setState({ status: 'error', message: cause instanceof ReviewsApiError ? cause.message : 'Unable to load reviews. Please try again.' })
     })
     return () => controller.abort()
-  }, [deckId, page, attempt, refresh])
+  }, [deckId, page, attempt, refresh, ownerView])
 
   const number = new Intl.NumberFormat(locale)
   const summary = state.status === 'ready' ? state.data.summary : null

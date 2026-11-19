@@ -22,6 +22,16 @@ public class DeckReviewService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public DeckReviewPageResponse listPublic(Long viewerId, Long deckId, int page, int size) {
         decks.findById(deckId).filter(deck -> deck.isPublic()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return readPage(viewerId, deckId, page, size);
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public DeckReviewPageResponse listOwned(Long ownerId, Long deckId, int page, int size) {
+        decks.findByIdAndOwner_Id(deckId, ownerId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return readPage(ownerId, deckId, page, size);
+    }
+
+    private DeckReviewPageResponse readPage(Long viewerId, Long deckId, int page, int size) {
         long[] counts = new long[6];
         for (var bucket : reviews.countRatings(deckId)) counts[bucket.getRating()] = bucket.getTotal();
         long total = 0;
