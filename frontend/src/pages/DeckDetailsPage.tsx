@@ -10,6 +10,8 @@ import StudyStartButton from '../components/study/StudyStartButton'
 import FlashcardDialog from '../components/flashcards/FlashcardDialog'
 import FlashcardForm from '../components/flashcards/FlashcardForm'
 import DeleteFlashcardDialog from '../components/flashcards/DeleteFlashcardDialog'
+import ImportFlashcardsDialog from '../components/flashcards/ImportFlashcardsDialog'
+import ExportFlashcardsButton from '../components/flashcards/ExportFlashcardsButton'
 import DeleteDeckDialog from '../components/decks/DeleteDeckDialog'
 import type { PreviewFlashcard } from '../data/flashcardPreview'
 import './MyDecks.css'
@@ -60,18 +62,21 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
   const { t, locale } = useLanguage()
   const navigate = useNavigate()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [importingCsv, setImportingCsv] = useState(false)
+  const [exportError, setExportError] = useState('')
   const [failedImage, setFailedImage] = useState<string | null>(null)
   const languageDeck = deck.deckType === 'LANGUAGE'
   const [dialog, setDialog] = useState<{ mode: 'create' } | { mode: 'edit' | 'delete'; card: PreviewFlashcard } | null>(null)
   const [flashcardRevision, setFlashcardRevision] = useState(0)
   const [createdRevision, setCreatedRevision] = useState(0)
   const [notice, setNotice] = useState('')
+  const [noticeValues, setNoticeValues] = useState<string[]>([])
   const addButtonRef = useRef<HTMLButtonElement>(null)
   const tone = languageDeck ? 'purple' : 'blue'
 
 
   return <>
-    <div className="deck-details-overview">
+    <div className="deck-details-overview deck-details-overview-owned">
     <header className="deck-details-hero">
       <div className={`deck-details-cover db-tone-${tone}`} aria-hidden="true">
         {deck.backgroundUrl && failedImage !== deck.backgroundUrl
@@ -91,12 +96,22 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     <div className="deck-details-actions">
       <Link className="button button-outline" to={`/decks/${deck.id}/edit`}>{t("Edit Deck")}</Link>
       <button ref={addButtonRef} className="button button-outline" type="button" onClick={() => setDialog({ mode: 'create' })}>{t("＋ Add Flashcard")}</button>
+      <button className="button button-outline" type="button" aria-haspopup="dialog" onClick={() => setImportingCsv(true)}>{t('Import CSV')}</button>
+      <ExportFlashcardsButton deckId={deck.id} onError={setExportError} />
       <StudyStartButton deckId={deck.id} />
       <button className="button deck-delete-button" type="button" onClick={() => setConfirmingDelete(true)}>{t('Delete Deck')}</button>
     </div>
     </div>
     </div>
-    {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+    {notice && <p className="form-notice form-success" role="status">{t(notice, noticeValues)}</p>}
+    {exportError && <p className="form-notice form-error" role="alert">{t(exportError)}</p>}
+    {importingCsv && <ImportFlashcardsDialog deckId={deck.id} onCancel={() => setImportingCsv(false)}
+      onImported={count => {
+        setImportingCsv(false); setNotice('Imported {0} flashcards.'); setNoticeValues([count.toLocaleString(locale)])
+        setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1)
+        requestAnimationFrame(() => addButtonRef.current?.focus())
+      }}
+      onRefresh={() => { setImportingCsv(false); setNotice(''); setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1) }} />}
     {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
       onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
       onUnavailable={() => navigate('/decks', { replace: true })} />}
