@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +27,16 @@ import org.springframework.web.multipart.MultipartFile;
 public class FlashcardCsvController {
     private final FlashcardCsvService csv;
     public FlashcardCsvController(FlashcardCsvService csv) { this.csv = csv; }
+
+    @Operation(summary = "Confirm and atomically import all flashcards from CSV",
+            description = "Owner only; CSRF required. Multipart fields file and confirmed=true. Revalidates the entire file (1 MiB/1000 cards) under owner/deck locks. "
+                    + "Any validation failure rejects the entire import. Existing flashcards and study progress are retained; duplicates are added as new cards. Repeating a successful request imports again.")
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CsvImportResponse> importCards(@AuthenticationPrincipal SessionUser user,
+            @PathVariable(name = "deckId") @Min(1) Long deckId, @RequestParam("file") MultipartFile file,
+            @RequestParam(name = "confirmed", defaultValue = "false") boolean confirmed) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(csv.importOwned(user, deckId, file, confirmed));
+    }
 
     @Operation(summary = "Analyse a CSV file and preview flashcards without saving",
             description = "Owner only; CSRF required. Multipart field file, UTF-8 with optional BOM, comma separator, unique header names. "

@@ -5,6 +5,35 @@ export type CsvCardData = { question: string | null; answer: string | null; exam
 export type CsvPreviewRow = { rowNumber: number; data: CsvCardData | null; fieldErrors: Record<string, string> }
 export type CsvPreview = { rows: CsvPreviewRow[]; errors: { rowNumber: number; message: string }[]; totalRows: number; validRows: number; invalidRows: number; valid: boolean }
 
+export class CsvImportApiError extends FlashcardApiError {
+  readonly uncertain: boolean
+  constructor(message: string, status = 0, uncertain = false) { super(message, status); this.name = 'CsvImportApiError'; this.uncertain = uncertain }
+}
+
+export async function importFlashcardsCsv(deckId: number, file: File, expectedCount: number, signal: AbortSignal): Promise<number> {
+  const form = new FormData()
+  form.append('file', file); form.append('confirmed', 'true')
+  const uncertain = 'Unable to confirm the import. Refresh flashcards before trying again to avoid adding duplicates.'
+  let response: Response
+  try {
+    response = await postWithCsrf(`/api/decks/${deckId}/flashcards/import`, {
+      body: form, headers: { Accept: 'application/json' }, signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]),
+    })
+  } catch { throw new CsvImportApiError(uncertain, 0, true) }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new CsvImportApiError(response.status >= 500 ? uncertain
+    : response.status === 401 ? 'Your session has expired. Please sign in again.'
+      : response.status === 403 ? 'You do not have permission to access this resource.'
+        : response.status === 404 ? 'This deck is unavailable or does not belong to your account.'
+          : response.status === 413 ? 'CSV file must not exceed 1 MiB.'
+            : response.status === 400 ? 'The CSV file is invalid. Analyse it again before importing.'
+              : 'Unable to import flashcards. Please try again.', response.status, response.status >= 500)
+  if (response.status !== 201 || !Number.isSafeInteger(data?.importedCount) || data.importedCount !== expectedCount || expectedCount < 1 || expectedCount > 1000) {
+    throw new CsvImportApiError(uncertain, response.status, true)
+  }
+  return data.importedCount
+}
+
 export async function previewFlashcardsCsv(deckId: number, file: File, signal: AbortSignal): Promise<CsvPreview> {
   const form = new FormData()
   form.append('file', file)

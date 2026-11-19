@@ -33,6 +33,8 @@
 .csv-file-errors { color: var(--danger); font-size: .85em; }
 .csv-preview-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: .8em; }
 .csv-preview-pagination .button { font-size: inherit; }
+.csv-import-confirmation { padding: 18px; border: 1px solid var(--primary-dark); border-radius: 12px; background: var(--surface-soft, #f7f9fc); }
+.csv-import-confirmation p { line-height: 1.7; }
 @media (max-width: 550px) { .csv-preview-row dl > div { grid-template-columns: 1fr; gap: 4px; } }
 @media (max-width: 550px) {
   .csv-columns > div { grid-template-columns: 1fr; gap: 6px; }

@@ -1,6 +1,17 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
   'ADMINISTRATION': 'ADMINISTRACJA',
+  'Preview the file first. Flashcards are saved only after you confirm the import.': 'Najpierw sprawdź podgląd pliku. Fiszki zostaną zapisane dopiero po potwierdzeniu importu.',
+  'Confirm CSV import': 'Potwierdź import CSV',
+  'Add {0} flashcards to this deck? Existing flashcards will remain. Duplicate rows will be added as new flashcards.': 'Dodać {0} fiszek do tej talii? Istniejące fiszki pozostaną. Powtarzające się wiersze zostaną dodane jako nowe fiszki.',
+  'Back to preview': 'Wróć do podglądu',
+  'Confirm import': 'Potwierdź import',
+  'Importing flashcards…': 'Importowanie fiszek…',
+  'Imported {0} flashcards.': 'Zaimportowano {0} fiszek.',
+  'Confirm the import before saving flashcards.': 'Potwierdź import przed zapisaniem fiszek.',
+  'The CSV file is invalid. Analyse it again before importing.': 'Plik CSV jest nieprawidłowy. Przeanalizuj go ponownie przed importem.',
+  'Unable to import flashcards. Please try again.': 'Nie udało się zaimportować fiszek. Spróbuj ponownie.',
+  'Unable to confirm the import. Refresh flashcards before trying again to avoid adding duplicates.': 'Nie udało się potwierdzić importu. Odśwież fiszki przed kolejną próbą, aby uniknąć dodania duplikatów.',
   'Enter an absolute HTTP or HTTPS image URL without embedded credentials.': 'Podaj pełny adres obrazu HTTP lub HTTPS bez danych logowania.',
   'Use at most 1000 characters.': 'Użyj maksymalnie 1000 znaków.',
   'Use at most 2048 characters.': 'Użyj maksymalnie 2048 znaków.',

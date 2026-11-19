@@ -81,6 +81,74 @@ class FlashcardCsvPreviewApiTests extends PostgresIntegrationTest {
         }
     }
 
+    @Test void confirmedImportAddsAllFieldsAndDuplicatesWhileRetainingExistingCards() throws Exception {
+        var owner = account();
+        var deck = decks.saveAndFlush(new Deck(owner, "Import", DeckType.GENERAL, "English", null));
+        var existing = cards.saveAndFlush(new Flashcard(deck, "Existing", "Answer"));
+        String csv = "question,answer,example_sentence,translated_example,image_url\n"
+                + "  Żółw  ,  turtle  ,Example,Przykład,https://example.invalid/image.png\n"
+                + "Duplicate,Answer,,,\nDuplicate,Answer,,,\n";
+        try (var client = new Client()) {
+            client.login(owner);
+            assertTrue(json.readTree(client.preview(deck.getId(), "cards.csv", csv, true).body()).get("valid").asBoolean());
+            assertEquals(1, cards.count());
+            var response = client.importCards(deck.getId(), csv, true, "true");
+            assertEquals(201, response.statusCode(), response.body());
+            assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+            assertEquals(3, json.readTree(response.body()).get("importedCount").asInt());
+            var saved = cards.findByDeck_IdAndDeck_Owner_IdOrderByCreatedAtAscIdAsc(deck.getId(), owner.getId());
+            assertEquals(4, saved.size()); assertEquals(existing.getId(), saved.getFirst().getId());
+            assertEquals("Żółw", saved.get(1).getQuestion()); assertEquals("turtle", saved.get(1).getAnswer());
+            assertEquals("Example", saved.get(1).getExampleSentence()); assertEquals("Przykład", saved.get(1).getTranslatedExample());
+            assertEquals("https://example.invalid/image.png", saved.get(1).getImageUrl());
+            assertEquals(2, saved.stream().filter(card -> card.getQuestion().equals("Duplicate")).count());
+        }
+    }
+
+    @Test void revalidatesTheUploadedFileAndRejectsAllRowsOnFailureOrMissingConfirmation() throws Exception {
+        var owner = account();
+        var deck = decks.saveAndFlush(new Deck(owner, "Atomic import", DeckType.GENERAL, "English", null));
+        String valid = "question,answer\nGood,Answer\n";
+        try (var client = new Client()) {
+            client.login(owner);
+            assertEquals(400, client.importCards(deck.getId(), valid, true, null).statusCode());
+            assertEquals(400, client.importCards(deck.getId(), valid, true, "false").statusCode());
+            assertTrue(json.readTree(client.preview(deck.getId(), "cards.csv", valid, true).body()).get("valid").asBoolean());
+            // A successful preview cannot authorize a different, invalid upload.
+            var invalid = client.importCards(deck.getId(), valid + "Bad,\n", true, "true");
+            assertEquals(400, invalid.statusCode(), invalid.body());
+            assertTrue(json.readTree(invalid.body()).get("fieldErrors").has("line 3.answer"));
+            assertEquals(0, cards.count());
+            assertEquals(400, client.importCards(deck.getId(), "question,answer\n" + "Good,Answer\n".repeat(1001), true, "true").statusCode());
+            assertEquals(0, cards.count());
+            assertEquals(400, client.importCards(deck.getId(), valid + "\"unclosed,Answer", true, "true").statusCode());
+            assertEquals(0, cards.count());
+            assertEquals(400, client.importCards(deck.getId(), "question,answer\n", true, "true").statusCode());
+        }
+    }
+
+    @Test void importRechecksOwnershipCsrfAndCurrentSessionAfterPreview() throws Exception {
+        var owner = account(); var viewer = account();
+        var deck = new Deck(owner, "Owned import", DeckType.GENERAL, "English", null);
+        deck.setPublic(true); deck = decks.saveAndFlush(deck);
+        String csv = "question,answer\nQ,A\n";
+        try (var client = new Client()) {
+            assertEquals(401, client.importCards(deck.getId(), csv, true, "true").statusCode());
+            client.login(viewer);
+            assertEquals(404, client.importCards(deck.getId(), csv, true, "true").statusCode());
+            client.login(owner);
+            assertEquals(403, client.importCards(deck.getId(), csv, false, "true").statusCode());
+            assertEquals(404, client.importCards(Long.MAX_VALUE, csv, true, "true").statusCode());
+            assertTrue(json.readTree(client.preview(deck.getId(), "cards.csv", csv, true).body()).get("valid").asBoolean());
+            decks.deleteById(deck.getId()); decks.flush();
+            assertEquals(404, client.importCards(deck.getId(), csv, true, "true").statusCode());
+            var next = decks.saveAndFlush(new Deck(owner, "Next", DeckType.GENERAL, "English", null));
+            owner.invalidateSessions(); users.saveAndFlush(owner);
+            assertEquals(401, client.importCards(next.getId(), csv, true, "true").statusCode());
+            assertEquals(0, cards.count());
+        }
+    }
+
     private User account() {
         String name = "CsvPreview" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
         var user = new User(name, name + "@example.invalid", encoder.encode(PASSWORD));
@@ -101,11 +169,19 @@ class FlashcardCsvPreviewApiTests extends PostgresIntegrationTest {
             var response = http.send(request, HttpResponse.BodyHandlers.ofString()); assertEquals(200, response.statusCode(), response.body());
         }
         HttpResponse<String> preview(Long deckId, String filename, String csv, boolean withCsrf) throws Exception {
+            return upload(deckId, filename, csv, withCsrf, "/import/preview", null);
+        }
+        HttpResponse<String> importCards(Long deckId, String csv, boolean withCsrf, String confirmed) throws Exception {
+            return upload(deckId, "cards.csv", csv, withCsrf, "/import", confirmed);
+        }
+        HttpResponse<String> upload(Long deckId, String filename, String csv, boolean withCsrf, String suffix, String confirmed) throws Exception {
             String boundary = "FlashMindCsvBoundary";
             var body = new ByteArrayOutputStream();
             body.writeBytes(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\nContent-Type: text/csv\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-            body.writeBytes(csv.getBytes(StandardCharsets.UTF_8)); body.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-            var request = HttpRequest.newBuilder(endpoint("/api/decks/" + deckId + "/flashcards/import/preview")).timeout(Duration.ofSeconds(15))
+            body.writeBytes(csv.getBytes(StandardCharsets.UTF_8));
+            if (confirmed != null) body.writeBytes(("\r\n--" + boundary + "\r\nContent-Disposition: form-data; name=\"confirmed\"\r\n\r\n" + confirmed).getBytes(StandardCharsets.UTF_8));
+            body.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            var request = HttpRequest.newBuilder(endpoint("/api/decks/" + deckId + "/flashcards" + suffix)).timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary).header("Accept", "application/json");
             if (withCsrf) request.header("X-CSRF-TOKEN", csrf());
             return http.send(request.POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())).build(), HttpResponse.BodyHandlers.ofString());

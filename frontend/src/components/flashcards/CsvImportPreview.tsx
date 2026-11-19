@@ -7,7 +7,7 @@ const fields: { name: keyof CsvCardData; label: string }[] = [
   { name: 'exampleSentence', label: 'example_sentence' }, { name: 'translatedExample', label: 'translated_example' }, { name: 'imageUrl', label: 'image_url' },
 ]
 
-export default function CsvImportPreview({ preview }: { preview: CsvPreview }) {
+export default function CsvImportPreview({ preview, disabled, onImport }: { preview: CsvPreview; disabled: boolean; onImport: () => void }) {
   const { t, locale } = useLanguage()
   const [page, setPage] = useState(0)
   const pages = Math.ceil(preview.rows.length / 20)
@@ -34,7 +34,6 @@ export default function CsvImportPreview({ preview }: { preview: CsvPreview }) {
       <button className="button button-outline" type="button" disabled={page + 1 >= pages} onClick={() => setPage(value => value + 1)}>{t('Next →')}</button>
     </nav>}
     <p className="field-hint">{t('Line numbers refer to the first physical line of each CSV record. Blank lines are ignored.')}</p>
-    <button className="button button-primary" type="button" disabled>{t('Import flashcards')}</button>
-    <p className="field-hint">{t('Saving imported flashcards will be available in the next step.')}</p>
+    <button className="button button-primary" type="button" disabled={!preview.valid || disabled} onClick={onImport}>{t('Import flashcards')}</button>
   </section>
 }

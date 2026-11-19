@@ -111,7 +111,8 @@ public class OpenApiConfiguration {
                         || path.contains("study-sessions") || path.endsWith("/follow")))
                     responses.addApiResponse("409", error("Operation conflicts with the current state or a business rule; see message/fieldErrors."));
                 responses.addApiResponse("500", error("Unexpected server error; internal details are not exposed."));
-                if (path.endsWith("/flashcards/import/preview")) responses.addApiResponse("413", error("CSV file exceeds 1 MiB or the multipart request is too large."));
+                if (path.endsWith("/flashcards/import/preview") || path.endsWith("/flashcards/import"))
+                    responses.addApiResponse("413", error("CSV file exceeds 1 MiB or the multipart request is too large."));
                 if (path.equals("/api/status")) responses.addApiResponse("503", new ApiResponse().description("Database is unavailable; status and database are DOWN.")
                         .content(responses.get("200").getContent()));
             }));
@@ -192,6 +193,7 @@ public class OpenApiConfiguration {
         if (method == PathItem.HttpMethod.DELETE || path.equals("/api/admin/access")
                 || path.equals("/api/auth/logout") || path.equals("/api/users/me/password")) return "204";
         if (method == PathItem.HttpMethod.POST) {
+            if (path.endsWith("/flashcards/import")) return "201";
             if (Set.of("/api/auth/register", "/api/decks", "/api/decks/{deckId}/flashcards", "/api/decks/{deckId}/study-sessions").contains(path)) return "201";
             if (Set.of("/api/auth/forgot-password", "/api/auth/resend-verification", "/api/users/me/email-change").contains(path)) return "202";
         }

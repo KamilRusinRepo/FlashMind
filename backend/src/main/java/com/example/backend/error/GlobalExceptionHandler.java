@@ -40,7 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(CsvPreviewException.class)
     public ResponseEntity<ApiError> handleCsvPreview(CsvPreviewException exception, HttpServletRequest request) {
         return ResponseEntity.status(exception.getStatus()).header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .body(createError(exception.getStatus(), exception.getMessage(), request.getRequestURI(), Map.of("file", exception.getMessage())));
+                .body(createError(exception.getStatus(), exception.getMessage(), request.getRequestURI(), exception.getFieldErrors()));
     }
 
     @ExceptionHandler(AdminUserEditException.class)

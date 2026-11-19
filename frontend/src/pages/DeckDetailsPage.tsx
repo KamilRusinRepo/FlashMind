@@ -70,6 +70,7 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
   const [flashcardRevision, setFlashcardRevision] = useState(0)
   const [createdRevision, setCreatedRevision] = useState(0)
   const [notice, setNotice] = useState('')
+  const [noticeValues, setNoticeValues] = useState<string[]>([])
   const addButtonRef = useRef<HTMLButtonElement>(null)
   const tone = languageDeck ? 'purple' : 'blue'
 
@@ -102,9 +103,15 @@ function DeckDetails({ deck }: { deck: OwnedDeck }) {
     </div>
     </div>
     </div>
-    {notice && <p className="form-notice form-success" role="status">{t(notice)}</p>}
+    {notice && <p className="form-notice form-success" role="status">{t(notice, noticeValues)}</p>}
     {exportError && <p className="form-notice form-error" role="alert">{t(exportError)}</p>}
-    {importingCsv && <ImportFlashcardsDialog deckId={deck.id} onCancel={() => setImportingCsv(false)} />}
+    {importingCsv && <ImportFlashcardsDialog deckId={deck.id} onCancel={() => setImportingCsv(false)}
+      onImported={count => {
+        setImportingCsv(false); setNotice('Imported {0} flashcards.'); setNoticeValues([count.toLocaleString(locale)])
+        setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1)
+        requestAnimationFrame(() => addButtonRef.current?.focus())
+      }}
+      onRefresh={() => { setImportingCsv(false); setNotice(''); setCreatedRevision(value => value + 1); setFlashcardRevision(value => value + 1) }} />}
     {confirmingDelete && <DeleteDeckDialog deck={deck} onCancel={() => setConfirmingDelete(false)}
       onDeleted={() => navigate('/decks', { replace: true, state: { deletedDeckId: deck.id } })}
       onUnavailable={() => navigate('/decks', { replace: true })} />}
