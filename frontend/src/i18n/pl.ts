@@ -1,5 +1,17 @@
 // Keys are canonical interface messages. User-authored deck/card content is never passed here.
 export const pl: Record<string, string> = {
+  'Rating': 'Ocena',
+  'Comment': 'Komentarz',
+  'Public': 'Publiczna',
+  'Private': 'Prywatna',
+  'Manage users, public decks and reviews.': 'Zarządzaj użytkownikami, publicznymi taliami i recenzjami.',
+  'Moderate reviews of public and private decks. Deleting a review also removes its rating.': 'Moderuj recenzje publicznych i prywatnych talii. Usunięcie recenzji usuwa również jej ocenę.',
+  'Reviews table': 'Tabela recenzji',
+  'Delete review by {0}': 'Usuń recenzję użytkownika {0}',
+  'Delete the review by {0} for {1}? The rating and comment will be permanently deleted.': 'Usunąć recenzję użytkownika {0} dla talii {1}? Ocena i komentarz zostaną trwale usunięte.',
+  'The review has been deleted.': 'Recenzja została usunięta.',
+  'This review is no longer available. Refresh the list.': 'Ta recenzja nie jest już dostępna. Odśwież listę.',
+  'Unable to delete this review. Please try again.': 'Nie udało się usunąć tej recenzji. Spróbuj ponownie.',
   'Edit review': 'Edytuj recenzję',
   'Delete review': 'Usuń recenzję',
   'Delete review?': 'Usunąć recenzję?',

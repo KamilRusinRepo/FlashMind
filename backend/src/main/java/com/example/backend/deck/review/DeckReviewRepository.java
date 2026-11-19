@@ -10,6 +10,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DeckReviewRepository extends JpaRepository<DeckReview, Long> {
+    @Override
+    @EntityGraph(attributePaths = {"user", "deck"})
+    Page<DeckReview> findAll(Pageable pageable);
+
+    @Query("select review.deck.id from DeckReview review where review.id = :reviewId")
+    Optional<Long> findDeckId(@Param("reviewId") Long reviewId);
+
     @EntityGraph(attributePaths = "user")
     Optional<DeckReview> findByUser_IdAndDeck_Id(Long userId, Long deckId);
     boolean existsByUser_IdAndDeck_Id(Long userId, Long deckId);
