@@ -6,6 +6,7 @@ Projekt indywidualny: Spring Boot REST API, React i PostgreSQL jako osobna usłu
 
 ## Spis treści
 
+- [Wersja do oceny](#wersja-do-oceny)
 - [Funkcjonalności](#funkcjonalności)
 - [Technologie](#technologie)
 - [Uruchomienie](#uruchomienie)
@@ -18,8 +19,13 @@ Projekt indywidualny: Spring Boot REST API, React i PostgreSQL jako osobna usłu
 - [Dokumentacja REST API](#dokumentacja-rest-api)
 - [Import i eksport CSV](#import-i-eksport-csv)
 - [Testy i CI](#testy-i-ci)
-- [Demo i wersja końcowa](#demo-i-wersja-końcowa)
+- [Film](#film)
 - [Zrzuty ekranu](#zrzuty-ekranu)
+
+
+## Wersja do oceny
+
+[v1.0.1](https://github.com/KamilRusinRepo/FlashMind/tree/v1.0.1)
 
 ## Funkcjonalności
 
