@@ -11,7 +11,10 @@
 .decks-empty p { color: var(--muted); max-width: 500px; }
 .decks-empty-icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 20px; background: #e7f7ed; color: var(--primary-dark); font-size: 36px; }
 .decks-result-count { color: var(--muted); margin-bottom: 16px; overflow-wrap: anywhere; }
-.decks-list-card { position: relative; transition: border-color .15s ease, box-shadow .15s ease; }
+.decks-list-card { position: relative; display: flex; flex-direction: column; transition: border-color .15s ease, box-shadow .15s ease; }
+.decks-list-card .db-deck-cover { flex-shrink: 0; }
+.decks-list-card .db-deck-body { display: flex; flex-direction: column; flex: 1; }
+.decks-list-card .decks-language { margin-top: auto; padding-top: 14px; }
 .decks-list-card:hover { border-color: #9bd4b3; box-shadow: 0 6px 20px #152d470a; }
 .deck-details-link::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: 20px; }
 .deck-details-link:focus-visible { outline: none; }
