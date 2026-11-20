@@ -4,10 +4,6 @@ FlashMind to aplikacja webowa do nauki z fiszkami. Pozwala tworzyć własne tali
 
 Projekt indywidualny: Spring Boot REST API, React i PostgreSQL jako osobna usługa. Wysyłka wiadomości e-mail wykorzystuje RabbitMQ, a całość uruchamia się przez Docker Compose.
 
-- **Repozytorium:** [KamilRusinRepo/FlashMind](https://github.com/KamilRusinRepo/FlashMind)
-- **Demo, 3–5 minut:** **DO UZUPEŁNIENIA — link do nagrania przed oddaniem projektu.**
-- **Wersja do oceny:** **DO UZUPEŁNIENIA — pełny hash końcowego commita lub opublikowany tag.**
-
 ## Spis treści
 
 - [Funkcjonalności](#funkcjonalności)
